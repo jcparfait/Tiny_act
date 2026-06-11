@@ -2,6 +2,7 @@ module Api
   module V1
     class ActivitySessionsController < ApplicationController
       QUIZ_QUESTIONS_LIMIT = 10
+      LANGUAGE_ITEMS_LIMIT = 30
 
       skip_before_action :authenticate_user!
       skip_forgery_protection
@@ -179,8 +180,6 @@ module Api
 
       private
 
-      # TEMPORAIRE POUR APPRENDRE.
-      # Plus tard, on remplacera ça par une vraie authentification mobile.
       def current_api_user
         User.joins(:user_interests).distinct.first || User.first
       end
@@ -256,7 +255,8 @@ module Api
           finished: activity_session.finished,
           elapsed_seconds: activity_session.elapsed_seconds,
           activity_id: activity_session.activity_id,
-          timer_started_at: activity_session.timer_started_at
+          timer_started_at: activity_session.timer_started_at,
+          language: activity_session.language
         }
       end
 
@@ -306,6 +306,15 @@ module Api
           base_payload.merge(
             quiz_kind: "culture",
             quiz_questions: serialize_culture_quiz_questions(activity)
+          )
+        elsif activity.language_activity?
+          assign_language_if_needed(activity, activity_session)
+
+          base_payload.merge(
+            language: activity_session&.language,
+            language_label: readable_language(activity_session&.language),
+            language_mode: language_item_type_for(activity),
+            language_items: serialize_language_items(activity, activity_session)
           )
         else
           base_payload
@@ -364,6 +373,58 @@ module Api
         else
           "easy"
         end
+      end
+
+      def assign_language_if_needed(activity, activity_session)
+        return if activity_session.blank?
+        return if activity_session.language.present?
+
+        item_type = language_item_type_for(activity)
+
+        language = LanguageItem
+                   .where(item_type: item_type)
+                   .distinct
+                   .pluck(:language)
+                   .sample
+
+        activity_session.update!(language: language) if language.present?
+      end
+
+      def serialize_language_items(activity, activity_session)
+        item_type = language_item_type_for(activity)
+
+        return [] if item_type.blank? || activity_session.blank? || activity_session.language.blank?
+
+        LanguageItem
+          .where(item_type: item_type, language: activity_session.language)
+          .order(Arel.sql("RANDOM()"))
+          .limit(LANGUAGE_ITEMS_LIMIT)
+          .map do |item|
+            {
+              id: item.id,
+              prompt: item.prompt,
+              answer: item.answer,
+              translation: item.translation.presence || item.answer,
+              item_type: item.item_type,
+              language: item.language
+            }
+          end
+      end
+
+      def language_item_type_for(activity)
+        case activity.activity_type
+        when "word_learning"
+          "word"
+        when "sentence_completion"
+          "sentence"
+        end
+      end
+
+      def readable_language(language)
+        {
+          "english" => "anglais",
+          "spanish" => "espagnol"
+        }[language] || language
       end
 
       def record_new_furniture_unlocks_for(activity_session)

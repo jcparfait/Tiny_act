@@ -21,6 +21,7 @@ export type ActivitySession = {
   elapsed_seconds: number;
   activity_id: number;
   timer_started_at?: string | null;
+  language?: string | null;
 };
 
 export type QuizQuestion = {
@@ -33,11 +34,24 @@ export type QuizQuestion = {
   answers: string[];
 };
 
+export type LanguageItem = {
+  id: number;
+  prompt: string;
+  answer: string;
+  translation?: string | null;
+  item_type: "word" | "sentence" | string;
+  language?: string | null;
+};
+
 export type ActivityPayload = {
   duration_seconds?: number;
   activity_session_id?: number | null;
   quiz_kind?: "culture" | "code";
   quiz_questions?: QuizQuestion[];
+  language?: string | null;
+  language_label?: string | null;
+  language_mode?: "word" | "sentence" | string;
+  language_items?: LanguageItem[];
 };
 
 export type Activity = {
