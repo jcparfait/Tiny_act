@@ -1,12 +1,13 @@
 module Api
   module V1
     class ActivitySessionsController < ApplicationController
+      QUIZ_QUESTIONS_LIMIT = 10
+
       skip_before_action :authenticate_user!
       skip_forgery_protection
 
       def create
         user = current_api_user!
-
         return unless user
 
         activity = matching_activities_for(user).order(Arel.sql("RANDOM()")).first
@@ -37,7 +38,6 @@ module Api
 
       def show
         user = current_api_user!
-
         return unless user
 
         activity_session = user.activity_sessions.find(params[:id])
@@ -50,13 +50,18 @@ module Api
 
         render json: {
           activity_session: serialize_activity_session(activity_session),
-          activities: activities.map { |activity| serialize_activity(activity) }
+          activities: activities.map do |activity|
+            serialize_activity(
+              activity,
+              activity_session: activity_session,
+              include_payload: activity.id == activity_session.activity_id
+            )
+          end
         }
       end
 
       def select_activity
         user = current_api_user!
-
         return unless user
 
         activity_session = user.activity_sessions.find(params[:id])
@@ -77,13 +82,12 @@ module Api
 
         render json: {
           activity_session: serialize_activity_session(activity_session),
-          activity: serialize_activity(activity)
+          activity: serialize_activity(activity, activity_session: activity_session, include_payload: true)
         }
       end
 
       def start
         user = current_api_user!
-
         return unless user
 
         activity_session = user.activity_sessions.find(params[:id])
@@ -100,13 +104,13 @@ module Api
 
         render json: {
           activity_session: serialize_activity_session(activity_session),
-          activity: serialize_activity(activity_session.activity)
+          activity: serialize_activity(activity_session.activity, activity_session: activity_session,
+                                                                  include_payload: true)
         }
       end
 
       def pause
         user = current_api_user!
-
         return unless user
 
         activity_session = user.activity_sessions.find(params[:id])
@@ -123,13 +127,13 @@ module Api
 
         render json: {
           activity_session: serialize_activity_session(activity_session),
-          activity: serialize_activity(activity_session.activity)
+          activity: serialize_activity(activity_session.activity, activity_session: activity_session,
+                                                                  include_payload: true)
         }
       end
 
       def resume
         user = current_api_user!
-
         return unless user
 
         activity_session = user.activity_sessions.find(params[:id])
@@ -146,13 +150,13 @@ module Api
 
         render json: {
           activity_session: serialize_activity_session(activity_session),
-          activity: serialize_activity(activity_session.activity)
+          activity: serialize_activity(activity_session.activity, activity_session: activity_session,
+                                                                  include_payload: true)
         }
       end
 
       def finish
         user = current_api_user!
-
         return unless user
 
         activity_session = user.activity_sessions.find(params[:id])
@@ -168,7 +172,8 @@ module Api
 
         render json: {
           activity_session: serialize_activity_session(activity_session),
-          activity: serialize_activity(activity_session.activity)
+          activity: serialize_activity(activity_session.activity, activity_session: activity_session,
+                                                                  include_payload: true)
         }
       end
 
@@ -255,8 +260,8 @@ module Api
         }
       end
 
-      def serialize_activity(activity)
-        {
+      def serialize_activity(activity, activity_session: nil, include_payload: false)
+        serialized = {
           id: activity.id,
           name: activity.name,
           description: activity.description.presence || activity.content,
@@ -280,6 +285,85 @@ module Api
             name: activity.mood.name
           }
         }
+
+        serialized[:payload] = serialize_activity_payload(activity, activity_session) if include_payload
+
+        serialized
+      end
+
+      def serialize_activity_payload(activity, activity_session)
+        base_payload = {
+          duration_seconds: activity.duration.value.to_i * 60,
+          activity_session_id: activity_session&.id
+        }
+
+        if activity.code_quiz?
+          base_payload.merge(
+            quiz_kind: "code",
+            quiz_questions: serialize_code_quiz_questions(activity)
+          )
+        elsif activity.culture_activity?
+          base_payload.merge(
+            quiz_kind: "culture",
+            quiz_questions: serialize_culture_quiz_questions(activity)
+          )
+        else
+          base_payload
+        end
+      end
+
+      def serialize_code_quiz_questions(activity)
+        questions_per_family = 4
+
+        questions = CodeQuestion::FAMILY_NAMES.flat_map do |family|
+          CodeQuestion.weighted_pool(
+            family: family,
+            mood_name: activity.mood.name,
+            limit: questions_per_family
+          )
+        end
+
+        questions
+          .sample(quiz_questions_limit_for(activity))
+          .map { |question| serialize_quiz_question(question) }
+      end
+
+      def serialize_culture_quiz_questions(activity)
+        CultureQuestion
+          .where(difficulty: culture_difficulty_for(activity))
+          .order(Arel.sql("RANDOM()"))
+          .limit(quiz_questions_limit_for(activity))
+          .map { |question| serialize_quiz_question(question) }
+      end
+
+      def serialize_quiz_question(question)
+        {
+          id: question.id,
+          question: question.question,
+          category: question.try(:category),
+          family: question.respond_to?(:family) ? question.family : question.try(:category),
+          difficulty: question.try(:difficulty),
+          correct_answer: question.correct_answer,
+          answers: question.answers
+        }
+      end
+
+      def quiz_questions_limit_for(activity)
+        duration_value = activity.duration.value.to_i
+        [[duration_value, 5].max, QUIZ_QUESTIONS_LIMIT].min
+      end
+
+      def culture_difficulty_for(activity)
+        case activity.mood.name
+        when "À plat"
+          "easy"
+        when "Mitigé"
+          "medium"
+        when "En forme"
+          "hard"
+        else
+          "easy"
+        end
       end
 
       def record_new_furniture_unlocks_for(activity_session)

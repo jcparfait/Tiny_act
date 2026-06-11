@@ -23,12 +23,30 @@ export type ActivitySession = {
   timer_started_at?: string | null;
 };
 
+export type QuizQuestion = {
+  id: number;
+  question: string;
+  category?: string | null;
+  family?: string | null;
+  difficulty?: string | null;
+  correct_answer: string;
+  answers: string[];
+};
+
+export type ActivityPayload = {
+  duration_seconds?: number;
+  activity_session_id?: number | null;
+  quiz_kind?: "culture" | "code";
+  quiz_questions?: QuizQuestion[];
+};
+
 export type Activity = {
   id: number;
   name: string;
   description?: string;
   content?: string;
   activity_type: string;
+  payload?: ActivityPayload;
   interest?: {
     id: number;
     name: string;
@@ -49,20 +67,21 @@ export type CreateActivitySessionResponse = {
   activities: Activity[];
 };
 
-export type SelectActivityResponse = {
+export type ActivitySessionActionResponse = {
   activity_session: ActivitySession;
   activity: Activity;
 };
+
+export type SelectActivityResponse = ActivitySessionActionResponse;
+export type StartActivitySessionResponse = ActivitySessionActionResponse;
+export type PauseActivitySessionResponse = ActivitySessionActionResponse;
+export type ResumeActivitySessionResponse = ActivitySessionActionResponse;
+export type FinishActivitySessionResponse = ActivitySessionActionResponse;
 
 export type InitialDataResponse = {
   moods: Mood[];
   locations: Location[];
   durations: Duration[];
-};
-
-export type StartActivitySessionResponse = {
-  activity_session: ActivitySession;
-  activity: Activity;
 };
 
 export type Step =
@@ -71,4 +90,5 @@ export type Step =
   | "duration"
   | "recommendations"
   | "preview"
-  | "activity";
+  | "activity"
+  | "finished";
