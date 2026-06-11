@@ -54,8 +54,37 @@ export function ActivityCard({
           lineHeight: 22,
         }}
       >
-        {activity.description || activity.content}
+        {activity.description || activity.content || "Aucune description."}
       </Text>
+
+      <View
+        style={{
+          padding: 12,
+          borderRadius: 16,
+          backgroundColor: "#FFF4EA",
+          gap: 4,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 13,
+            color: "#5D5A70",
+            fontWeight: "700",
+          }}
+        >
+          Type : {activity.activity_type}
+        </Text>
+
+        <Text
+          style={{
+            fontSize: 13,
+            color: "#5D5A70",
+            fontWeight: "700",
+          }}
+        >
+          Lieu : {activity.location?.name || "Non renseigné"}
+        </Text>
+      </View>
 
       <Pressable
         onPress={() => onSelect(activity)}

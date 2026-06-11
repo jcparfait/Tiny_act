@@ -316,6 +316,10 @@ module Api
             language_mode: language_item_type_for(activity),
             language_items: serialize_language_items(activity, activity_session)
           )
+        elsif activity.activity_type == "melody"
+          base_payload.merge(
+            melody: serialize_melody(activity, activity_session)
+          )
         else
           base_payload
         end
@@ -425,6 +429,42 @@ module Api
           "english" => "anglais",
           "spanish" => "espagnol"
         }[language] || language
+      end
+
+      def serialize_melody(activity, activity_session)
+        scope = Melody.where(difficulty: preferred_melody_difficulty_for(activity)).order(:id)
+        scope = Melody.order(:id) if scope.none?
+
+        return nil if scope.none?
+
+        offset = if activity_session.present?
+                   activity_session.id.to_i % scope.count
+                 else
+                   rand(scope.count)
+                 end
+
+        melody = scope.offset(offset).first || scope.first
+
+        {
+          name: melody.name,
+          notes: melody.notes,
+          difficulty: melody.difficulty,
+          category: melody.category,
+          source: melody.source
+        }
+      end
+
+      def preferred_melody_difficulty_for(activity)
+        case activity.mood.name
+        when "À plat"
+          "easy"
+        when "Mitigé"
+          "medium"
+        when "En forme"
+          "hard"
+        else
+          "easy"
+        end
       end
 
       def record_new_furniture_unlocks_for(activity_session)

@@ -6,6 +6,7 @@ type ActiveActivityCardProps = {
   activity: Activity;
   activitySession: ActivitySession;
   elapsedSeconds: number;
+  onActivityReadyToFinishChange?: (ready: boolean) => void;
 };
 
 function formatElapsedTime(totalSeconds: number) {
@@ -30,6 +31,7 @@ export function ActiveActivityCard({
   activity,
   activitySession,
   elapsedSeconds,
+  onActivityReadyToFinishChange,
 }: ActiveActivityCardProps) {
   return (
     <View
@@ -65,7 +67,10 @@ export function ActiveActivityCard({
         </Text>
       </View>
 
-      <ActivityRenderer activity={activity} />
+      <ActivityRenderer
+        activity={activity}
+        onActivityReadyToFinishChange={onActivityReadyToFinishChange}
+      />
 
       <View
         style={{

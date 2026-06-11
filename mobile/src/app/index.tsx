@@ -83,6 +83,7 @@ export default function HomeScreen() {
   );
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [activityReadyToFinish, setActivityReadyToFinish] = useState(true);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -200,6 +201,7 @@ export default function HomeScreen() {
     setRecommendedActivities([]);
     setSelectedActivity(null);
     setElapsedSeconds(0);
+    setActivityReadyToFinish(true);
     setError(null);
   }
 
@@ -210,6 +212,7 @@ export default function HomeScreen() {
     setError(null);
     setRecommendedActivities([]);
     setSelectedActivity(null);
+    setActivityReadyToFinish(true);
 
     try {
       const data = await createActivitySession({
@@ -239,6 +242,7 @@ export default function HomeScreen() {
 
     setSelectingActivity(true);
     setError(null);
+    setActivityReadyToFinish(true);
 
     try {
       const data = await selectActivity(activitySession.id, activity.id);
@@ -260,6 +264,7 @@ export default function HomeScreen() {
 
     setStartingActivity(true);
     setError(null);
+    setActivityReadyToFinish(selectedActivity.activity_type !== "melody");
 
     try {
       const data = await startActivitySession(activitySession.id);
@@ -267,6 +272,7 @@ export default function HomeScreen() {
       setActivitySession(data.activity_session);
       setSelectedActivity(data.activity);
       setElapsedSeconds(computeElapsedSeconds(data.activity_session));
+      setActivityReadyToFinish(data.activity.activity_type !== "melody");
       setStep("activity");
 
       console.log("Activity started:", data);
@@ -323,7 +329,7 @@ export default function HomeScreen() {
   }
 
   async function handleFinishActivity() {
-    if (!activitySession || !selectedActivity) return;
+    if (!activitySession || !selectedActivity || !activityReadyToFinish) return;
 
     setFinishingActivity(true);
     setError(null);
@@ -337,6 +343,7 @@ export default function HomeScreen() {
       setActivitySession(data.activity_session);
       setSelectedActivity(data.activity);
       setElapsedSeconds(data.activity_session.elapsed_seconds);
+      setActivityReadyToFinish(true);
       setStep("finished");
 
       console.log("Activity finished:", data);
@@ -349,6 +356,11 @@ export default function HomeScreen() {
 
   const activityIsPaused = activitySession?.status === "paused";
   const activityIsInProgress = activitySession?.status === "in_progress";
+  const finishButtonDisabled =
+    finishingActivity ||
+    pausingActivity ||
+    resumingActivity ||
+    !activityReadyToFinish;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF4EA" }}>
@@ -476,6 +488,7 @@ export default function HomeScreen() {
               activity={selectedActivity}
               activitySession={activitySession}
               elapsedSeconds={elapsedSeconds}
+              onActivityReadyToFinishChange={setActivityReadyToFinish}
             />
           )}
 
@@ -484,6 +497,7 @@ export default function HomeScreen() {
               activity={selectedActivity}
               activitySession={activitySession}
               elapsedSeconds={elapsedSeconds}
+              onActivityReadyToFinishChange={setActivityReadyToFinish}
             />
           )}
 
@@ -538,11 +552,15 @@ export default function HomeScreen() {
               )}
 
               <PrimaryButton
-                label={finishingActivity ? "Finalisation..." : "Terminer"}
-                onPress={handleFinishActivity}
-                disabled={
-                  finishingActivity || pausingActivity || resumingActivity
+                label={
+                  !activityReadyToFinish
+                    ? "Joue toutes les notes pour terminer"
+                    : finishingActivity
+                      ? "Finalisation..."
+                      : "Terminer"
                 }
+                onPress={handleFinishActivity}
+                disabled={finishButtonDisabled}
               />
             </View>
           )}

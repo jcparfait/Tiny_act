@@ -43,6 +43,14 @@ export type LanguageItem = {
   language?: string | null;
 };
 
+export type MelodyPayload = {
+  name: string;
+  notes: string[];
+  difficulty?: string | null;
+  category?: string | null;
+  source?: string | null;
+};
+
 export type ActivityPayload = {
   duration_seconds?: number;
   activity_session_id?: number | null;
@@ -52,6 +60,7 @@ export type ActivityPayload = {
   language_label?: string | null;
   language_mode?: "word" | "sentence" | string;
   language_items?: LanguageItem[];
+  melody?: MelodyPayload | null;
 };
 
 export type Activity = {
