@@ -19,7 +19,10 @@ import { SessionBadge } from "../components/SessionBadge";
 
 import {
   createActivitySession,
+  finishActivitySession,
   loadInitialData,
+  pauseActivitySession,
+  resumeActivitySession,
   selectActivity,
   startActivitySession,
 } from "../services/api";
@@ -32,6 +35,28 @@ import {
   Mood,
   Step,
 } from "../types/tinyAct";
+
+function computeElapsedSeconds(activitySession: ActivitySession | null) {
+  if (!activitySession) return 0;
+
+  const baseElapsedSeconds = activitySession.elapsed_seconds || 0;
+
+  if (
+    activitySession.status !== "in_progress" ||
+    !activitySession.timer_started_at
+  ) {
+    return baseElapsedSeconds;
+  }
+
+  const startedAt = new Date(activitySession.timer_started_at).getTime();
+  const now = Date.now();
+  const secondsSinceStart = Math.max(
+    0,
+    Math.floor((now - startedAt) / 1000)
+  );
+
+  return baseElapsedSeconds + secondsSinceStart;
+}
 
 export default function HomeScreen() {
   const [step, setStep] = useState<Step>("mood");
@@ -57,10 +82,15 @@ export default function HomeScreen() {
     null
   );
 
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectingActivity, setSelectingActivity] = useState(false);
   const [startingActivity, setStartingActivity] = useState(false);
+  const [pausingActivity, setPausingActivity] = useState(false);
+  const [resumingActivity, setResumingActivity] = useState(false);
+  const [finishingActivity, setFinishingActivity] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -81,6 +111,20 @@ export default function HomeScreen() {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    if (step !== "activity" && step !== "finished") return;
+
+    setElapsedSeconds(computeElapsedSeconds(activitySession));
+
+    if (activitySession?.status !== "in_progress") return;
+
+    const intervalId = setInterval(() => {
+      setElapsedSeconds(computeElapsedSeconds(activitySession));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [step, activitySession]);
+
   const title =
     step === "mood"
       ? "Comment tu te sens ?"
@@ -92,7 +136,9 @@ export default function HomeScreen() {
             ? "On a trouvé ça pour toi"
             : step === "preview"
               ? "Prêt à commencer ?"
-              : "C’est parti";
+              : step === "activity"
+                ? "C’est parti"
+                : "Bien joué";
 
   const subtitle =
     step === "mood"
@@ -105,7 +151,9 @@ export default function HomeScreen() {
             ? "Choisis une activité pour transformer ton envie de scroll en action."
             : step === "preview"
               ? "Voici le résumé de ton activité avant de la lancer."
-              : "Concentre-toi seulement sur cette petite action.";
+              : step === "activity"
+                ? "Concentre-toi seulement sur cette petite action."
+                : "Ta session est terminée.";
 
   function handleContinue() {
     setError(null);
@@ -151,6 +199,7 @@ export default function HomeScreen() {
     setActivitySession(null);
     setRecommendedActivities([]);
     setSelectedActivity(null);
+    setElapsedSeconds(0);
     setError(null);
   }
 
@@ -217,6 +266,7 @@ export default function HomeScreen() {
 
       setActivitySession(data.activity_session);
       setSelectedActivity(data.activity);
+      setElapsedSeconds(computeElapsedSeconds(data.activity_session));
       setStep("activity");
 
       console.log("Activity started:", data);
@@ -226,6 +276,79 @@ export default function HomeScreen() {
       setStartingActivity(false);
     }
   }
+
+  async function handlePauseActivity() {
+    if (!activitySession || !selectedActivity) return;
+
+    setPausingActivity(true);
+    setError(null);
+
+    try {
+      const data = await pauseActivitySession(
+        activitySession.id,
+        elapsedSeconds
+      );
+
+      setActivitySession(data.activity_session);
+      setSelectedActivity(data.activity);
+      setElapsedSeconds(data.activity_session.elapsed_seconds);
+
+      console.log("Activity paused:", data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setPausingActivity(false);
+    }
+  }
+
+  async function handleResumeActivity() {
+    if (!activitySession || !selectedActivity) return;
+
+    setResumingActivity(true);
+    setError(null);
+
+    try {
+      const data = await resumeActivitySession(activitySession.id);
+
+      setActivitySession(data.activity_session);
+      setSelectedActivity(data.activity);
+      setElapsedSeconds(computeElapsedSeconds(data.activity_session));
+
+      console.log("Activity resumed:", data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setResumingActivity(false);
+    }
+  }
+
+  async function handleFinishActivity() {
+    if (!activitySession || !selectedActivity) return;
+
+    setFinishingActivity(true);
+    setError(null);
+
+    try {
+      const data = await finishActivitySession(
+        activitySession.id,
+        elapsedSeconds
+      );
+
+      setActivitySession(data.activity_session);
+      setSelectedActivity(data.activity);
+      setElapsedSeconds(data.activity_session.elapsed_seconds);
+      setStep("finished");
+
+      console.log("Activity finished:", data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setFinishingActivity(false);
+    }
+  }
+
+  const activityIsPaused = activitySession?.status === "paused";
+  const activityIsInProgress = activitySession?.status === "in_progress";
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF4EA" }}>
@@ -344,10 +467,19 @@ export default function HomeScreen() {
             <ActiveActivityCard
               activity={selectedActivity}
               activitySession={activitySession}
+              elapsedSeconds={elapsedSeconds}
             />
           )}
 
-          {step !== "mood" && step !== "activity" && (
+          {step === "finished" && selectedActivity && activitySession && (
+            <ActiveActivityCard
+              activity={selectedActivity}
+              activitySession={activitySession}
+              elapsedSeconds={elapsedSeconds}
+            />
+          )}
+
+          {step !== "mood" && step !== "activity" && step !== "finished" && (
             <SecondaryButton label="← Retour" onPress={handleBack} />
           )}
 
@@ -379,14 +511,36 @@ export default function HomeScreen() {
             />
           )}
 
-          {step === "activity" && selectedActivity && (
-            <PrimaryButton
-              label="Terminer bientôt disponible"
-              onPress={() => {
-                console.log("Finish activity later:", selectedActivity);
-              }}
-              disabled
-            />
+          {step === "activity" && selectedActivity && activitySession && (
+            <View style={{ gap: 12 }}>
+              {activityIsInProgress && (
+                <PrimaryButton
+                  label={pausingActivity ? "Pause..." : "Pause"}
+                  onPress={handlePauseActivity}
+                  disabled={pausingActivity || finishingActivity}
+                />
+              )}
+
+              {activityIsPaused && (
+                <PrimaryButton
+                  label={resumingActivity ? "Reprise..." : "Reprendre"}
+                  onPress={handleResumeActivity}
+                  disabled={resumingActivity || finishingActivity}
+                />
+              )}
+
+              <PrimaryButton
+                label={finishingActivity ? "Finalisation..." : "Terminer"}
+                onPress={handleFinishActivity}
+                disabled={
+                  finishingActivity || pausingActivity || resumingActivity
+                }
+              />
+            </View>
+          )}
+
+          {step === "finished" && (
+            <PrimaryButton label="Recommencer" onPress={resetFlow} />
           )}
         </View>
       </ScrollView>

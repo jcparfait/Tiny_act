@@ -5,12 +5,9 @@ module Api
       skip_forgery_protection
 
       def create
-        user = current_api_user
+        user = current_api_user!
 
-        unless user
-          render json: { error: "Aucun utilisateur disponible pour le test API." }, status: :unprocessable_entity
-          return
-        end
+        return unless user
 
         activity = matching_activities_for(user).order(Arel.sql("RANDOM()")).first
 
@@ -39,7 +36,11 @@ module Api
       end
 
       def show
-        activity_session = current_api_user.activity_sessions.find(params[:id])
+        user = current_api_user!
+
+        return unless user
+
+        activity_session = user.activity_sessions.find(params[:id])
 
         activities = if activity_session.candidate_activity_ids.present?
                        activities_in_saved_order(activity_session.candidate_activity_ids)
@@ -54,11 +55,14 @@ module Api
       end
 
       def select_activity
-        user = current_api_user
+        user = current_api_user!
+
+        return unless user
+
         activity_session = user.activity_sessions.find(params[:id])
         activity = Activity.find(params.require(:activity_id))
 
-        candidate_ids = activity_session.candidate_activity_ids.map(&:to_i)
+        candidate_ids = Array(activity_session.candidate_activity_ids).map(&:to_i)
 
         unless candidate_ids.include?(activity.id)
           render json: { error: "Cette activité ne fait pas partie des recommandations." },
@@ -78,7 +82,10 @@ module Api
       end
 
       def start
-        user = current_api_user
+        user = current_api_user!
+
+        return unless user
+
         activity_session = user.activity_sessions.find(params[:id])
 
         if activity_session.finished?
@@ -97,12 +104,91 @@ module Api
         }
       end
 
+      def pause
+        user = current_api_user!
+
+        return unless user
+
+        activity_session = user.activity_sessions.find(params[:id])
+
+        if activity_session.finished?
+          render json: { error: "Cette session est déjà terminée." }, status: :unprocessable_entity
+          return
+        end
+
+        activity_session.update!(
+          elapsed_seconds: safe_elapsed_seconds,
+          status: "paused"
+        )
+
+        render json: {
+          activity_session: serialize_activity_session(activity_session),
+          activity: serialize_activity(activity_session.activity)
+        }
+      end
+
+      def resume
+        user = current_api_user!
+
+        return unless user
+
+        activity_session = user.activity_sessions.find(params[:id])
+
+        if activity_session.finished?
+          render json: { error: "Cette session est déjà terminée." }, status: :unprocessable_entity
+          return
+        end
+
+        activity_session.update!(
+          status: "in_progress",
+          timer_started_at: Time.current
+        )
+
+        render json: {
+          activity_session: serialize_activity_session(activity_session),
+          activity: serialize_activity(activity_session.activity)
+        }
+      end
+
+      def finish
+        user = current_api_user!
+
+        return unless user
+
+        activity_session = user.activity_sessions.find(params[:id])
+        was_already_finished = activity_session.finished?
+
+        activity_session.update!(
+          elapsed_seconds: safe_elapsed_seconds,
+          finished: true,
+          status: "finished"
+        )
+
+        record_new_furniture_unlocks_for(activity_session) unless was_already_finished
+
+        render json: {
+          activity_session: serialize_activity_session(activity_session),
+          activity: serialize_activity(activity_session.activity)
+        }
+      end
+
       private
 
       # TEMPORAIRE POUR APPRENDRE.
-      # Plus tard, on remplacera ça par une vraie auth mobile avec token.
+      # Plus tard, on remplacera ça par une vraie authentification mobile.
       def current_api_user
-        User.first
+        User.joins(:user_interests).distinct.first || User.first
+      end
+
+      def current_api_user!
+        user = current_api_user
+
+        unless user
+          render json: { error: "Aucun utilisateur disponible pour le test API." }, status: :unprocessable_entity
+          return nil
+        end
+
+        user
       end
 
       def activity_session_params
@@ -153,6 +239,11 @@ module Api
         ids
       end
 
+      def safe_elapsed_seconds
+        elapsed_seconds = params[:elapsed_seconds].to_i
+        elapsed_seconds.negative? ? 0 : elapsed_seconds
+      end
+
       def serialize_activity_session(activity_session)
         {
           id: activity_session.id,
@@ -189,6 +280,32 @@ module Api
             name: activity.mood.name
           }
         }
+      end
+
+      def record_new_furniture_unlocks_for(activity_session)
+        interest = activity_session.activity.interest
+        locked_furnitures_before_reward = locked_furnitures_for(activity_session.user, interest)
+
+        XpCalculator.award!(activity_session)
+
+        current_xp = XpCalculator.total_for_interest(activity_session.user, interest)
+        newly_unlocked_furniture_ids = locked_furnitures_before_reward
+                                       .select { |furniture| furniture.required_xp.to_i <= current_xp }
+                                       .map(&:id)
+
+        activity_session.update!(
+          newly_unlocked_furniture_ids: newly_unlocked_furniture_ids,
+          furniture_unlocks_seen_at: nil
+        )
+      end
+
+      def locked_furnitures_for(user, interest)
+        current_xp = XpCalculator.total_for_interest(user, interest)
+
+        Furniture
+          .where(interest: interest)
+          .where("required_xp > ?", current_xp)
+          .order(:required_xp, :id)
       end
     end
   end

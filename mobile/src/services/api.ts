@@ -2,9 +2,12 @@ import {
   CreateActivitySessionPayload,
   CreateActivitySessionResponse,
   Duration,
+  FinishActivitySessionResponse,
   InitialDataResponse,
   Location,
   Mood,
+  PauseActivitySessionResponse,
+  ResumeActivitySessionResponse,
   SelectActivityResponse,
   StartActivitySessionResponse,
 } from "../types/tinyAct";
@@ -86,6 +89,56 @@ export async function startActivitySession(
       headers: {
         "Content-Type": "application/json",
       },
+    }
+  );
+}
+
+export async function pauseActivitySession(
+  activitySessionId: number,
+  elapsedSeconds: number
+): Promise<PauseActivitySessionResponse> {
+  return fetchJson<PauseActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/pause`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        elapsed_seconds: elapsedSeconds,
+      }),
+    }
+  );
+}
+
+export async function resumeActivitySession(
+  activitySessionId: number
+): Promise<ResumeActivitySessionResponse> {
+  return fetchJson<ResumeActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/resume`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+}
+
+export async function finishActivitySession(
+  activitySessionId: number,
+  elapsedSeconds: number
+): Promise<FinishActivitySessionResponse> {
+  return fetchJson<FinishActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/finish`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        elapsed_seconds: elapsedSeconds,
+      }),
     }
   );
 }

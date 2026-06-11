@@ -1,9 +1,26 @@
 Rails.application.routes.draw do
-  get "webmanifest"    => "pwa#manifest"
-  get "service-worker" => "pwa#service_worker"
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      get "health", to: "health#show"
 
-  get "rooms/show"
-  get "activities/show"
+      resources :moods, only: [:index]
+      resources :locations, only: [:index]
+      resources :durations, only: [:index]
+
+      resources :activity_sessions, only: [:create, :show] do
+        member do
+          patch :select_activity
+          patch :start
+          patch :pause
+          patch :resume
+          patch :finish
+        end
+      end
+    end
+  end
+
+  get "webmanifest" => "pwa#manifest"
+  get "service-worker" => "pwa#service_worker"
 
   devise_for :users
 
@@ -34,22 +51,5 @@ Rails.application.routes.draw do
 
   resources :rooms, only: [:index, :show] do
     resource :like, only: [:create, :destroy], controller: "room_likes"
-  end
-
-  namespace :api, defaults: { format: :json } do
-    namespace :v1 do
-      get "health", to: "health#show"
-
-      resources :moods, only: [:index]
-      resources :locations, only: [:index]
-      resources :durations, only: [:index]
-
-      resources :activity_sessions, only: [:create, :show] do
-        member do
-          patch :select_activity
-          patch :start
-        end
-      end
-    end
   end
 end
