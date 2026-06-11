@@ -35,4 +35,11 @@ Rails.application.routes.draw do
   resources :rooms, only: [:index, :show] do
     resource :like, only: [:create, :destroy], controller: "room_likes"
   end
+
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      get "health", to: "health#show"
+      resources :moods, only: [:index]
+    end
+  end
 end
