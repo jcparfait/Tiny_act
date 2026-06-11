@@ -16,11 +16,20 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
-  const data = await response.json();
+  const text = await response.text();
+
+  let data: unknown = null;
+
+  if (text.length > 0) {
+    data = JSON.parse(text);
+  }
 
   if (!response.ok) {
     const errorMessage =
-      data && typeof data.error === "string"
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof data.error === "string"
         ? data.error
         : `Erreur API : ${response.status}`;
 
@@ -89,6 +98,7 @@ export async function startActivitySession(
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({}),
     }
   );
 }
@@ -121,6 +131,7 @@ export async function resumeActivitySession(
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({}),
     }
   );
 }
