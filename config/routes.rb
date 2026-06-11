@@ -44,7 +44,11 @@ Rails.application.routes.draw do
       resources :locations, only: [:index]
       resources :durations, only: [:index]
 
-      resources :activity_sessions, only: [:create, :show]
+      resources :activity_sessions, only: [:create, :show] do
+        member do
+          patch :select_activity
+        end
+      end
     end
   end
 end

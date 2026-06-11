@@ -1,0 +1,80 @@
+import { Text, View } from "react-native";
+import { Activity } from "../types/tinyAct";
+
+type PreviewActivityCardProps = {
+  activity: Activity;
+};
+
+export function PreviewActivityCard({ activity }: PreviewActivityCardProps) {
+  return (
+    <View
+      style={{
+        padding: 22,
+        borderRadius: 28,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 2,
+        borderColor: "#F2D7C8",
+        gap: 18,
+      }}
+    >
+      <View style={{ gap: 6 }}>
+        <Text
+          style={{
+            fontSize: 13,
+            fontWeight: "800",
+            color: "#FF4B2B",
+            textTransform: "uppercase",
+          }}
+        >
+          {activity.interest?.name || "Activité"} ·{" "}
+          {activity.duration?.label || ""}
+        </Text>
+
+        <Text
+          style={{
+            fontSize: 30,
+            fontWeight: "900",
+            color: "#17152F",
+          }}
+        >
+          {activity.name}
+        </Text>
+      </View>
+
+      <Text
+        style={{
+          fontSize: 16,
+          color: "#5D5A70",
+          lineHeight: 24,
+        }}
+      >
+        {activity.description || activity.content}
+      </Text>
+
+      <View
+        style={{
+          padding: 16,
+          borderRadius: 20,
+          backgroundColor: "#FFF4EA",
+          gap: 8,
+        }}
+      >
+        <Text style={{ fontSize: 15, color: "#17152F", fontWeight: "800" }}>
+          Résumé
+        </Text>
+
+        <Text style={{ fontSize: 15, color: "#5D5A70" }}>
+          Lieu : {activity.location?.name || "Non renseigné"}
+        </Text>
+
+        <Text style={{ fontSize: 15, color: "#5D5A70" }}>
+          Durée : {activity.duration?.label || "Non renseignée"}
+        </Text>
+
+        <Text style={{ fontSize: 15, color: "#5D5A70" }}>
+          Type : {activity.activity_type}
+        </Text>
+      </View>
+    </View>
+  );
+}

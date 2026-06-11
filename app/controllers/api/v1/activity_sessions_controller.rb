@@ -53,6 +53,30 @@ module Api
         }
       end
 
+      def select_activity
+        user = current_api_user
+        activity_session = user.activity_sessions.find(params[:id])
+        activity = Activity.find(params.require(:activity_id))
+
+        candidate_ids = activity_session.candidate_activity_ids.map(&:to_i)
+
+        unless candidate_ids.include?(activity.id)
+          render json: { error: "Cette activité ne fait pas partie des recommandations." },
+                 status: :unprocessable_entity
+          return
+        end
+
+        activity_session.update!(
+          activity: activity,
+          status: "preview"
+        )
+
+        render json: {
+          activity_session: serialize_activity_session(activity_session),
+          activity: serialize_activity(activity)
+        }
+      end
+
       private
 
       # TEMPORAIRE POUR APPRENDRE.
@@ -65,22 +89,20 @@ module Api
         params.require(:activity_session).permit(:mood_id, :location_id, :duration_id)
       end
 
-      def matching_activities_for(user)
+      def matching_activities_for(_user)
         Activity.where(
           active: true,
           mood_id: activity_session_params[:mood_id],
           duration_id: activity_session_params[:duration_id],
-          interest_id: user.interest_ids,
           location_id: allowed_location_ids(activity_session_params[:location_id])
         )
       end
 
-      def activity_recommendations_for(user, reference_activity)
+      def activity_recommendations_for(_user, reference_activity)
         Activity.where(
           active: true,
           mood: reference_activity.mood,
           duration: reference_activity.duration,
-          interest_id: user.interest_ids,
           location_id: allowed_location_ids(reference_activity.location_id)
         )
                 .includes(:interest, :duration, :location, :mood)
