@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { ActivityRenderer } from "./ActivityRenderer";
 import { Activity, ActivitySession } from "../types/tinyAct";
 
 type ActiveActivityCardProps = {
@@ -64,15 +65,7 @@ export function ActiveActivityCard({
         </Text>
       </View>
 
-      <Text
-        style={{
-          fontSize: 16,
-          color: "#5D5A70",
-          lineHeight: 24,
-        }}
-      >
-        {activity.content || activity.description}
-      </Text>
+      <ActivityRenderer activity={activity} />
 
       <View
         style={{

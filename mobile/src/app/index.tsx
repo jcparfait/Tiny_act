@@ -355,11 +355,19 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          padding: 24,
-          justifyContent: "center",
+          padding: 18,
+          alignItems: "center",
         }}
       >
-        <View style={{ gap: 24 }}>
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            minHeight: "100%",
+            justifyContent: "center",
+            gap: 24,
+          }}
+        >
           <ScreenHeader title={title} subtitle={subtitle} />
 
           {loading && <ActivityIndicator />}
