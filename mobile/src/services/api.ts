@@ -6,6 +6,7 @@ import {
   Location,
   Mood,
   SelectActivityResponse,
+  StartActivitySessionResponse,
 } from "../types/tinyAct";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -71,6 +72,20 @@ export async function selectActivity(
       body: JSON.stringify({
         activity_id: activityId,
       }),
+    }
+  );
+}
+
+export async function startActivitySession(
+  activitySessionId: number
+): Promise<StartActivitySessionResponse> {
+  return fetchJson<StartActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/start`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
     }
   );
 }

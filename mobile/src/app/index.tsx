@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 
+import { ActiveActivityCard } from "../components/ActiveActivityCard";
 import { ActivityCard } from "../components/ActivityCard";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ErrorBox } from "../components/ErrorBox";
@@ -20,6 +21,7 @@ import {
   createActivitySession,
   loadInitialData,
   selectActivity,
+  startActivitySession,
 } from "../services/api";
 
 import {
@@ -58,6 +60,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectingActivity, setSelectingActivity] = useState(false);
+  const [startingActivity, setStartingActivity] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -87,7 +90,9 @@ export default function HomeScreen() {
           ? "Tu as combien de temps ?"
           : step === "recommendations"
             ? "On a trouvé ça pour toi"
-            : "Prêt à commencer ?";
+            : step === "preview"
+              ? "Prêt à commencer ?"
+              : "C’est parti";
 
   const subtitle =
     step === "mood"
@@ -98,7 +103,9 @@ export default function HomeScreen() {
           ? "Choisis une durée réaliste pour commencer maintenant."
           : step === "recommendations"
             ? "Choisis une activité pour transformer ton envie de scroll en action."
-            : "Voici le résumé de ton activité avant de la lancer.";
+            : step === "preview"
+              ? "Voici le résumé de ton activité avant de la lancer."
+              : "Concentre-toi seulement sur cette petite action.";
 
   function handleContinue() {
     setError(null);
@@ -196,6 +203,27 @@ export default function HomeScreen() {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
       setSelectingActivity(false);
+    }
+  }
+
+  async function handleStartActivity() {
+    if (!activitySession || !selectedActivity) return;
+
+    setStartingActivity(true);
+    setError(null);
+
+    try {
+      const data = await startActivitySession(activitySession.id);
+
+      setActivitySession(data.activity_session);
+      setSelectedActivity(data.activity);
+      setStep("activity");
+
+      console.log("Activity started:", data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setStartingActivity(false);
     }
   }
 
@@ -312,7 +340,14 @@ export default function HomeScreen() {
             <PreviewActivityCard activity={selectedActivity} />
           )}
 
-          {step !== "mood" && (
+          {step === "activity" && selectedActivity && activitySession && (
+            <ActiveActivityCard
+              activity={selectedActivity}
+              activitySession={activitySession}
+            />
+          )}
+
+          {step !== "mood" && step !== "activity" && (
             <SecondaryButton label="← Retour" onPress={handleBack} />
           )}
 
@@ -338,10 +373,19 @@ export default function HomeScreen() {
 
           {step === "preview" && selectedActivity && (
             <PrimaryButton
-              label="Commencer l’activité"
+              label={startingActivity ? "Démarrage..." : "Commencer l’activité"}
+              onPress={handleStartActivity}
+              disabled={startingActivity}
+            />
+          )}
+
+          {step === "activity" && selectedActivity && (
+            <PrimaryButton
+              label="Terminer bientôt disponible"
               onPress={() => {
-                console.log("Start activity:", selectedActivity);
+                console.log("Finish activity later:", selectedActivity);
               }}
+              disabled
             />
           )}
         </View>

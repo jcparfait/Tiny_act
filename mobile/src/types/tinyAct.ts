@@ -20,6 +20,7 @@ export type ActivitySession = {
   finished: boolean;
   elapsed_seconds: number;
   activity_id: number;
+  timer_started_at?: string | null;
 };
 
 export type Activity = {
@@ -59,9 +60,15 @@ export type InitialDataResponse = {
   durations: Duration[];
 };
 
+export type StartActivitySessionResponse = {
+  activity_session: ActivitySession;
+  activity: Activity;
+};
+
 export type Step =
   | "mood"
   | "location"
   | "duration"
   | "recommendations"
-  | "preview";
+  | "preview"
+  | "activity";

@@ -47,6 +47,7 @@ Rails.application.routes.draw do
       resources :activity_sessions, only: [:create, :show] do
         member do
           patch :select_activity
+          patch :start
         end
       end
     end

@@ -77,6 +77,26 @@ module Api
         }
       end
 
+      def start
+        user = current_api_user
+        activity_session = user.activity_sessions.find(params[:id])
+
+        if activity_session.finished?
+          render json: { error: "Cette session est déjà terminée." }, status: :unprocessable_entity
+          return
+        end
+
+        activity_session.update!(
+          status: "in_progress",
+          timer_started_at: Time.current
+        )
+
+        render json: {
+          activity_session: serialize_activity_session(activity_session),
+          activity: serialize_activity(activity_session.activity)
+        }
+      end
+
       private
 
       # TEMPORAIRE POUR APPRENDRE.
@@ -139,7 +159,8 @@ module Api
           status: activity_session.status,
           finished: activity_session.finished,
           elapsed_seconds: activity_session.elapsed_seconds,
-          activity_id: activity_session.activity_id
+          activity_id: activity_session.activity_id,
+          timer_started_at: activity_session.timer_started_at
         }
       end
 
