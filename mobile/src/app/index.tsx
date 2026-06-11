@@ -18,7 +18,13 @@ type Location = {
   name: string;
 };
 
-type Step = "mood" | "location";
+type Duration = {
+  id: number;
+  value: number;
+  label: string;
+};
+
+type Step = "mood" | "location" | "duration";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -27,9 +33,11 @@ export default function HomeScreen() {
 
   const [moods, setMoods] = useState<Mood[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [durations, setDurations] = useState<Duration[]>([]);
 
   const [selectedMoodId, setSelectedMoodId] = useState<number | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  const [selectedDurationId, setSelectedDurationId] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +45,12 @@ export default function HomeScreen() {
   useEffect(() => {
     async function loadInitialData() {
       try {
-        const [moodsResponse, locationsResponse] = await Promise.all([
-          fetch(`${API_URL}/api/v1/moods`),
-          fetch(`${API_URL}/api/v1/locations`),
-        ]);
+        const [moodsResponse, locationsResponse, durationsResponse] =
+          await Promise.all([
+            fetch(`${API_URL}/api/v1/moods`),
+            fetch(`${API_URL}/api/v1/locations`),
+            fetch(`${API_URL}/api/v1/durations`),
+          ]);
 
         if (!moodsResponse.ok) {
           throw new Error(`Erreur API moods : ${moodsResponse.status}`);
@@ -50,11 +60,17 @@ export default function HomeScreen() {
           throw new Error(`Erreur API locations : ${locationsResponse.status}`);
         }
 
+        if (!durationsResponse.ok) {
+          throw new Error(`Erreur API durations : ${durationsResponse.status}`);
+        }
+
         const moodsData = await moodsResponse.json();
         const locationsData = await locationsResponse.json();
+        const durationsData = await durationsResponse.json();
 
         setMoods(moodsData);
         setLocations(locationsData);
+        setDurations(durationsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erreur inconnue");
       } finally {
@@ -66,22 +82,40 @@ export default function HomeScreen() {
   }, []);
 
   const title =
-    step === "mood" ? "Comment tu te sens ?" : "Tu es où ?";
+    step === "mood"
+      ? "Comment tu te sens ?"
+      : step === "location"
+        ? "Tu es où ?"
+        : "Tu as combien de temps ?";
 
   const subtitle =
     step === "mood"
       ? "Choisis ton état actuel, puis on te proposera une micro-action."
-      : "Choisis le contexte dans lequel tu peux faire ton activité.";
+      : step === "location"
+        ? "Choisis le contexte dans lequel tu peux faire ton activité."
+        : "Choisis une durée réaliste pour commencer maintenant.";
 
   function handleContinue() {
     if (step === "mood" && selectedMoodId) {
       setStep("location");
+      return;
+    }
+
+    if (step === "location" && selectedLocationId) {
+      setStep("duration");
+      return;
     }
   }
 
   function handleBack() {
     if (step === "location") {
       setStep("mood");
+      return;
+    }
+
+    if (step === "duration") {
+      setStep("location");
+      return;
     }
   }
 
@@ -181,7 +215,39 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {step === "location" && (
+          {!loading && !error && step === "duration" && (
+            <View style={{ gap: 14 }}>
+              {durations.map((duration) => {
+                const isSelected = selectedDurationId === duration.id;
+
+                return (
+                  <Pressable
+                    key={duration.id}
+                    onPress={() => setSelectedDurationId(duration.id)}
+                    style={{
+                      padding: 20,
+                      borderRadius: 24,
+                      backgroundColor: isSelected ? "#17152F" : "#FFFFFF",
+                      borderWidth: 2,
+                      borderColor: isSelected ? "#17152F" : "#F2D7C8",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 22,
+                        fontWeight: "800",
+                        color: isSelected ? "#FFFFFF" : "#17152F",
+                      }}
+                    >
+                      {duration.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {step !== "mood" && (
             <Pressable
               onPress={handleBack}
               style={{
@@ -197,39 +263,52 @@ export default function HomeScreen() {
           )}
 
           {step === "mood" && selectedMoodId && (
-            <Pressable
-              onPress={handleContinue}
-              style={{
-                marginTop: 12,
-                padding: 18,
-                borderRadius: 999,
-                backgroundColor: "#FF4B2B",
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "800" }}>
-                Continuer
-              </Text>
-            </Pressable>
+            <PrimaryButton label="Continuer" onPress={handleContinue} />
           )}
 
           {step === "location" && selectedLocationId && (
-            <Pressable
-              style={{
-                marginTop: 12,
-                padding: 18,
-                borderRadius: 999,
-                backgroundColor: "#FF4B2B",
-                alignItems: "center",
+            <PrimaryButton label="Continuer" onPress={handleContinue} />
+          )}
+
+          {step === "duration" && selectedDurationId && (
+            <PrimaryButton
+              label="Trouver une activité"
+              onPress={() => {
+                console.log({
+                  mood_id: selectedMoodId,
+                  location_id: selectedLocationId,
+                  duration_id: selectedDurationId,
+                });
               }}
-            >
-              <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "800" }}>
-                Continuer
-              </Text>
-            </Pressable>
+            />
           )}
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function PrimaryButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        marginTop: 12,
+        padding: 18,
+        borderRadius: 999,
+        backgroundColor: "#FF4B2B",
+        alignItems: "center",
+      }}
+    >
+      <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "800" }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }

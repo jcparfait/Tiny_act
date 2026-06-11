@@ -37,9 +37,11 @@ Rails.application.routes.draw do
   end
 
   namespace :api, defaults: { format: :json } do
-    namespace :v1 do
-      get "health", to: "health#show"
-      resources :moods, only: [:index]
-    end
+  namespace :v1 do
+    get "health", to: "health#show"
+    resources :moods, only: [:index]
+    resources :locations, only: [:index]
+    resources :durations, only: [:index]
   end
+end
 end
