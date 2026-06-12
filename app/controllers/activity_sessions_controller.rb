@@ -1,10 +1,7 @@
-class ActivitySessionsController < ApplicationController
+class ActivitySessionsController < BaseController
   ROOM_REWARD_XP = 120
 
-  include TopbarData
-
-  before_action :authenticate_user!
-  before_action :set_topbar_data, only: %i[new location duration show]
+  include TopbarDatas
 
   def index
     @activity_sessions = current_user.activity_sessions.where(finished: true).includes(activity: :interest).order(updated_at: :desc)
@@ -309,8 +306,8 @@ class ActivitySessionsController < ApplicationController
 
     current_xp = XpCalculator.total_for_interest(activity_session.user, interest)
     newly_unlocked_furniture_ids = locked_furnitures_before_reward
-      .select { |furniture| furniture.required_xp.to_i <= current_xp }
-      .map(&:id)
+                                   .select { |furniture| furniture.required_xp.to_i <= current_xp }
+                                   .map(&:id)
 
     activity_session.update!(
       newly_unlocked_furniture_ids: newly_unlocked_furniture_ids,
@@ -350,9 +347,9 @@ class ActivitySessionsController < ApplicationController
     return Furniture.none if furniture_ids.empty?
 
     furnitures = Furniture
-      .includes(:interest)
-      .where(id: furniture_ids)
-      .sort_by { |furniture| furniture_ids.index(furniture.id) || furniture_ids.size }
+                 .includes(:interest)
+                 .where(id: furniture_ids)
+                 .sort_by { |furniture| furniture_ids.index(furniture.id) || furniture_ids.size }
 
     @activity_session.update!(furniture_unlocks_seen_at: Time.current)
 

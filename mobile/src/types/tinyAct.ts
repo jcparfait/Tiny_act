@@ -1,3 +1,20 @@
+export type AuthUser = {
+  id: number;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar?: string | null;
+};
+
+export type LoginResponse = {
+  token: string;
+  user: AuthUser;
+};
+
+export type CurrentUserResponse = {
+  user: AuthUser;
+};
+
 export type Mood = {
   id: number;
   name: string;
@@ -163,11 +180,20 @@ export type ActivitySessionActionResponse = {
   activity: Activity;
 };
 
-export type SelectActivityResponse = ActivitySessionActionResponse;
-export type StartActivitySessionResponse = ActivitySessionActionResponse;
-export type PauseActivitySessionResponse = ActivitySessionActionResponse;
-export type ResumeActivitySessionResponse = ActivitySessionActionResponse;
-export type FinishActivitySessionResponse = ActivitySessionActionResponse;
+export type SelectActivityResponse =
+  ActivitySessionActionResponse;
+
+export type StartActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type PauseActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type ResumeActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type FinishActivitySessionResponse =
+  ActivitySessionActionResponse;
 
 export type InitialDataResponse = {
   moods: Mood[];

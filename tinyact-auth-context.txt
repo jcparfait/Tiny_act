@@ -1,0 +1,568 @@
+===== GEMFILE AUTH =====
+19:# Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
+20:# gem "bcrypt", "~> 3.1.7"
+44:gem "devise"
+
+===== ROUTES =====
+Rails.application.routes.draw do
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      get "health", to: "health#show"
+
+      resources :moods, only: [:index]
+      resources :locations, only: [:index]
+      resources :durations, only: [:index]
+
+      resources :activity_sessions, only: [:index, :create, :show] do
+        resource :progress,
+                 only: [:show, :update],
+                 controller: "activity_session_progress"
+
+        member do
+          patch :select_activity
+          patch :start
+          patch :pause
+          patch :resume
+          patch :finish
+        end
+      end
+    end
+  end
+
+  get "webmanifest" => "pwa#manifest"
+  get "service-worker" => "pwa#service_worker"
+
+  devise_for :users
+
+  root to: "activity_sessions#new"
+
+  resources :activity_sessions,
+            only: [:index, :new, :create, :show, :update] do
+    collection do
+      get :location
+      get :duration
+    end
+
+    member do
+      patch :start
+      patch :progress
+      patch :pause
+      patch :resume
+      patch :abandon
+    end
+  end
+
+  resources :activities, only: [:show]
+
+  resource :user, only: [:show, :edit, :update]
+
+  resource :user_interests, only: [:show, :update]
+
+  resources :room_furnitures, only: [:create, :update, :destroy]
+
+  resources :rooms, only: [:index, :show] do
+    resource :like,
+             only: [:create, :destroy],
+             controller: "room_likes"
+  end
+end
+
+===== USER MODEL =====
+class User < ApplicationRecord
+  AVATARS = (1..24).map { |number| "avatar_#{number.to_s.rjust(2, '0')}" }
+
+  validates :avatar, inclusion: { in: AVATARS }, allow_blank: true
+
+  has_one :room, dependent: :destroy
+  has_many :user_interest_progresses, dependent: :destroy
+  has_many :activity_sessions, dependent: :destroy
+  has_many :user_interests, dependent: :destroy
+  has_many :interests, through: :user_interests
+  has_many :room_likes, dependent: :destroy
+  has_many :liked_rooms, through: :room_likes, source: :room
+
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable
+
+  after_create :create_default_room
+
+  private
+
+  def create_default_room
+    create_room!(width: Room::GRID_WIDTH, height: Room::GRID_HEIGHT)
+  end
+end
+
+===== USERS SCHEMA =====
+346:  create_table "users", force: :cascade do |t|
+347-    t.string "avatar"
+348-    t.datetime "created_at", null: false
+349-    t.string "email", default: "", null: false
+350-    t.string "encrypted_password", default: "", null: false
+351-    t.string "first_name"
+352-    t.string "last_name"
+353-    t.datetime "remember_created_at"
+354-    t.datetime "reset_password_sent_at"
+355-    t.string "reset_password_token"
+356-    t.datetime "updated_at", null: false
+357-    t.index ["email"], name: "index_users_on_email", unique: true
+358-    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+359-  end
+360-
+361-  add_foreign_key "activities", "durations"
+362-  add_foreign_key "activities", "interests"
+363-  add_foreign_key "activities", "locations"
+364-  add_foreign_key "activities", "moods"
+365-  add_foreign_key "activity_sessions", "activities"
+366-  add_foreign_key "activity_sessions", "users"
+367-  add_foreign_key "furnitures", "interests"
+368-  add_foreign_key "room_furnitures", "furnitures"
+369-  add_foreign_key "room_furnitures", "rooms"
+370-  add_foreign_key "room_likes", "rooms"
+371-  add_foreign_key "room_likes", "users"
+372-  add_foreign_key "rooms", "users"
+373-  add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+374-  add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+375-  add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+376-  add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+377-  add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+378-  add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+379-  add_foreign_key "user_interest_progresses", "interests"
+380-  add_foreign_key "user_interest_progresses", "users"
+381-  add_foreign_key "user_interests", "interests"
+382-  add_foreign_key "user_interests", "users"
+383-end
+
+===== APPLICATION CONTROLLER =====
+class ApplicationController < ActionController::Base
+  before_action :authenticate_user!
+
+  # Avant chaque action d'un controller Devise (inscription/connexion),
+  # on exécute la méthode ci-dessous.
+  before_action :configure_permitted_parameters, if: :devise_controller?
+
+  def default_url_options
+    { host: ENV["DOMAIN"] || "localhost:3000" }
+  end
+
+  private
+
+  # On autorise first_name et last_name à être enregistrés
+  # UNIQUEMENT au moment de l'inscription (:sign_up).
+  def configure_permitted_parameters
+    devise_parameter_sanitizer.permit(:sign_up, keys: %i[first_name last_name])
+  end
+end
+
+===== ACTIVITY SESSIONS AUTH SECTION =====
+module Api
+  module V1
+    class ActivitySessionsController < ApplicationController
+      QUIZ_QUESTIONS_LIMIT = 10
+      LANGUAGE_ITEMS_LIMIT = 30
+
+      skip_before_action :authenticate_user!
+      skip_forgery_protection
+
+      def index
+        user = current_api_user!
+        return unless user
+
+        activity_sessions = user
+                            .activity_sessions
+                            .includes(activity: %i[interest duration location mood])
+                            .order(created_at: :desc)
+                            .limit(30)
+
+        render json: activity_sessions.map { |activity_session|
+          serialize_activity_session_summary(activity_session)
+        }
+      end
+
+      def create
+232-        }
+233-      end
+234-
+235-      private
+236-
+237:      def current_api_user
+238-        User
+239-          .joins(:user_interests)
+240-          .distinct
+241-          .first || User.first
+242-      end
+243-
+244:      def current_api_user!
+245-        user = current_api_user
+246-
+247-        unless user
+248-          render json: {
+249-            error: "Aucun utilisateur disponible pour le test API."
+250-          }, status: :unprocessable_entity
+251-
+252-          return nil
+253-        end
+254-
+255-        user
+256-      end
+257-
+258-      def activity_session_params
+259-        params
+260-          .require(:activity_session)
+261-          .permit(:mood_id, :location_id, :duration_id)
+262-      end
+263-
+264-      def matching_activities_for(_user)
+265-        Activity.where(
+266-          active: true,
+267-          mood_id: activity_session_params[:mood_id],
+268-          duration_id: activity_session_params[:duration_id],
+269-          location_id: allowed_location_ids(
+
+===== PROGRESS CONTROLLER =====
+module Api
+  module V1
+    class ActivitySessionProgressController < ApplicationController
+      skip_before_action :authenticate_user!
+      skip_forgery_protection
+
+      before_action :set_activity_session
+
+      def show
+        render json: {
+          activity_session_id: @activity_session.id,
+          progress_data: @activity_session.progress_data || {}
+        }
+      end
+
+      def update
+        merged_progress = current_progress.deep_merge(progress_params.to_h)
+
+        @activity_session.update!(
+          progress_data: merged_progress
+        )
+
+        render json: {
+          activity_session_id: @activity_session.id,
+          progress_data: @activity_session.progress_data
+        }
+      end
+
+      private
+
+      def set_activity_session
+        user = current_api_user
+
+        unless user
+          render json: {
+            error: "Aucun utilisateur disponible pour le test API."
+          }, status: :unprocessable_entity
+
+          return
+        end
+
+        @activity_session = user.activity_sessions.find(
+          params[:activity_session_id]
+        )
+      end
+
+      def current_api_user
+        User
+          .joins(:user_interests)
+          .distinct
+          .first || User.first
+      end
+
+      def current_progress
+        @activity_session.progress_data.presence || {}
+      end
+
+      def progress_params
+        params.require(:progress_data).permit!
+      end
+    end
+  end
+end
+
+===== MOBILE PACKAGE =====
+{
+  "name": "mobile",
+  "main": "expo-router/entry",
+  "version": "1.0.0",
+  "dependencies": {
+    "@expo/ui": "~56.0.17",
+    "expo": "~56.0.11",
+    "expo-constants": "~56.0.18",
+    "expo-device": "~56.0.4",
+    "expo-font": "~56.0.6",
+    "expo-glass-effect": "~56.0.4",
+    "expo-image": "~56.0.11",
+    "expo-linking": "~56.0.14",
+    "expo-router": "~56.2.10",
+    "expo-splash-screen": "~56.0.10",
+    "expo-status-bar": "~56.0.4",
+    "expo-symbols": "~56.0.6",
+    "expo-system-ui": "~56.0.5",
+    "expo-web-browser": "~56.0.5",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-gesture-handler": "~2.31.1",
+    "react-native-reanimated": "4.3.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.8.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "reset-project": "node ./scripts/reset-project.js",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "expo lint"
+  },
+  "private": true
+}
+
+===== MOBILE API =====
+import {
+  ActivityProgressData,
+  ActivityProgressResponse,
+  ActivitySessionDetailsResponse,
+  ActivitySessionSummary,
+  CreateActivitySessionPayload,
+  CreateActivitySessionResponse,
+  Duration,
+  FinishActivitySessionResponse,
+  InitialDataResponse,
+  Location,
+  Mood,
+  PauseActivitySessionResponse,
+  ResumeActivitySessionResponse,
+  SelectActivityResponse,
+  StartActivitySessionResponse,
+} from "../types/tinyAct";
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, options);
+  const text = await response.text();
+
+  let data: unknown = null;
+
+  if (text.length > 0) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      const preview = text.slice(0, 160).replace(/\s+/g, " ");
+
+      throw new Error(
+        `Rails n'a pas renvoyé du JSON. Status ${response.status}. URL appelée : ${url}. Début de réponse : ${preview}`
+      );
+    }
+  }
+
+  if (!response.ok) {
+    const errorMessage =
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : `Erreur API : ${response.status}`;
+
+    throw new Error(errorMessage);
+  }
+
+  return data as T;
+}
+
+export async function loadInitialData(): Promise<InitialDataResponse> {
+  const [moods, locations, durations] = await Promise.all([
+    fetchJson<Mood[]>(`${API_URL}/api/v1/moods`),
+    fetchJson<Location[]>(`${API_URL}/api/v1/locations`),
+    fetchJson<Duration[]>(`${API_URL}/api/v1/durations`),
+  ]);
+
+  return {
+    moods,
+    locations,
+    durations,
+  };
+}
+
+export async function loadActivitySessions(): Promise<
+  ActivitySessionSummary[]
+> {
+  return fetchJson<ActivitySessionSummary[]>(
+    `${API_URL}/api/v1/activity_sessions`
+  );
+}
+
+export async function loadActivitySession(
+  activitySessionId: number
+): Promise<ActivitySessionDetailsResponse> {
+  return fetchJson<ActivitySessionDetailsResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}`
+  );
+}
+
+export async function loadActivityProgress(
+  activitySessionId: number
+): Promise<ActivityProgressResponse> {
+  return fetchJson<ActivityProgressResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`
+  );
+}
+
+export async function saveActivityProgress(
+  activitySessionId: number,
+  progressData: ActivityProgressData
+): Promise<ActivityProgressResponse> {
+  return fetchJson<ActivityProgressResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        progress_data: progressData,
+      }),
+    }
+  );
+}
+
+export async function createActivitySession(
+  payload: CreateActivitySessionPayload
+): Promise<CreateActivitySessionResponse> {
+  return fetchJson<CreateActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        activity_session: payload,
+      }),
+    }
+  );
+}
+
+export async function selectActivity(
+  activitySessionId: number,
+  activityId: number
+): Promise<SelectActivityResponse> {
+  return fetchJson<SelectActivityResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/select_activity`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        activity_id: activityId,
+      }),
+    }
+  );
+}
+
+export async function startActivitySession(
+  activitySessionId: number
+): Promise<StartActivitySessionResponse> {
+  return fetchJson<StartActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/start`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({}),
+    }
+  );
+}
+
+export async function pauseActivitySession(
+  activitySessionId: number,
+  elapsedSeconds: number
+): Promise<PauseActivitySessionResponse> {
+  return fetchJson<PauseActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/pause`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        elapsed_seconds: elapsedSeconds,
+      }),
+    }
+  );
+}
+
+export async function resumeActivitySession(
+  activitySessionId: number
+): Promise<ResumeActivitySessionResponse> {
+  return fetchJson<ResumeActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/resume`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({}),
+    }
+  );
+}
+
+export async function finishActivitySession(
+  activitySessionId: number,
+  elapsedSeconds: number
+): Promise<FinishActivitySessionResponse> {
+  return fetchJson<FinishActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/finish`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        elapsed_seconds: elapsedSeconds,
+      }),
+    }
+  );
+}
+
+===== MOBILE ROOT LAYOUT =====
+import { Stack } from "expo-router";
+
+export default function RootLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    />
+  );
+}
+
+===== MOBILE ROUTES =====
+mobile/src/app/_layout.tsx
+mobile/src/app/explore.tsx
+mobile/src/app/history.tsx
+mobile/src/app/index.tsx
+mobile/src/app/session/[id].tsx

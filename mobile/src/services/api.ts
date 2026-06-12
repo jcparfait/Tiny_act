@@ -5,10 +5,12 @@ import {
   ActivitySessionSummary,
   CreateActivitySessionPayload,
   CreateActivitySessionResponse,
+  CurrentUserResponse,
   Duration,
   FinishActivitySessionResponse,
   InitialDataResponse,
   Location,
+  LoginResponse,
   Mood,
   PauseActivitySessionResponse,
   ResumeActivitySessionResponse,
@@ -16,10 +18,30 @@ import {
   StartActivitySessionResponse,
 } from "../types/tinyAct";
 
+import { getAuthToken } from "./authStorage";
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, options);
+async function fetchJson<T>(
+  url: string,
+  options?: RequestInit
+): Promise<T> {
+  const token = await getAuthToken();
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...((options?.headers || {}) as Record<string, string>),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
   const text = await response.text();
 
   let data: unknown = null;
@@ -28,7 +50,9 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     try {
       data = JSON.parse(text);
     } catch {
-      const preview = text.slice(0, 160).replace(/\s+/g, " ");
+      const preview = text
+        .slice(0, 160)
+        .replace(/\s+/g, " ");
 
       throw new Error(
         `Rails n'a pas renvoyé du JSON. Status ${response.status}. URL appelée : ${url}. Début de réponse : ${preview}`
@@ -51,12 +75,55 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return data as T;
 }
 
-export async function loadInitialData(): Promise<InitialDataResponse> {
-  const [moods, locations, durations] = await Promise.all([
-    fetchJson<Mood[]>(`${API_URL}/api/v1/moods`),
-    fetchJson<Location[]>(`${API_URL}/api/v1/locations`),
-    fetchJson<Duration[]>(`${API_URL}/api/v1/durations`),
-  ]);
+export async function loginMobile(
+  email: string,
+  password: string
+): Promise<LoginResponse> {
+  return fetchJson<LoginResponse>(
+    `${API_URL}/api/v1/auth/login`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    }
+  );
+}
+
+export async function loadCurrentUser(): Promise<
+  CurrentUserResponse
+> {
+  return fetchJson<CurrentUserResponse>(
+    `${API_URL}/api/v1/auth/me`
+  );
+}
+
+export async function logoutMobile(): Promise<void> {
+  return fetchJson<void>(
+    `${API_URL}/api/v1/auth/logout`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+export async function loadInitialData(): Promise<
+  InitialDataResponse
+> {
+  const [moods, locations, durations] =
+    await Promise.all([
+      fetchJson<Mood[]>(`${API_URL}/api/v1/moods`),
+      fetchJson<Location[]>(
+        `${API_URL}/api/v1/locations`
+      ),
+      fetchJson<Duration[]>(
+        `${API_URL}/api/v1/durations`
+      ),
+    ]);
 
   return {
     moods,
@@ -99,7 +166,6 @@ export async function saveActivityProgress(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({
         progress_data: progressData,
@@ -117,7 +183,6 @@ export async function createActivitySession(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({
         activity_session: payload,
@@ -136,7 +201,6 @@ export async function selectActivity(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({
         activity_id: activityId,
@@ -154,7 +218,6 @@ export async function startActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({}),
     }
@@ -171,7 +234,6 @@ export async function pauseActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({
         elapsed_seconds: elapsedSeconds,
@@ -189,7 +251,6 @@ export async function resumeActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({}),
     }
@@ -206,7 +267,6 @@ export async function finishActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
       },
       body: JSON.stringify({
         elapsed_seconds: elapsedSeconds,

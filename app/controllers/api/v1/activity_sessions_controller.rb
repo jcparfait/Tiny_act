@@ -1,11 +1,8 @@
 module Api
   module V1
-    class ActivitySessionsController < ApplicationController
+    class ActivitySessionsController < BaseController
       QUIZ_QUESTIONS_LIMIT = 10
       LANGUAGE_ITEMS_LIMIT = 30
-
-      skip_before_action :authenticate_user!
-      skip_forgery_protection
 
       def index
         user = current_api_user!
@@ -233,27 +230,6 @@ module Api
       end
 
       private
-
-      def current_api_user
-        User
-          .joins(:user_interests)
-          .distinct
-          .first || User.first
-      end
-
-      def current_api_user!
-        user = current_api_user
-
-        unless user
-          render json: {
-            error: "Aucun utilisateur disponible pour le test API."
-          }, status: :unprocessable_entity
-
-          return nil
-        end
-
-        user
-      end
 
       def activity_session_params
         params

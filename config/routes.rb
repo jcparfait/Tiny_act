@@ -3,11 +3,19 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "health", to: "health#show"
 
+      post "auth/login", to: "auth_sessions#create"
+      get "auth/me", to: "auth_sessions#show"
+      delete "auth/logout", to: "auth_sessions#destroy"
+
       resources :moods, only: [:index]
       resources :locations, only: [:index]
       resources :durations, only: [:index]
 
       resources :activity_sessions, only: [:index, :create, :show] do
+        resource :progress,
+                 only: [:show, :update],
+                 controller: "activity_session_progress"
+
         member do
           patch :select_activity
           patch :start
@@ -26,7 +34,8 @@ Rails.application.routes.draw do
 
   root to: "activity_sessions#new"
 
-  resources :activity_sessions, only: [:index, :new, :create, :show, :update] do
+  resources :activity_sessions,
+            only: [:index, :new, :create, :show, :update] do
     collection do
       get :location
       get :duration
@@ -50,6 +59,8 @@ Rails.application.routes.draw do
   resources :room_furnitures, only: [:create, :update, :destroy]
 
   resources :rooms, only: [:index, :show] do
-    resource :like, only: [:create, :destroy], controller: "room_likes"
+    resource :like,
+             only: [:create, :destroy],
+             controller: "room_likes"
   end
 end
