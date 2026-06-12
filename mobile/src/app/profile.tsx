@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Text } from "react-native";
+import { useRouter } from "expo-router";
 
 import {
   AuthField,
+  AuthLink,
   AuthScreen,
 } from "../components/AuthScreen";
 
@@ -12,6 +14,7 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, updateProfile } = useAuth();
 
   const [firstName, setFirstName] =
@@ -78,6 +81,21 @@ export default function ProfileScreen() {
         label="Nom"
         value={lastName}
         onChangeText={setLastName}
+      />
+
+      <Text
+        style={{
+          color: "#5D5A70",
+          fontWeight: "700",
+        }}
+      >
+        {user?.interest_ids.length || 0} centre(s)
+        d’intérêt sélectionné(s)
+      </Text>
+
+      <AuthLink
+        label="Modifier mes centres d’intérêt"
+        onPress={() => router.push("/interests")}
       />
 
       {saved && (

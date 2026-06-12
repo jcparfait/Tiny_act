@@ -12,6 +12,8 @@ Rails.application.routes.draw do
       patch "auth/profile", to: "auth_profiles#update"
       get "auth/providers", to: "auth_providers#show"
       post "auth/oauth/exchange", to: "oauth_exchanges#create"
+      get "interests", to: "interests#index"
+      patch "interests", to: "interests#update"
 
       resources :moods, only: [:index]
       resources :locations, only: [:index]

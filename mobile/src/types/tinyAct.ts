@@ -4,6 +4,22 @@ export type AuthUser = {
   first_name?: string | null;
   last_name?: string | null;
   avatar?: string | null;
+  interest_ids: number[];
+  onboarding_complete: boolean;
+};
+
+export type Interest = {
+  id: number;
+  name: string;
+};
+
+export type InterestsResponse = {
+  interests: Interest[];
+  selected_interest_ids: number[];
+};
+
+export type UpdateInterestsResponse = InterestsResponse & {
+  user: AuthUser;
 };
 
 export type LoginResponse = {

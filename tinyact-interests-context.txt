@@ -1,0 +1,596 @@
+===== INTEREST MODEL =====
+class Interest < ApplicationRecord
+  has_many :activities, dependent: :destroy
+  has_many :user_interests, dependent: :destroy
+  has_many :users, through: :user_interests
+
+  validates :name, presence: true, uniqueness: true
+end
+
+===== USER INTEREST MODEL =====
+class UserInterest < ApplicationRecord
+  belongs_to :user
+  belongs_to :interest
+end
+
+===== USER INTERESTS CONTROLLER =====
+class UserInterestsController < ApplicationController
+  include TopbarData
+
+  before_action :authenticate_user!
+  before_action :set_topbar_data, only: %i[show]
+
+  def show
+    @interests = Interest.all
+    @selected_interest_ids = current_user.interest_ids
+  end
+
+  def update
+    interest_ids = params[:interest_ids] || []
+
+    current_user.interest_ids = interest_ids
+
+    redirect_to user_path(current_user), notice: "Tes centres d'intérêt ont été mis à jour."
+  end
+end
+
+===== INTERESTS SCHEMA =====
+110:  create_table "interests", force: :cascade do |t|
+111-    t.datetime "created_at", null: false
+112-    t.string "name"
+113-    t.datetime "updated_at", null: false
+114-  end
+115-
+116-  create_table "language_items", force: :cascade do |t|
+117-    t.string "answer"
+118-    t.datetime "created_at", null: false
+119-    t.string "item_type"
+120-    t.string "language"
+121-    t.text "prompt"
+122-    t.text "translation"
+123-    t.datetime "updated_at", null: false
+124-  end
+125-
+126-  create_table "locations", force: :cascade do |t|
+127-    t.datetime "created_at", null: false
+128-    t.string "name"
+129-    t.datetime "updated_at", null: false
+130-  end
+131-
+132-  create_table "melodies", force: :cascade do |t|
+133-    t.string "category", null: false
+134-    t.datetime "created_at", null: false
+135-    t.string "difficulty", null: false
+136-    t.string "family"
+137-    t.string "name", null: false
+138-    t.jsonb "notes", default: [], null: false
+139-    t.string "source"
+140-    t.string "topic"
+
+===== USER INTERESTS SCHEMA =====
+357:  create_table "user_interests", force: :cascade do |t|
+358-    t.datetime "created_at", null: false
+359-    t.bigint "interest_id", null: false
+360-    t.datetime "updated_at", null: false
+361-    t.bigint "user_id", null: false
+362-    t.index ["interest_id"], name: "index_user_interests_on_interest_id"
+363-    t.index ["user_id", "interest_id"], name: "index_user_interests_on_user_id_and_interest_id", unique: true
+364-    t.index ["user_id"], name: "index_user_interests_on_user_id"
+365-  end
+366-
+367-  create_table "users", force: :cascade do |t|
+368-    t.string "avatar"
+369-    t.datetime "created_at", null: false
+370-    t.string "email", default: "", null: false
+371-    t.string "encrypted_password", default: "", null: false
+372-    t.string "first_name"
+373-    t.string "last_name"
+374-    t.string "mobile_api_token_digest"
+375-    t.datetime "remember_created_at"
+376-    t.datetime "reset_password_sent_at"
+377-    t.string "reset_password_token"
+378-    t.datetime "updated_at", null: false
+379-    t.index ["email"], name: "index_users_on_email", unique: true
+380-    t.index ["mobile_api_token_digest"], name: "index_users_on_mobile_api_token_digest", unique: true
+381-    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+382-  end
+383-
+384-  add_foreign_key "activities", "durations"
+385-  add_foreign_key "activities", "interests"
+386-  add_foreign_key "activities", "locations"
+387-  add_foreign_key "activities", "moods"
+
+===== USER INTEREST VIEW =====
+app/views/user_interests/show.html.erb
+<div class="phone-page mood-page user-interests-page">
+  <header class="user-interests-screen-header">
+    <%= render "activity_sessions/selection_topbar" %>
+  </header>
+
+  <main class="user-interests-screen-main">
+    <section class="user-interests-intro">
+      <p class="user-interests-kicker">Personnalisation</p>
+
+      <div class="mood-hero setup-hero">
+        <h1>Tes centres d'intérêt</h1>
+      </div>
+
+      <p class="setup-helper">
+        Choisis ce que tu veux retrouver dans tes recommandations.
+        On adaptera les actions à tes envies.
+      </p>
+    </section>
+
+    <%= form_with url: user_interests_path,
+                  method: :patch,
+                  class: "interests-form" do %>
+
+      <div class="interests-scroll-area">
+        <div class="interests-grid">
+          <% @interests.each do |interest| %>
+            <% interest_name = interest.name %>
+
+            <% css_class =
+              case interest_name
+              when "Sport"
+                "interest-sport"
+              when "Langues"
+                "interest-langues"
+              when "Bien-être"
+                "interest-wellbeing"
+              when "Créativité"
+                "interest-creativity"
+              when "Photo"
+                "interest-photo"
+              when "Dessin"
+                "interest-drawing"
+              when "Écriture"
+                "interest-writing"
+              when "Culture"
+                "interest-culture"
+              when "Code", "Programmation", "Développement"
+                "interest-code"
+              when "Productivité", "Productivite"
+                "interest-productivity"
+              when "Musique", "Music"
+                "interest-music"
+              else
+                "interest-default"
+              end
+            %>
+
+            <% interest_mascot =
+              case interest_name
+              when "Sport"
+                "mascot/activities/sport.png"
+              when "Langues"
+                "mascot/activities/langues.png"
+              when "Bien-être"
+                "mascot/activities/bien_etre.png"
+              when "Créativité"
+                "mascot/activities/creativite.png"
+              when "Photo"
+                "mascot/activities/photo.png"
+              when "Dessin"
+                "mascot/activities/dessin.png"
+              when "Écriture"
+                "mascot/activities/ecriture.png"
+              when "Culture"
+                "mascot/activities/culture.png"
+              when "Code", "Programmation", "Développement"
+                "mascot/activities/code.png"
+              when "Productivité", "Productivite"
+                "mascot/activities/productivite.png"
+              when "Musique", "Music"
+                "mascot/activities/musique.png"
+              else
+                nil
+              end
+            %>
+
+            <% interest_description =
+              case interest_name
+              when "Sport"
+                "Bouger et relancer ton énergie."
+              when "Langues"
+                "Apprendre quelques mots utiles."
+              when "Bien-être"
+                "Respirer, ralentir, te recentrer."
+              when "Créativité"
+                "Produire une idée ou une forme."
+              when "Photo"
+                "Regarder autrement ce qui t’entoure."
+              when "Dessin"
+                "Dessiner sans pression."
+              when "Écriture"
+                "Poser une idée en quelques lignes."
+              when "Culture"
+                "Nourrir ta curiosité."
+              when "Code", "Programmation", "Développement"
+                "Résoudre un petit problème."
+              when "Productivité", "Productivite"
+                "Clarifier et avancer."
+              when "Musique", "Music"
+                "Écouter, créer ou jouer avec le son."
+              else
+                "Ajouter cette catégorie."
+              end
+            %>
+
+            <label class="interest-option">
+              <%= check_box_tag(
+                    "interest_ids[]",
+                    interest.id,
+                    @selected_interest_ids.include?(interest.id)
+                  ) %>
+
+              <span class="interest-card <%= css_class %>">
+                <span class="interest-card-shine"></span>
+
+                <span class="interest-mascot-frame">
+                  <% if interest_mascot.present? %>
+                    <%= image_tag interest_mascot,
+                                  class: "interest-mascot-image",
+                                  alt: "" %>
+                  <% else %>
+                    <span class="interest-fallback-icon">✦</span>
+                  <% end %>
+                </span>
+
+                <span class="interest-copy">
+                  <span class="interest-name">
+                    <%= interest_name %>
+                  </span>
+
+                  <span class="interest-description">
+                    <%= interest_description %>
+                  </span>
+                </span>
+
+                <span class="interest-checkmark">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+
+      <footer class="interests-bottom-action">
+        <%= submit_tag "Enregistrer mes choix", class: "interests-submit" %>
+      </footer>
+    <% end %>
+  </main>
+</div>
+
+===== SEEDS INTERESTS =====
+db/seeds/room.rb:9:sport = Interest.find_by(name: "Sport"),
+db/seeds/room.rb:10:culture = Interest.find_by(name: "Culture")
+db/seeds/room.rb:18:  interest: culture
+db/seeds/room.rb:24:  interest: sport,
+db/seeds/room.rb:33:  interest: culture,
+db/seeds/room.rb:44:  interest: sport,
+db/seeds/room.rb:53:  interest: sport,
+db/seeds.rb:6:  UserInterest.destroy_all
+db/seeds.rb:13:  Interest.destroy_all
+db/seeds.rb:37:  puts "🎯 Creating interests..."
+db/seeds.rb:39:  sport          = Interest.create!(name: "Sport")
+db/seeds.rb:40:  wellbeing      = Interest.create!(name: "Bien-être")
+db/seeds.rb:41:  photo_interest = Interest.create!(name: "Photo")
+db/seeds.rb:42:  drawing        = Interest.create!(name: "Dessin")
+db/seeds.rb:43:  languages      = Interest.create!(name: "Langues")
+db/seeds.rb:44:  culture        = Interest.create!(name: "Culture")
+db/seeds.rb:45:  productivite   = Interest.create!(name: "Productivité")
+db/seeds.rb:46:  code           = Interest.create!(name: "Code")
+db/seeds.rb:47:  musique        = Interest.create!(name: "Musique")
+db/seeds.rb:57:    interest: languages,
+db/seeds.rb:68:    interest: languages,
+db/seeds.rb:79:    interest: languages,
+db/seeds.rb:90:    interest: languages,
+db/seeds.rb:101:    interest: languages,
+db/seeds.rb:112:    interest: languages,
+db/seeds.rb:123:    interest: languages,
+db/seeds.rb:134:    interest: languages,
+db/seeds.rb:194:      interest: culture,
+db/seeds.rb:219:      interest: code,
+db/seeds.rb:237:      interest: musique,
+db/seeds.rb:251:    interest: photo_interest,
+db/seeds.rb:281:  Interest.find_each do |interest|
+db/seeds.rb:282:    UserInterest.find_or_create_by!(user: user, interest: interest)
+db/seeds.rb:360:  puts "#{Interest.count} interests created"
+db/seeds.rb:367:  puts "#{Activity.where(interest: sport, active: true).count} active sport activities created"
+db/seeds.rb:368:  puts "#{Activity.where(interest: languages, active: true).count} active language activities created"
+db/seeds.rb:369:  puts "#{Activity.where(interest: culture, active: true).count} active culture activities created"
+db/seeds.rb:384:    interest: culture
+db/seeds.rb:389:    interest: culture ,
+db/seeds.rb:400:    interest: culture
+db/seeds.rb:408:    interest: sport,
+db/seeds.rb:416:    interest: sport,
+db/seeds.rb:422:    interest: sport,
+db/seeds.rb:431:    interest: productivite,
+db/seeds.rb:439:    interest: productivite,
+db/seeds.rb:447:    interest: productivite,
+db/seeds.rb:458:    interest: wellbeing,
+db/seeds.rb:466:    interest: wellbeing,
+db/seeds.rb:474:    interest: wellbeing,
+db/seeds.rb:483:    interest: languages,
+db/seeds.rb:491:    interest: languages,
+db/seeds.rb:499:    interest: languages,
+db/seeds.rb:508:    interest: code,
+db/seeds.rb:516:    interest: code,
+db/seeds.rb:524:    interest: code,
+db/seeds.rb:533:    interest: drawing,
+db/seeds.rb:541:    interest: drawing,
+db/seeds.rb:549:    interest: drawing,
+db/seeds.rb:558:    interest: photo_interest,
+db/seeds.rb:566:    interest: photo_interest,
+db/seeds.rb:574:    interest: photo_interest,
+db/seeds.rb:583:    interest: musique,
+db/seeds.rb:591:    interest: musique,
+db/seeds.rb:599:    interest: musique,
+db/seeds.rb:605:  max_required_xp_by_interest_id = Furniture
+db/seeds.rb:606:    .group(:interest_id)
+db/seeds.rb:610:    Interest.find_each do |interest|
+db/seeds.rb:611:      UserInterest.find_or_create_by!(user: user, interest: interest)
+db/seeds.rb:613:      max_required_xp = max_required_xp_by_interest_id[interest.id].to_i
+db/seeds.rb:616:      UserInterestProgress
+db/seeds.rb:617:        .find_or_create_by!(user: user, interest: interest)
+db/seeds.rb:622:      current_session_xp = XpCalculator.total_for_interest(user, interest)
+db/seeds.rb:626:      activity = Activity.where(interest: interest, active: true).first ||
+db/seeds.rb:627:                 Activity.where(interest: interest).first
+db/seeds.rb:634:        interest: interest,
+db/seeds/room.rb:9:sport = Interest.find_by(name: "Sport"),
+db/seeds/room.rb:10:culture = Interest.find_by(name: "Culture")
+db/seeds/room.rb:18:  interest: culture
+db/seeds/room.rb:24:  interest: sport,
+db/seeds/room.rb:33:  interest: culture,
+db/seeds/room.rb:44:  interest: sport,
+db/seeds/room.rb:53:  interest: sport,
+
+===== MOBILE PROFILE =====
+import { useEffect, useState } from "react";
+import { Text } from "react-native";
+
+import {
+  AuthField,
+  AuthScreen,
+} from "../components/AuthScreen";
+
+import { ErrorBox } from "../components/ErrorBox";
+import { MobileNav } from "../components/MobileNav";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { useAuth } from "../context/AuthContext";
+
+export default function ProfileScreen() {
+  const { user, updateProfile } = useAuth();
+
+  const [firstName, setFirstName] =
+    useState(user?.first_name || "");
+
+  const [lastName, setLastName] =
+    useState(user?.last_name || "");
+
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    setFirstName(user?.first_name || "");
+    setLastName(user?.last_name || "");
+  }, [user]);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+
+    try {
+      await updateProfile({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      });
+
+      setSaved(true);
+    } catch (profileError) {
+      setError(
+        profileError instanceof Error
+          ? profileError.message
+          : "Impossible de modifier le profil."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <AuthScreen
+      title="Mon profil"
+      subtitle="Modifie les informations liées à ton compte."
+    >
+      <Text
+        style={{
+          color: "#5D5A70",
+          fontWeight: "700",
+        }}
+      >
+        {user?.email}
+      </Text>
+
+      <AuthField
+        label="Prénom"
+        value={firstName}
+        onChangeText={setFirstName}
+      />
+
+      <AuthField
+        label="Nom"
+        value={lastName}
+        onChangeText={setLastName}
+      />
+
+      {saved && (
+        <Text
+          style={{
+            color: "#176C3A",
+            fontWeight: "900",
+          }}
+        >
+          Profil enregistré.
+        </Text>
+      )}
+
+      {error && <ErrorBox message={error} />}
+
+      <PrimaryButton
+        label={
+          saving
+            ? "Enregistrement..."
+            : "Enregistrer"
+        }
+        onPress={handleSave}
+        disabled={saving}
+      />
+
+      <MobileNav active="profile" />
+    </AuthScreen>
+  );
+}
+
+===== MOBILE LAYOUT =====
+import {
+  ActivityIndicator,
+  View,
+} from "react-native";
+
+import { Stack } from "expo-router";
+
+import {
+  AuthProvider,
+  useAuth,
+} from "../context/AuthContext";
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
+  );
+}
+
+function RootNavigator() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#FFF4EA",
+        }}
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Protected guard={!user}>
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
+        <Stack.Screen name="oauth-callback" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={Boolean(user)}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="history" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="explore" />
+        <Stack.Screen name="session/[id]" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
+===== ACTIVITY FILTER METHODS =====
+230-      end
+231-
+232-      private
+233-
+234-      def activity_session_params
+235-        params
+236-          .require(:activity_session)
+237-          .permit(:mood_id, :location_id, :duration_id)
+238-      end
+239-
+240:      def matching_activities_for(_user)
+241-        Activity.where(
+242-          active: true,
+243-          mood_id: activity_session_params[:mood_id],
+244-          duration_id: activity_session_params[:duration_id],
+245-          location_id: allowed_location_ids(
+246-            activity_session_params[:location_id]
+247-          )
+248-        )
+249-      end
+250-
+251-      def activity_recommendations_for(_user, reference_activity)
+252-        Activity
+253-          .where(
+254-            active: true,
+255-            mood: reference_activity.mood,
+256-            duration: reference_activity.duration,
+257-            location_id: allowed_location_ids(
+258-              reference_activity.location_id
+259-            )
+260-          )
+261-          .includes(:interest, :duration, :location, :mood)
+262-          .group_by(&:interest_id)
+263-          .values
+264-          .map(&:sample)
+265-          .compact
+266-          .sample(3)
+267-      end
+268-
+269-      def activities_in_saved_order(activity_ids)
+270-        ids = activity_ids.map(&:to_i)
+271-
+272-        activities_by_id = Activity
+273-                           .includes(
+274-                             :interest,
+275-                             :duration,
+276-                             :location,
+277-                             :mood
+278-                           )
+279-                           .where(id: ids)
+280-                           .index_by(&:id)
+281-
+282-        ids.filter_map { |id| activities_by_id[id] }
+283-      end
+284-
+285-      def allowed_location_ids(selected_location_id)
+286-        ids = [selected_location_id]
+287-
+288-        anywhere = Location.find_by(name: "N'importe où")
+289-        ids << anywhere.id if anywhere.present?
+290-
+291-        ids
+292-      end
+293-
+294-      def safe_elapsed_seconds
+295-        elapsed_seconds = params[:elapsed_seconds].to_i
+296-
+297-        elapsed_seconds.negative? ? 0 : elapsed_seconds
+298-      end
+299-
+300-      def serialize_activity_session(activity_session)

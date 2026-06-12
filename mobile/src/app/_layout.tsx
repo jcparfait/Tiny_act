@@ -1,9 +1,15 @@
+import { useEffect } from "react";
+
 import {
   ActivityIndicator,
   View,
 } from "react-native";
 
-import { Stack } from "expo-router";
+import {
+  Stack,
+  useRouter,
+  useSegments,
+} from "expo-router";
 
 import {
   AuthProvider,
@@ -20,6 +26,27 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { user, loading } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+
+  const isInterestsRoute =
+    segments[0] === "interests";
+
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (
+      !user.onboarding_complete &&
+      !isInterestsRoute
+    ) {
+      router.replace("/interests");
+    }
+  }, [
+    isInterestsRoute,
+    loading,
+    router,
+    user,
+  ]);
 
   if (loading) {
     return (
@@ -51,6 +78,7 @@ function RootNavigator() {
       </Stack.Protected>
 
       <Stack.Protected guard={Boolean(user)}>
+        <Stack.Screen name="interests" />
         <Stack.Screen name="index" />
         <Stack.Screen name="history" />
         <Stack.Screen name="profile" />

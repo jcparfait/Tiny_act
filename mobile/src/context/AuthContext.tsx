@@ -23,6 +23,7 @@ import {
   setAuthToken,
 } from "../services/authStorage";
 
+import { updateMobileInterests } from "../services/interestsApi";
 import { AuthUser } from "../types/tinyAct";
 
 type RegistrationValues = {
@@ -65,6 +66,10 @@ type AuthContextValue = {
     last_name: string;
     avatar?: string;
   }) => Promise<void>;
+
+  updateInterests: (
+    interestIds: number[]
+  ) => Promise<void>;
 
   signOut: () => Promise<void>;
 };
@@ -114,12 +119,10 @@ export function AuthProvider({
     };
   }, []);
 
-  async function storeLoginResponse(
-    response: {
-      token: string;
-      user: AuthUser;
-    }
-  ) {
+  async function storeLoginResponse(response: {
+    token: string;
+    user: AuthUser;
+  }) {
     await setAuthToken(response.token);
     setUser(response.user);
   }
@@ -182,6 +185,15 @@ export function AuthProvider({
     setUser(response.user);
   }
 
+  async function updateInterests(
+    interestIds: number[]
+  ) {
+    const response =
+      await updateMobileInterests(interestIds);
+
+    setUser(response.user);
+  }
+
   async function signOut() {
     try {
       await logoutMobile();
@@ -204,6 +216,7 @@ export function AuthProvider({
         requestPasswordReset,
         resetPassword,
         updateProfile,
+        updateInterests,
         signOut,
       }}
     >

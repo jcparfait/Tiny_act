@@ -237,9 +237,14 @@ module Api
           .permit(:mood_id, :location_id, :duration_id)
       end
 
-      def matching_activities_for(_user)
+      def matching_activities_for(user)
+        interest_ids = user.interest_ids
+
+        return Activity.none if interest_ids.empty?
+
         Activity.where(
           active: true,
+          interest_id: interest_ids,
           mood_id: activity_session_params[:mood_id],
           duration_id: activity_session_params[:duration_id],
           location_id: allowed_location_ids(
@@ -248,10 +253,15 @@ module Api
         )
       end
 
-      def activity_recommendations_for(_user, reference_activity)
+      def activity_recommendations_for(user, reference_activity)
+        interest_ids = user.interest_ids
+
+        return Activity.none if interest_ids.empty?
+
         Activity
           .where(
             active: true,
+            interest_id: interest_ids,
             mood: reference_activity.mood,
             duration: reference_activity.duration,
             location_id: allowed_location_ids(

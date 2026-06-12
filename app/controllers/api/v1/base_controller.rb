@@ -48,7 +48,9 @@ module Api
           email: user.email,
           first_name: user.first_name,
           last_name: user.last_name,
-          avatar: user.avatar
+          avatar: user.avatar,
+          interest_ids: user.interest_ids,
+          onboarding_complete: user.interests.exists?
         }
       end
     end
