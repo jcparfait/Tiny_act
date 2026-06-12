@@ -14,16 +14,6 @@ export type Duration = {
   label: string;
 };
 
-export type ActivitySession = {
-  id: number;
-  status: string;
-  finished: boolean;
-  elapsed_seconds: number;
-  activity_id: number;
-  timer_started_at?: string | null;
-  language?: string | null;
-};
-
 export type QuizQuestion = {
   id: number;
   question: string;
@@ -54,12 +44,15 @@ export type MelodyPayload = {
 export type ActivityPayload = {
   duration_seconds?: number;
   activity_session_id?: number | null;
+
   quiz_kind?: "culture" | "code";
   quiz_questions?: QuizQuestion[];
+
   language?: string | null;
   language_label?: string | null;
   language_mode?: "word" | "sentence" | string;
   language_items?: LanguageItem[];
+
   melody?: MelodyPayload | null;
 };
 
@@ -70,13 +63,45 @@ export type Activity = {
   content?: string;
   activity_type: string;
   payload?: ActivityPayload;
+
   interest?: {
     id: number;
     name: string;
   };
+
   duration?: Duration;
   location?: Location;
   mood?: Mood;
+};
+
+export type QuizProgress = {
+  questions: QuizQuestion[];
+  current_index: number;
+  selected_answer: string | null;
+  score: number;
+  completed: boolean;
+};
+
+export type ActivityProgressData = {
+  quiz?: QuizProgress;
+  word_learning?: Record<string, unknown>;
+  sentence_completion?: Record<string, unknown>;
+  melody?: Record<string, unknown>;
+};
+
+export type ActivityProgressResponse = {
+  activity_session_id: number;
+  progress_data: ActivityProgressData;
+};
+
+export type ActivitySession = {
+  id: number;
+  status: string;
+  finished: boolean;
+  elapsed_seconds: number;
+  activity_id: number;
+  timer_started_at?: string | null;
+  language?: string | null;
 };
 
 export type ActivitySessionSummary = ActivitySession & {

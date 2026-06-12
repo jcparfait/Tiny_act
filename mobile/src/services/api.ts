@@ -1,4 +1,6 @@
 import {
+  ActivityProgressData,
+  ActivityProgressResponse,
   ActivitySessionDetailsResponse,
   ActivitySessionSummary,
   CreateActivitySessionPayload,
@@ -76,6 +78,33 @@ export async function loadActivitySession(
 ): Promise<ActivitySessionDetailsResponse> {
   return fetchJson<ActivitySessionDetailsResponse>(
     `${API_URL}/api/v1/activity_sessions/${activitySessionId}`
+  );
+}
+
+export async function loadActivityProgress(
+  activitySessionId: number
+): Promise<ActivityProgressResponse> {
+  return fetchJson<ActivityProgressResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`
+  );
+}
+
+export async function saveActivityProgress(
+  activitySessionId: number,
+  progressData: ActivityProgressData
+): Promise<ActivityProgressResponse> {
+  return fetchJson<ActivityProgressResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        progress_data: progressData,
+      }),
+    }
   );
 }
 

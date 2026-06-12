@@ -1,6 +1,22 @@
-import { useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { Activity } from "../../types/tinyAct";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+
+import {
+  loadActivityProgress,
+  saveActivityProgress,
+} from "../../services/api";
+
+import {
+  Activity,
+  QuizProgress,
+  QuizQuestion,
+} from "../../types/tinyAct";
+
 import {
   activityMainText,
   DarkButton,
@@ -11,22 +27,156 @@ import {
   ScoreCard,
 } from "./shared";
 
+function validSavedQuizProgress(
+  value: QuizProgress | undefined
+): value is QuizProgress {
+  return (
+    value !== undefined &&
+    Array.isArray(value.questions) &&
+    typeof value.current_index === "number" &&
+    typeof value.score === "number" &&
+    typeof value.completed === "boolean"
+  );
+}
+
 export function QuizActivity({ activity }: { activity: Activity }) {
-  const questions = useMemo(() => {
-    return activity.payload?.quiz_questions || [];
-  }, [activity.payload?.quiz_questions]);
+  const activitySessionId =
+    activity.payload?.activity_session_id || null;
+
+  const payloadQuestions =
+    activity.payload?.quiz_questions || [];
+
+  const [questions, setQuestions] = useState<QuizQuestion[]>(
+    payloadQuestions
+  );
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswer, setSelectedAnswer] =
+    useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [completed, setCompleted] = useState(false);
 
-  const currentQuestion = questions[currentIndex];
-  const isAnswered = selectedAnswer !== null;
-  const isLastQuestion = currentIndex === questions.length - 1;
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [progressError, setProgressError] =
+    useState<string | null>(null);
 
   const quizLabel =
-    activity.activity_type === "code_quiz" ? "Quiz code" : "Quiz culture";
+    activity.activity_type === "code_quiz"
+      ? "Quiz code"
+      : "Quiz culture";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateProgress() {
+      setProgressLoaded(false);
+      setProgressError(null);
+
+      setQuestions(payloadQuestions);
+      setCurrentIndex(0);
+      setSelectedAnswer(null);
+      setScore(0);
+      setCompleted(false);
+
+      if (!activitySessionId) {
+        setProgressLoaded(true);
+        return;
+      }
+
+      try {
+        const response = await loadActivityProgress(
+          activitySessionId
+        );
+
+        if (cancelled) return;
+
+        const savedQuiz = response.progress_data.quiz;
+
+        if (validSavedQuizProgress(savedQuiz)) {
+          const savedQuestions =
+            savedQuiz.questions.length > 0
+              ? savedQuiz.questions
+              : payloadQuestions;
+
+          const maximumIndex = Math.max(
+            savedQuestions.length - 1,
+            0
+          );
+
+          const safeIndex = Math.min(
+            Math.max(savedQuiz.current_index, 0),
+            maximumIndex
+          );
+
+          setQuestions(savedQuestions);
+          setCurrentIndex(safeIndex);
+          setSelectedAnswer(savedQuiz.selected_answer);
+          setScore(savedQuiz.score);
+          setCompleted(savedQuiz.completed);
+        }
+      } catch (error) {
+        if (cancelled) return;
+
+        setProgressError(
+          error instanceof Error
+            ? error.message
+            : "Impossible de charger la progression."
+        );
+      } finally {
+        if (!cancelled) {
+          setProgressLoaded(true);
+        }
+      }
+    }
+
+    hydrateProgress();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activity.id, activitySessionId]);
+
+  useEffect(() => {
+    if (
+      !progressLoaded ||
+      !activitySessionId ||
+      questions.length === 0
+    ) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      saveActivityProgress(activitySessionId, {
+        quiz: {
+          questions,
+          current_index: currentIndex,
+          selected_answer: selectedAnswer,
+          score,
+          completed,
+        },
+      }).catch((error) => {
+        console.warn(
+          "Impossible de sauvegarder la progression du quiz",
+          error
+        );
+      });
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    activitySessionId,
+    completed,
+    currentIndex,
+    progressLoaded,
+    questions,
+    score,
+    selectedAnswer,
+  ]);
+
+  const currentQuestion = questions[currentIndex];
+  const isAnswered = selectedAnswer !== null;
+  const isLastQuestion =
+    currentIndex === questions.length - 1;
 
   function handleAnswer(answer: string) {
     if (selectedAnswer || !currentQuestion) return;
@@ -50,14 +200,45 @@ export function QuizActivity({ activity }: { activity: Activity }) {
     setSelectedAnswer(null);
   }
 
+  if (!progressLoaded) {
+    return (
+      <View
+        style={{
+          padding: 22,
+          borderRadius: 22,
+          backgroundColor: "#FFFFFF",
+          borderWidth: 1,
+          borderColor: "#F2D7C8",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <ActivityIndicator />
+
+        <Text
+          style={{
+            fontSize: 15,
+            color: "#5D5A70",
+            fontWeight: "700",
+          }}
+        >
+          Chargement de ta progression…
+        </Text>
+      </View>
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <View style={{ gap: 14 }}>
-        <IntroCard label={quizLabel} text={activityMainText(activity)} />
+        <IntroCard
+          label={quizLabel}
+          text={activityMainText(activity)}
+        />
 
         <DarkInfoBox
           title="Aucune question reçue"
-          text="Vérifie que l’activité a bien un payload avec quiz_questions."
+          text="Vérifie que l’activité contient des questions de quiz."
         />
       </View>
     );
@@ -66,15 +247,34 @@ export function QuizActivity({ activity }: { activity: Activity }) {
   if (completed) {
     return (
       <View style={{ gap: 14 }}>
-        <ScoreCard score={score} total={questions.length} />
+        {progressError && (
+          <FeedbackBox
+            success={false}
+            text={progressError}
+          />
+        )}
+
+        <ScoreCard
+          score={score}
+          total={questions.length}
+        />
       </View>
     );
   }
 
   return (
     <View style={{ gap: 14 }}>
+      {progressError && (
+        <FeedbackBox
+          success={false}
+          text={progressError}
+        />
+      )}
+
       <IntroCard
-        label={`${quizLabel} · Question ${currentIndex + 1}/${questions.length}`}
+        label={`${quizLabel} · Question ${
+          currentIndex + 1
+        }/${questions.length}`}
         text={activityMainText(activity)}
       />
 
@@ -83,8 +283,8 @@ export function QuizActivity({ activity }: { activity: Activity }) {
       <View style={{ gap: 10 }}>
         {currentQuestion.answers.map((answer) => {
           const selected = selectedAnswer === answer;
-          const correct = answer === currentQuestion.correct_answer;
-          const showCorrection = isAnswered;
+          const correct =
+            answer === currentQuestion.correct_answer;
 
           return (
             <Pressable
@@ -95,18 +295,18 @@ export function QuizActivity({ activity }: { activity: Activity }) {
                 padding: 15,
                 borderRadius: 18,
                 backgroundColor:
-                  showCorrection && correct
+                  isAnswered && correct
                     ? "#D9F8E5"
-                    : showCorrection && selected && !correct
+                    : isAnswered && selected && !correct
                       ? "#FFE1DD"
                       : selected
                         ? "#17152F"
                         : "#FFFFFF",
                 borderWidth: 2,
                 borderColor:
-                  showCorrection && correct
+                  isAnswered && correct
                     ? "#2EAD63"
-                    : showCorrection && selected && !correct
+                    : isAnswered && selected && !correct
                       ? "#FF4B2B"
                       : selected
                         ? "#17152F"
@@ -117,15 +317,15 @@ export function QuizActivity({ activity }: { activity: Activity }) {
                 style={{
                   fontSize: 15,
                   fontWeight: "800",
+                  lineHeight: 21,
                   color:
-                    showCorrection && correct
+                    isAnswered && correct
                       ? "#176C3A"
-                      : showCorrection && selected && !correct
+                      : isAnswered && selected && !correct
                         ? "#B42318"
                         : selected
                           ? "#FFFFFF"
                           : "#17152F",
-                  lineHeight: 21,
                 }}
               >
                 {answer}
@@ -137,9 +337,13 @@ export function QuizActivity({ activity }: { activity: Activity }) {
 
       {isAnswered && (
         <FeedbackBox
-          success={selectedAnswer === currentQuestion.correct_answer}
+          success={
+            selectedAnswer ===
+            currentQuestion.correct_answer
+          }
           text={
-            selectedAnswer === currentQuestion.correct_answer
+            selectedAnswer ===
+            currentQuestion.correct_answer
               ? "Bonne réponse."
               : `Mauvaise réponse. La bonne réponse était : ${currentQuestion.correct_answer}`
           }
@@ -148,7 +352,11 @@ export function QuizActivity({ activity }: { activity: Activity }) {
 
       {isAnswered && (
         <DarkButton
-          label={isLastQuestion ? "Voir le score" : "Question suivante"}
+          label={
+            isLastQuestion
+              ? "Voir le score"
+              : "Question suivante"
+          }
           onPress={handleNextQuestion}
         />
       )}
