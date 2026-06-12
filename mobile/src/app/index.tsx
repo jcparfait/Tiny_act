@@ -16,6 +16,7 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { SecondaryButton } from "../components/SecondaryButton";
 import { SessionBadge } from "../components/SessionBadge";
+import { MobileNav } from "../components/MobileNav";
 
 import {
   createActivitySession,
@@ -568,6 +569,7 @@ export default function HomeScreen() {
           {step === "finished" && (
             <PrimaryButton label="Recommencer" onPress={resetFlow} />
           )}
+          <MobileNav active="new" />
         </View>
       </ScrollView>
     </SafeAreaView>

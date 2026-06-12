@@ -79,6 +79,18 @@ export type Activity = {
   mood?: Mood;
 };
 
+export type ActivitySessionSummary = ActivitySession & {
+  xp_earned?: number;
+  created_at?: string;
+  updated_at?: string;
+  activity: Activity;
+};
+
+export type ActivitySessionDetailsResponse = {
+  activity_session: ActivitySession;
+  activities: Activity[];
+};
+
 export type CreateActivitySessionPayload = {
   mood_id: number;
   location_id: number;

@@ -1,4 +1,6 @@
 import {
+  ActivitySessionDetailsResponse,
+  ActivitySessionSummary,
   CreateActivitySessionPayload,
   CreateActivitySessionResponse,
   Duration,
@@ -21,7 +23,15 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   let data: unknown = null;
 
   if (text.length > 0) {
-    data = JSON.parse(text);
+    try {
+      data = JSON.parse(text);
+    } catch {
+      const preview = text.slice(0, 160).replace(/\s+/g, " ");
+
+      throw new Error(
+        `Rails n'a pas renvoyé du JSON. Status ${response.status}. URL appelée : ${url}. Début de réponse : ${preview}`
+      );
+    }
   }
 
   if (!response.ok) {
@@ -53,6 +63,22 @@ export async function loadInitialData(): Promise<InitialDataResponse> {
   };
 }
 
+export async function loadActivitySessions(): Promise<
+  ActivitySessionSummary[]
+> {
+  return fetchJson<ActivitySessionSummary[]>(
+    `${API_URL}/api/v1/activity_sessions`
+  );
+}
+
+export async function loadActivitySession(
+  activitySessionId: number
+): Promise<ActivitySessionDetailsResponse> {
+  return fetchJson<ActivitySessionDetailsResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}`
+  );
+}
+
 export async function createActivitySession(
   payload: CreateActivitySessionPayload
 ): Promise<CreateActivitySessionResponse> {
@@ -62,6 +88,7 @@ export async function createActivitySession(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         activity_session: payload,
@@ -80,6 +107,7 @@ export async function selectActivity(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         activity_id: activityId,
@@ -97,6 +125,7 @@ export async function startActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({}),
     }
@@ -113,6 +142,7 @@ export async function pauseActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         elapsed_seconds: elapsedSeconds,
@@ -130,6 +160,7 @@ export async function resumeActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({}),
     }
@@ -146,6 +177,7 @@ export async function finishActivitySession(
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         elapsed_seconds: elapsedSeconds,
