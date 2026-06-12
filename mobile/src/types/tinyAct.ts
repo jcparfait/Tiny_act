@@ -82,11 +82,42 @@ export type QuizProgress = {
   completed: boolean;
 };
 
+export type WordLearningProgress = {
+  items: LanguageItem[];
+  current_index: number;
+  show_translation: boolean;
+  completed: boolean;
+};
+
+export type SentenceFeedback =
+  | "correct"
+  | "wrong"
+  | "revealed"
+  | null;
+
+export type SentenceCompletionProgress = {
+  items: LanguageItem[];
+  current_index: number;
+  input_value: string;
+  attempts: number;
+  score: number;
+  feedback: SentenceFeedback;
+  completed: boolean;
+};
+
+export type MelodyProgress = {
+  notes: string[];
+  current_index: number;
+  played_notes: string[];
+  wrong_note: string | null;
+  completed: boolean;
+};
+
 export type ActivityProgressData = {
   quiz?: QuizProgress;
-  word_learning?: Record<string, unknown>;
-  sentence_completion?: Record<string, unknown>;
-  melody?: Record<string, unknown>;
+  word_learning?: WordLearningProgress;
+  sentence_completion?: SentenceCompletionProgress;
+  melody?: MelodyProgress;
 };
 
 export type ActivityProgressResponse = {

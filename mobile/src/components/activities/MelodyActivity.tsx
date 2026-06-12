@@ -1,35 +1,199 @@
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { Activity } from "../../types/tinyAct";
-import { DarkInfoBox, FeedbackBox, IntroCard } from "./shared";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+
+import {
+  loadActivityProgress,
+  saveActivityProgress,
+} from "../../services/api";
+
+import {
+  Activity,
+  MelodyProgress,
+} from "../../types/tinyAct";
+
+import {
+  DarkInfoBox,
+  FeedbackBox,
+  IntroCard,
+} from "./shared";
 
 type MelodyActivityProps = {
   activity: Activity;
-  onActivityReadyToFinishChange?: (ready: boolean) => void;
+  onActivityReadyToFinishChange?: (
+    ready: boolean
+  ) => void;
 };
+
+function validProgress(
+  value: MelodyProgress | undefined
+): value is MelodyProgress {
+  return (
+    value !== undefined &&
+    Array.isArray(value.notes) &&
+    typeof value.current_index === "number" &&
+    Array.isArray(value.played_notes) &&
+    typeof value.completed === "boolean"
+  );
+}
 
 export function MelodyActivity({
   activity,
   onActivityReadyToFinishChange,
 }: MelodyActivityProps) {
   const melody = activity.payload?.melody;
-  const notes = melody?.notes || [];
+
+  const sessionId =
+    activity.payload?.activity_session_id || null;
+
+  const payloadNotes = melody?.notes || [];
+
+  const [notes, setNotes] =
+    useState<string[]>(payloadNotes);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [playedNotes, setPlayedNotes] = useState<string[]>([]);
-  const [wrongNote, setWrongNote] = useState<string | null>(null);
-  const [completed, setCompleted] = useState(false);
+  const [playedNotes, setPlayedNotes] =
+    useState<string[]>([]);
 
-  const currentNote = notes[currentIndex];
+  const [wrongNote, setWrongNote] =
+    useState<string | null>(null);
+
+  const [completed, setCompleted] = useState(false);
+  const [progressLoaded, setProgressLoaded] =
+    useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadProgress() {
+      setProgressLoaded(false);
+      setNotes(payloadNotes);
+      setCurrentIndex(0);
+      setPlayedNotes([]);
+      setWrongNote(null);
+      setCompleted(false);
+
+      if (!sessionId) {
+        setProgressLoaded(true);
+        return;
+      }
+
+      try {
+        const response =
+          await loadActivityProgress(sessionId);
+
+        if (cancelled) return;
+
+        const saved = response.progress_data.melody;
+
+        if (validProgress(saved)) {
+          const savedNotes =
+            saved.notes.length > 0
+              ? saved.notes
+              : payloadNotes;
+
+          const maximumIndex = Math.max(
+            savedNotes.length - 1,
+            0
+          );
+
+          const safePlayedNotes =
+            saved.played_notes.slice(
+              0,
+              savedNotes.length
+            );
+
+          setNotes(savedNotes);
+          setCurrentIndex(
+            Math.min(
+              Math.max(saved.current_index, 0),
+              maximumIndex
+            )
+          );
+          setPlayedNotes(safePlayedNotes);
+          setWrongNote(saved.wrong_note);
+          setCompleted(
+            saved.completed ||
+              safePlayedNotes.length >= savedNotes.length
+          );
+        }
+      } catch (error) {
+        console.warn(
+          "Impossible de charger la mélodie",
+          error
+        );
+      } finally {
+        if (!cancelled) {
+          setProgressLoaded(true);
+        }
+      }
+    }
+
+    loadProgress();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activity.id, sessionId]);
+
+  useEffect(() => {
+    if (!progressLoaded) return;
+
     if (notes.length === 0) {
       onActivityReadyToFinishChange?.(true);
       return;
     }
 
     onActivityReadyToFinishChange?.(completed);
-  }, [completed, notes.length, onActivityReadyToFinishChange]);
+  }, [
+    completed,
+    notes.length,
+    onActivityReadyToFinishChange,
+    progressLoaded,
+  ]);
+
+  useEffect(() => {
+    if (
+      !progressLoaded ||
+      !sessionId ||
+      notes.length === 0
+    ) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      saveActivityProgress(sessionId, {
+        melody: {
+          notes,
+          current_index: currentIndex,
+          played_notes: playedNotes,
+          wrong_note: wrongNote,
+          completed,
+        },
+      }).catch((error) => {
+        console.warn(
+          "Impossible de sauvegarder la mélodie",
+          error
+        );
+      });
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    completed,
+    currentIndex,
+    notes,
+    playedNotes,
+    progressLoaded,
+    sessionId,
+    wrongNote,
+  ]);
+
+  const currentNote = notes[currentIndex];
 
   function playNote(note: string) {
     if (completed || notes.length === 0) return;
@@ -49,7 +213,32 @@ export function MelodyActivity({
       return;
     }
 
-    setCurrentIndex((previousIndex) => previousIndex + 1);
+    setCurrentIndex(
+      (previousIndex) => previousIndex + 1
+    );
+  }
+
+  if (!progressLoaded) {
+    return (
+      <View
+        style={{
+          padding: 22,
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <ActivityIndicator />
+
+        <Text
+          style={{
+            color: "#5D5A70",
+            fontWeight: "700",
+          }}
+        >
+          Chargement de la progression…
+        </Text>
+      </View>
+    );
   }
 
   if (!melody || notes.length === 0) {
@@ -71,7 +260,9 @@ export function MelodyActivity({
   return (
     <View style={{ gap: 14 }}>
       <IntroCard
-        label={`Mélodie · ${melody.category || "clavier"}`}
+        label={`Mélodie · ${
+          melody.category || "clavier"
+        }`}
         text={`Joue les notes dans l’ordre. Difficulté : ${
           melody.difficulty || "non renseignée"
         }.`}
@@ -134,7 +325,8 @@ export function MelodyActivity({
       >
         {notes.map((note, index) => {
           const isPlayed = index < playedNotes.length;
-          const isCurrent = index === currentIndex && !completed;
+          const isCurrent =
+            index === currentIndex && !completed;
 
           return (
             <View
@@ -188,7 +380,10 @@ export function MelodyActivity({
         />
       )}
 
-      <PianoKeyboard onPressNote={playNote} disabled={completed} />
+      <PianoKeyboard
+        onPressNote={playNote}
+        disabled={completed}
+      />
     </View>
   );
 }
@@ -200,8 +395,24 @@ function PianoKeyboard({
   onPressNote: (note: string) => void;
   disabled: boolean;
 }) {
-  const whiteNotes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"];
-  const blackNotes = ["C#4", "D#4", "F#4", "G#4", "A#4"];
+  const whiteNotes = [
+    "C4",
+    "D4",
+    "E4",
+    "F4",
+    "G4",
+    "A4",
+    "B4",
+    "C5",
+  ];
+
+  const blackNotes = [
+    "C#4",
+    "D#4",
+    "F#4",
+    "G#4",
+    "A#4",
+  ];
 
   return (
     <View style={{ gap: 12 }}>
@@ -221,7 +432,9 @@ function PianoKeyboard({
               flex: 1,
               minHeight: 86,
               borderRadius: 14,
-              backgroundColor: disabled ? "#E7E0D8" : "#FFFFFF",
+              backgroundColor: disabled
+                ? "#E7E0D8"
+                : "#FFFFFF",
               borderWidth: 2,
               borderColor: "#F2D7C8",
               alignItems: "center",
@@ -258,7 +471,9 @@ function PianoKeyboard({
               minWidth: 54,
               minHeight: 52,
               borderRadius: 12,
-              backgroundColor: disabled ? "#5D5A70" : "#17152F",
+              backgroundColor: disabled
+                ? "#5D5A70"
+                : "#17152F",
               alignItems: "center",
               justifyContent: "center",
             }}
