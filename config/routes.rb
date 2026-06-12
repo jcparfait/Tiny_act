@@ -6,6 +6,12 @@ Rails.application.routes.draw do
       post "auth/login", to: "auth_sessions#create"
       get "auth/me", to: "auth_sessions#show"
       delete "auth/logout", to: "auth_sessions#destroy"
+      post "auth/register", to: "auth_registrations#create"
+      post "auth/password", to: "auth_passwords#create"
+      patch "auth/password", to: "auth_passwords#update"
+      patch "auth/profile", to: "auth_profiles#update"
+      get "auth/providers", to: "auth_providers#show"
+      post "auth/oauth/exchange", to: "oauth_exchanges#create"
 
       resources :moods, only: [:index]
       resources :locations, only: [:index]
@@ -30,7 +36,15 @@ Rails.application.routes.draw do
   get "webmanifest" => "pwa#manifest"
   get "service-worker" => "pwa#service_worker"
 
-  devise_for :users
+  get "mobile_oauth/:provider",
+    to: "mobile_oauth#start",
+    as: :mobile_oauth_start
+
+  devise_for :users,
+           controllers: {
+             omniauth_callbacks:
+               "users/omniauth_callbacks"
+           }
 
   root to: "activity_sessions#new"
 

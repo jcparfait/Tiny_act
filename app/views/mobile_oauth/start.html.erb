@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <title>Connexion Tiny Act</title>
+  </head>
+
+  <body>
+    <%= form_with url: @authorization_path,
+                  method: :post,
+                  local: true,
+                  data: { turbo: false },
+                  html: { id: "oauth-form" } do %>
+      <button type="submit">
+        Continuer la connexion
+      </button>
+    <% end %>
+
+    <script>
+      document.getElementById("oauth-form").submit();
+    </script>
+  </body>
+</html>

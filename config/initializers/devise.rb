@@ -313,4 +313,57 @@ Devise.setup do |config|
   # When set to false, does not sign a user in automatically after their password is
   # changed. Defaults to true, so a user is signed in automatically after changing a password.
   # config.sign_in_after_change_password = true
+  google_client_id =
+    ENV["GOOGLE_CLIENT_ID"].presence ||
+    Rails.application.credentials.dig(
+      :oauth,
+      :google,
+      :client_id
+    )
+
+  google_client_secret =
+    ENV["GOOGLE_CLIENT_SECRET"].presence ||
+    Rails.application.credentials.dig(
+      :oauth,
+      :google,
+      :client_secret
+    )
+
+  if google_client_id.present? &&
+    google_client_secret.present?
+    config.omniauth(
+      :google_oauth2,
+      google_client_id,
+      google_client_secret,
+      scope: "email,profile",
+      prompt: "select_account"
+    )
+  end
+
+  facebook_app_id =
+    ENV["FACEBOOK_APP_ID"].presence ||
+    Rails.application.credentials.dig(
+      :oauth,
+      :facebook,
+      :app_id
+    )
+
+  facebook_app_secret =
+    ENV["FACEBOOK_APP_SECRET"].presence ||
+    Rails.application.credentials.dig(
+      :oauth,
+      :facebook,
+      :app_secret
+    )
+
+  if facebook_app_id.present? &&
+    facebook_app_secret.present?
+    config.omniauth(
+      :facebook,
+      facebook_app_id,
+      facebook_app_secret,
+      scope: "email,public_profile",
+      info_fields: "email,first_name,last_name,name"
+    )
+  end
 end

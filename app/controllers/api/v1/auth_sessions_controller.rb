@@ -20,17 +20,15 @@ module Api
           return
         end
 
-        token = user.issue_mobile_api_token!
-
         render json: {
-          token: token,
-          user: serialize_user(user)
+          token: user.issue_mobile_api_token!,
+          user: serialize_api_user(user)
         }
       end
 
       def show
         render json: {
-          user: serialize_user(current_api_user)
+          user: serialize_api_user(current_api_user)
         }
       end
 
@@ -38,18 +36,6 @@ module Api
         current_api_user.revoke_mobile_api_token!
 
         head :no_content
-      end
-
-      private
-
-      def serialize_user(user)
-        {
-          id: user.id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          avatar: user.avatar
-        }
       end
     end
   end

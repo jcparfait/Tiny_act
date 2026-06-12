@@ -17,10 +17,8 @@ module Api
       private
 
       def authenticate_api_user!
-        token = bearer_token
-
         @current_api_user =
-          User.find_by_mobile_api_token(token)
+          User.find_by_mobile_api_token(bearer_token)
 
         return if @current_api_user.present?
 
@@ -42,6 +40,16 @@ module Api
         return nil unless scheme.casecmp("Bearer").zero?
 
         token
+      end
+
+      def serialize_api_user(user)
+        {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          avatar: user.avatar
+        }
       end
     end
   end

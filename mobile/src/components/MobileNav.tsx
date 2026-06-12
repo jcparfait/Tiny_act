@@ -9,16 +9,64 @@ import { Link } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 
 type MobileNavProps = {
-  active: "new" | "history";
+  active: "new" | "history" | "profile";
 };
+
+type NavItemProps = {
+  href: "/" | "/history" | "/profile";
+  label: string;
+  isActive: boolean;
+};
+
+function NavItem({
+  href,
+  label,
+  isActive,
+}: NavItemProps) {
+  return (
+    <Link href={href} asChild>
+      <Pressable
+        style={({ pressed }) => ({
+          flex: 1,
+          minHeight: 48,
+          paddingVertical: 12,
+          paddingHorizontal: 8,
+          borderRadius: 16,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: isActive
+            ? "#FF4B2B"
+            : "transparent",
+          opacity: pressed ? 0.8 : 1,
+        })}
+      >
+        <Text
+          numberOfLines={1}
+          style={{
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: "900",
+            textAlign: "center",
+          }}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Link>
+  );
+}
 
 export function MobileNav({
   active,
 }: MobileNavProps) {
   const { user, signOut } = useAuth();
-  const [loggingOut, setLoggingOut] = useState(false);
+
+  const [loggingOut, setLoggingOut] =
+    useState(false);
 
   async function handleLogout() {
+    if (loggingOut) return;
+
     setLoggingOut(true);
 
     try {
@@ -31,76 +79,38 @@ export function MobileNav({
   return (
     <View
       style={{
-        marginTop: 10,
-        padding: 10,
-        borderRadius: 24,
-        backgroundColor: "#FFFFFF",
-        borderWidth: 2,
-        borderColor: "#F2D7C8",
-        gap: 10,
+        width: "100%",
+        marginTop: 14,
+        gap: 12,
       }}
     >
       <View
         style={{
           flexDirection: "row",
-          gap: 8,
+          alignItems: "center",
+          padding: 8,
+          borderRadius: 28,
+          backgroundColor: "#17152F",
+          gap: 4,
         }}
       >
-        <Link href="/" asChild>
-          <Pressable
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 10,
-              borderRadius: 16,
-              backgroundColor:
-                active === "new"
-                  ? "#17152F"
-                  : "#FFF4EA",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontWeight: "900",
-                color:
-                  active === "new"
-                    ? "#FFFFFF"
-                    : "#17152F",
-              }}
-            >
-              Nouvelle activité
-            </Text>
-          </Pressable>
-        </Link>
+        <NavItem
+          href="/"
+          label="Nouvelle"
+          isActive={active === "new"}
+        />
 
-        <Link href="/history" asChild>
-          <Pressable
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 10,
-              borderRadius: 16,
-              backgroundColor:
-                active === "history"
-                  ? "#17152F"
-                  : "#FFF4EA",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontWeight: "900",
-                color:
-                  active === "history"
-                    ? "#FFFFFF"
-                    : "#17152F",
-              }}
-            >
-              Historique
-            </Text>
-          </Pressable>
-        </Link>
+        <NavItem
+          href="/history"
+          label="Historique"
+          isActive={active === "history"}
+        />
+
+        <NavItem
+          href="/profile"
+          label="Profil"
+          isActive={active === "profile"}
+        />
       </View>
 
       <View
@@ -108,8 +118,8 @@ export function MobileNav({
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 10,
-          paddingHorizontal: 6,
+          paddingHorizontal: 8,
+          gap: 12,
         }}
       >
         <Text
@@ -121,18 +131,24 @@ export function MobileNav({
             fontWeight: "700",
           }}
         >
-          {user?.email}
+          {user?.first_name
+            ? `${user.first_name} · ${user.email}`
+            : user?.email}
         </Text>
 
         <Pressable
-          disabled={loggingOut}
           onPress={handleLogout}
+          disabled={loggingOut}
+          style={({ pressed }) => ({
+            opacity:
+              loggingOut || pressed ? 0.55 : 1,
+          })}
         >
           <Text
             style={{
               color: "#FF4B2B",
+              fontSize: 13,
               fontWeight: "900",
-              opacity: loggingOut ? 0.5 : 1,
             }}
           >
             {loggingOut

@@ -44,11 +44,16 @@ function RootNavigator() {
     >
       <Stack.Protected guard={!user}>
         <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
+        <Stack.Screen name="oauth-callback" />
       </Stack.Protected>
 
       <Stack.Protected guard={Boolean(user)}>
         <Stack.Screen name="index" />
         <Stack.Screen name="history" />
+        <Stack.Screen name="profile" />
         <Stack.Screen name="explore" />
         <Stack.Screen name="session/[id]" />
       </Stack.Protected>

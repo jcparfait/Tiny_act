@@ -15,6 +15,19 @@ export type CurrentUserResponse = {
   user: AuthUser;
 };
 
+export type AuthProvidersResponse = {
+  google: boolean;
+  facebook: boolean;
+};
+
+export type AuthMessageResponse = {
+  message: string;
+};
+
+export type ProfileResponse = {
+  user: AuthUser;
+};
+
 export type Mood = {
   id: number;
   name: string;

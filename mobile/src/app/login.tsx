@@ -1,32 +1,63 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Text, View } from "react-native";
+import { useRouter } from "expo-router";
 
 import {
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  AuthField,
+  AuthLink,
+  AuthScreen,
+  SocialButton,
+} from "../components/AuthScreen";
 
 import { ErrorBox } from "../components/ErrorBox";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { useAuth } from "../context/AuthContext";
+import { loadAuthProviders } from "../services/authApi";
+import {
+  SocialProvider,
+  startSocialAuth,
+} from "../services/socialAuth";
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
+  const router = useRouter();
+
+  const {
+    signIn,
+    completeSocialSignIn,
+  } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] =
-    useState(false);
+
+  const [providers, setProviders] = useState({
+    google: false,
+    facebook: false,
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+  const [socialLoading, setSocialLoading] =
+    useState<SocialProvider | null>(null);
+
   const [error, setError] =
     useState<string | null>(null);
+
+  useEffect(() => {
+    loadAuthProviders()
+      .then(setProviders)
+      .catch(() => {
+        setProviders({
+          google: false,
+          facebook: false,
+        });
+      });
+  }, []);
 
   async function handleLogin() {
     if (!email.trim() || !password) {
       setError(
         "Renseigne ton email et ton mot de passe."
       );
+
       return;
     }
 
@@ -46,135 +77,119 @@ export default function LoginScreen() {
     }
   }
 
+  async function handleSocial(
+    provider: SocialProvider
+  ) {
+    setSocialLoading(provider);
+    setError(null);
+
+    try {
+      const code = await startSocialAuth(provider);
+
+      if (code) {
+        await completeSocialSignIn(code);
+      }
+    } catch (socialError) {
+      setError(
+        socialError instanceof Error
+          ? socialError.message
+          : "Impossible de terminer la connexion."
+      );
+    } finally {
+      setSocialLoading(null);
+    }
+  }
+
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: "#FFF4EA",
-      }}
+    <AuthScreen
+      title="Tiny Act"
+      subtitle="Connecte-toi pour retrouver tes activités et ta progression."
     >
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 20,
-        }}
-      >
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 440,
-            gap: 22,
-          }}
-        >
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                fontSize: 40,
-                fontWeight: "900",
-                color: "#17152F",
-              }}
-            >
-              Tiny Act
-            </Text>
+      <AuthField
+        label="Email"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        placeholder="email@exemple.fr"
+      />
 
-            <Text
-              style={{
-                fontSize: 17,
-                color: "#5D5A70",
-                lineHeight: 24,
-              }}
-            >
-              Connecte-toi pour retrouver tes activités
-              et ta progression.
-            </Text>
-          </View>
+      <AuthField
+        label="Mot de passe"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoCapitalize="none"
+        placeholder="Mot de passe"
+        onSubmitEditing={handleLogin}
+      />
 
-          <View
+      {error && <ErrorBox message={error} />}
+
+      <PrimaryButton
+        label={
+          submitting
+            ? "Connexion..."
+            : "Se connecter"
+        }
+        onPress={handleLogin}
+        disabled={submitting || socialLoading !== null}
+      />
+
+      {(providers.google || providers.facebook) && (
+        <View style={{ gap: 10 }}>
+          <Text
             style={{
-              padding: 22,
-              borderRadius: 28,
-              backgroundColor: "#FFFFFF",
-              borderWidth: 2,
-              borderColor: "#F2D7C8",
-              gap: 16,
+              color: "#5D5A70",
+              textAlign: "center",
+              fontWeight: "700",
             }}
           >
-            <View style={{ gap: 7 }}>
-              <Text
-                style={{
-                  fontWeight: "800",
-                  color: "#17152F",
-                }}
-              >
-                Email
-              </Text>
+            ou
+          </Text>
 
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                placeholder="email@exemple.fr"
-                placeholderTextColor="#8E8A9D"
-                style={{
-                  padding: 14,
-                  borderRadius: 16,
-                  borderWidth: 2,
-                  borderColor: "#F2D7C8",
-                  fontSize: 16,
-                  color: "#17152F",
-                  outlineStyle: "none" as never,
-                }}
-              />
-            </View>
-
-            <View style={{ gap: 7 }}>
-              <Text
-                style={{
-                  fontWeight: "800",
-                  color: "#17152F",
-                }}
-              >
-                Mot de passe
-              </Text>
-
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                placeholder="Mot de passe"
-                placeholderTextColor="#8E8A9D"
-                onSubmitEditing={handleLogin}
-                style={{
-                  padding: 14,
-                  borderRadius: 16,
-                  borderWidth: 2,
-                  borderColor: "#F2D7C8",
-                  fontSize: 16,
-                  color: "#17152F",
-                  outlineStyle: "none" as never,
-                }}
-              />
-            </View>
-
-            {error && <ErrorBox message={error} />}
-
-            <PrimaryButton
+          {providers.google && (
+            <SocialButton
               label={
-                submitting
-                  ? "Connexion..."
-                  : "Se connecter"
+                socialLoading === "google_oauth2"
+                  ? "Connexion Google..."
+                  : "Continuer avec Google"
               }
-              onPress={handleLogin}
-              disabled={submitting}
+              disabled={socialLoading !== null}
+              onPress={() =>
+                handleSocial("google_oauth2")
+              }
             />
-          </View>
+          )}
+
+          {providers.facebook && (
+            <SocialButton
+              label={
+                socialLoading === "facebook"
+                  ? "Connexion Facebook..."
+                  : "Continuer avec Facebook"
+              }
+              disabled={socialLoading !== null}
+              onPress={() =>
+                handleSocial("facebook")
+              }
+            />
+          )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      )}
+
+      <AuthLink
+        label="Mot de passe oublié ?"
+        onPress={() =>
+          router.push("/forgot-password")
+        }
+      />
+
+      <AuthLink
+        label="Créer un compte"
+        onPress={() => router.push("/register")}
+      />
+    </AuthScreen>
   );
 }

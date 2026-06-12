@@ -1,23 +1,51 @@
 require "digest"
 
 class User < ApplicationRecord
-  AVATARS = (1..24).map { |number| "avatar_#{number.to_s.rjust(2, '0')}" }
+  AVATARS = (1..24).map do |number|
+    "avatar_#{number.to_s.rjust(2, '0')}"
+  end
 
-  validates :avatar, inclusion: { in: AVATARS }, allow_blank: true
+  validates :avatar,
+            inclusion: { in: AVATARS },
+            allow_blank: true
 
   has_one :room, dependent: :destroy
-  has_many :user_interest_progresses, dependent: :destroy
-  has_many :activity_sessions, dependent: :destroy
-  has_many :user_interests, dependent: :destroy
-  has_many :interests, through: :user_interests
-  has_many :room_likes, dependent: :destroy
-  has_many :liked_rooms, through: :room_likes, source: :room
+
+  has_many :user_interest_progresses,
+           dependent: :destroy
+
+  has_many :activity_sessions,
+           dependent: :destroy
+
+  has_many :user_interests,
+           dependent: :destroy
+
+  has_many :interests,
+           through: :user_interests
+
+  has_many :room_likes,
+           dependent: :destroy
+
+  has_many :liked_rooms,
+           through: :room_likes,
+           source: :room
+
+  has_many :oauth_identities,
+           dependent: :destroy
+
+  has_many :mobile_oauth_codes,
+           dependent: :destroy
 
   devise :database_authenticatable,
          :registerable,
          :recoverable,
          :rememberable,
-         :validatable
+         :validatable,
+         :omniauthable,
+         omniauth_providers: %i[
+           google_oauth2
+           facebook
+         ]
 
   after_create :create_default_room
   before_update :revoke_mobile_token_when_password_changes
@@ -26,7 +54,8 @@ class User < ApplicationRecord
     raw_token = SecureRandom.hex(32)
 
     update!(
-      mobile_api_token_digest: self.class.digest_mobile_api_token(raw_token)
+      mobile_api_token_digest:
+        self.class.digest_mobile_api_token(raw_token)
     )
 
     raw_token
@@ -40,7 +69,8 @@ class User < ApplicationRecord
     return nil if raw_token.blank?
 
     find_by(
-      mobile_api_token_digest: digest_mobile_api_token(raw_token)
+      mobile_api_token_digest:
+        digest_mobile_api_token(raw_token)
     )
   end
 

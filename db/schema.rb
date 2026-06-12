@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_12_085815) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_12_124539) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -144,10 +144,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_12_085815) do
     t.index ["name"], name: "index_melodies_on_name", unique: true
   end
 
+  create_table "mobile_oauth_codes", force: :cascade do |t|
+    t.string "code_digest", null: false
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "used_at"
+    t.bigint "user_id", null: false
+    t.index ["code_digest"], name: "index_mobile_oauth_codes_on_code_digest", unique: true
+    t.index ["user_id"], name: "index_mobile_oauth_codes_on_user_id"
+  end
+
   create_table "moods", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "oauth_identities", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["provider", "uid"], name: "index_oauth_identities_on_provider_and_uid", unique: true
+    t.index ["user_id"], name: "index_oauth_identities_on_user_id"
   end
 
   create_table "room_furnitures", force: :cascade do |t|
@@ -367,6 +388,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_12_085815) do
   add_foreign_key "activity_sessions", "activities"
   add_foreign_key "activity_sessions", "users"
   add_foreign_key "furnitures", "interests"
+  add_foreign_key "mobile_oauth_codes", "users"
+  add_foreign_key "oauth_identities", "users"
   add_foreign_key "room_furnitures", "furnitures"
   add_foreign_key "room_furnitures", "rooms"
   add_foreign_key "room_likes", "rooms"
