@@ -1,12 +1,15 @@
 import { useState } from "react";
+
 import {
   Pressable,
   Text,
   View,
 } from "react-native";
+
 import { Link } from "expo-router";
 
 import { useAuth } from "../context/AuthContext";
+import { AvatarImage } from "./AvatarPicker";
 
 type MobileNavProps = {
   active: "new" | "history" | "profile";
@@ -59,7 +62,10 @@ function NavItem({
 export function MobileNav({
   active,
 }: MobileNavProps) {
-  const { user, signOut } = useAuth();
+  const {
+    user,
+    signOut,
+  } = useAuth();
 
   const [loggingOut, setLoggingOut] =
     useState(false);
@@ -122,19 +128,46 @@ export function MobileNav({
           gap: 12,
         }}
       >
-        <Text
-          numberOfLines={1}
-          style={{
-            flex: 1,
-            color: "#5D5A70",
-            fontSize: 13,
-            fontWeight: "700",
-          }}
-        >
-          {user?.first_name
-            ? `${user.first_name} · ${user.email}`
-            : user?.email}
-        </Text>
+        <Link href="/profile" asChild>
+          <Pressable
+            style={({ pressed }) => ({
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <AvatarImage
+              avatar={user?.avatar}
+              size={42}
+            />
+
+            <View style={{ flex: 1 }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: "#17152F",
+                  fontSize: 14,
+                  fontWeight: "900",
+                }}
+              >
+                {user?.first_name || "Mon profil"}
+              </Text>
+
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: "#5D5A70",
+                  fontSize: 12,
+                  fontWeight: "700",
+                }}
+              >
+                {user?.email}
+              </Text>
+            </View>
+          </Pressable>
+        </Link>
 
         <Pressable
           onPress={handleLogout}

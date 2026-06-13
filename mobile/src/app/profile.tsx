@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
+
+import {
+  Text,
+  View,
+} from "react-native";
+
 import { useRouter } from "expo-router";
 
 import {
@@ -8,6 +13,7 @@ import {
   AuthScreen,
 } from "../components/AuthScreen";
 
+import { AvatarImage } from "../components/AvatarPicker";
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PrimaryButton } from "../components/PrimaryButton";
@@ -15,7 +21,11 @@ import { useAuth } from "../context/AuthContext";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, updateProfile } = useAuth();
+
+  const {
+    user,
+    updateProfile,
+  } = useAuth();
 
   const [firstName, setFirstName] =
     useState(user?.first_name || "");
@@ -62,6 +72,24 @@ export default function ProfileScreen() {
       title="Mon profil"
       subtitle="Modifie les informations liées à ton compte."
     >
+      <View
+        style={{
+          alignItems: "center",
+          gap: 10,
+          paddingBottom: 4,
+        }}
+      >
+        <AvatarImage
+          avatar={user?.avatar}
+          size={104}
+        />
+
+        <AuthLink
+          label="Modifier mon avatar"
+          onPress={() => router.push("/avatar")}
+        />
+      </View>
+
       <Text
         style={{
           color: "#5D5A70",

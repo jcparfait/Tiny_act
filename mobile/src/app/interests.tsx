@@ -154,7 +154,7 @@ export default function InterestsScreen() {
       router.replace(
         editingExistingSelection
           ? "/profile"
-          : "/"
+          : "/avatar"
       );
     } catch (saveError) {
       setError(

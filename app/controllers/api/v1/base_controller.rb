@@ -50,7 +50,8 @@ module Api
           last_name: user.last_name,
           avatar: user.avatar,
           interest_ids: user.interest_ids,
-          onboarding_complete: user.interests.exists?
+          onboarding_complete:
+            user.interests.exists? && user.avatar.present?
         }
       end
     end

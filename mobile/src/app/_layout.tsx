@@ -25,30 +25,57 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading,
+  } = useAuth();
+
   const router = useRouter();
   const segments = useSegments();
 
-  const isInterestsRoute =
-    segments[0] === "interests";
+  const currentRoute = segments[0];
+
+  const needsInterests =
+    Boolean(user) &&
+    user!.interest_ids.length === 0;
+
+  const needsAvatar =
+    Boolean(user) &&
+    user!.interest_ids.length > 0 &&
+    !user!.avatar;
+
+  const redirectingToInterests =
+    needsInterests &&
+    currentRoute !== "interests";
+
+  const redirectingToAvatar =
+    needsAvatar &&
+    currentRoute !== "avatar";
 
   useEffect(() => {
     if (loading || !user) return;
 
-    if (
-      !user.onboarding_complete &&
-      !isInterestsRoute
-    ) {
+    if (redirectingToInterests) {
       router.replace("/interests");
+      return;
+    }
+
+    if (redirectingToAvatar) {
+      router.replace("/avatar");
     }
   }, [
-    isInterestsRoute,
     loading,
+    redirectingToAvatar,
+    redirectingToInterests,
     router,
     user,
   ]);
 
-  if (loading) {
+  if (
+    loading ||
+    redirectingToInterests ||
+    redirectingToAvatar
+  ) {
     return (
       <View
         style={{
@@ -79,6 +106,7 @@ function RootNavigator() {
 
       <Stack.Protected guard={Boolean(user)}>
         <Stack.Screen name="interests" />
+        <Stack.Screen name="avatar" />
         <Stack.Screen name="index" />
         <Stack.Screen name="history" />
         <Stack.Screen name="profile" />
