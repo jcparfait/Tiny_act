@@ -6,12 +6,19 @@ Rails.application.routes.draw do
       post "auth/login", to: "auth_sessions#create"
       get "auth/me", to: "auth_sessions#show"
       delete "auth/logout", to: "auth_sessions#destroy"
+
       post "auth/register", to: "auth_registrations#create"
+
       post "auth/password", to: "auth_passwords#create"
       patch "auth/password", to: "auth_passwords#update"
+
       patch "auth/profile", to: "auth_profiles#update"
+
       get "auth/providers", to: "auth_providers#show"
-      post "auth/oauth/exchange", to: "oauth_exchanges#create"
+
+      post "auth/oauth/exchange",
+           to: "oauth_exchanges#create"
+
       get "interests", to: "interests#index"
       patch "interests", to: "interests#update"
 
@@ -19,7 +26,14 @@ Rails.application.routes.draw do
       resources :locations, only: [:index]
       resources :durations, only: [:index]
 
-      resources :activity_sessions, only: [:index, :create, :show] do
+      resource :room, only: [:show] do
+        resources :furnitures,
+                  only: [:create, :update, :destroy],
+                  controller: "room_furnitures"
+      end
+
+      resources :activity_sessions,
+                only: [:index, :create, :show] do
         resource :progress,
                  only: [:show, :update],
                  controller: "activity_session_progress"
@@ -39,14 +53,14 @@ Rails.application.routes.draw do
   get "service-worker" => "pwa#service_worker"
 
   get "mobile_oauth/:provider",
-    to: "mobile_oauth#start",
-    as: :mobile_oauth_start
+      to: "mobile_oauth#start",
+      as: :mobile_oauth_start
 
   devise_for :users,
-           controllers: {
-             omniauth_callbacks:
-               "users/omniauth_callbacks"
-           }
+             controllers: {
+               omniauth_callbacks:
+                 "users/omniauth_callbacks"
+             }
 
   root to: "activity_sessions#new"
 
@@ -68,11 +82,14 @@ Rails.application.routes.draw do
 
   resources :activities, only: [:show]
 
-  resource :user, only: [:show, :edit, :update]
+  resource :user,
+           only: [:show, :edit, :update]
 
-  resource :user_interests, only: [:show, :update]
+  resource :user_interests,
+           only: [:show, :update]
 
-  resources :room_furnitures, only: [:create, :update, :destroy]
+  resources :room_furnitures,
+            only: [:create, :update, :destroy]
 
   resources :rooms, only: [:index, :show] do
     resource :like,

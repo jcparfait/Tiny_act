@@ -12,11 +12,20 @@ import { useAuth } from "../context/AuthContext";
 import { AvatarImage } from "./AvatarPicker";
 
 type MobileNavProps = {
-  active: "new" | "history" | "profile";
+  active:
+    | "new"
+    | "history"
+    | "room"
+    | "profile";
 };
 
 type NavItemProps = {
-  href: "/" | "/history" | "/profile";
+  href:
+    | "/"
+    | "/history"
+    | "/explore"
+    | "/profile";
+
   label: string;
   isActive: boolean;
 };
@@ -31,10 +40,10 @@ function NavItem({
       <Pressable
         style={({ pressed }) => ({
           flex: 1,
-          minHeight: 48,
-          paddingVertical: 12,
-          paddingHorizontal: 8,
-          borderRadius: 16,
+          minHeight: 46,
+          paddingVertical: 11,
+          paddingHorizontal: 4,
+          borderRadius: 15,
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: isActive
@@ -47,7 +56,7 @@ function NavItem({
           numberOfLines={1}
           style={{
             color: "#FFFFFF",
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: "900",
             textAlign: "center",
           }}
@@ -62,10 +71,7 @@ function NavItem({
 export function MobileNav({
   active,
 }: MobileNavProps) {
-  const {
-    user,
-    signOut,
-  } = useAuth();
+  const { user, signOut } = useAuth();
 
   const [loggingOut, setLoggingOut] =
     useState(false);
@@ -94,15 +100,15 @@ export function MobileNav({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          padding: 8,
+          padding: 7,
           borderRadius: 28,
           backgroundColor: "#17152F",
-          gap: 4,
+          gap: 3,
         }}
       >
         <NavItem
           href="/"
-          label="Nouvelle"
+          label="Activité"
           isActive={active === "new"}
         />
 
@@ -110,6 +116,12 @@ export function MobileNav({
           href="/history"
           label="Historique"
           isActive={active === "history"}
+        />
+
+        <NavItem
+          href="/explore"
+          label="Salle"
+          isActive={active === "room"}
         />
 
         <NavItem

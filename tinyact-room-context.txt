@@ -1,0 +1,3018 @@
+===== ROUTES =====
+Rails.application.routes.draw do
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      get "health", to: "health#show"
+
+      post "auth/login", to: "auth_sessions#create"
+      get "auth/me", to: "auth_sessions#show"
+      delete "auth/logout", to: "auth_sessions#destroy"
+      post "auth/register", to: "auth_registrations#create"
+      post "auth/password", to: "auth_passwords#create"
+      patch "auth/password", to: "auth_passwords#update"
+      patch "auth/profile", to: "auth_profiles#update"
+      get "auth/providers", to: "auth_providers#show"
+      post "auth/oauth/exchange", to: "oauth_exchanges#create"
+      get "interests", to: "interests#index"
+      patch "interests", to: "interests#update"
+
+      resources :moods, only: [:index]
+      resources :locations, only: [:index]
+      resources :durations, only: [:index]
+
+      resources :activity_sessions, only: [:index, :create, :show] do
+        resource :progress,
+                 only: [:show, :update],
+                 controller: "activity_session_progress"
+
+        member do
+          patch :select_activity
+          patch :start
+          patch :pause
+          patch :resume
+          patch :finish
+        end
+      end
+    end
+  end
+
+  get "webmanifest" => "pwa#manifest"
+  get "service-worker" => "pwa#service_worker"
+
+  get "mobile_oauth/:provider",
+    to: "mobile_oauth#start",
+    as: :mobile_oauth_start
+
+  devise_for :users,
+           controllers: {
+             omniauth_callbacks:
+               "users/omniauth_callbacks"
+           }
+
+  root to: "activity_sessions#new"
+
+  resources :activity_sessions,
+            only: [:index, :new, :create, :show, :update] do
+    collection do
+      get :location
+      get :duration
+    end
+
+    member do
+      patch :start
+      patch :progress
+      patch :pause
+      patch :resume
+      patch :abandon
+    end
+  end
+
+  resources :activities, only: [:show]
+
+  resource :user, only: [:show, :edit, :update]
+
+  resource :user_interests, only: [:show, :update]
+
+  resources :room_furnitures, only: [:create, :update, :destroy]
+
+  resources :rooms, only: [:index, :show] do
+    resource :like,
+             only: [:create, :destroy],
+             controller: "room_likes"
+  end
+end
+
+===== FURNITURE MODEL =====
+class Furniture < ApplicationRecord
+  has_many :room_furnitures
+  belongs_to :interest
+end
+
+===== ROOM FURNITURE MODEL =====
+class RoomFurniture < ApplicationRecord
+  belongs_to :room
+  belongs_to :furniture
+end
+
+===== ROOM MODEL =====
+class Room < ApplicationRecord
+  GRID_WIDTH = 5
+  GRID_HEIGHT = 5
+
+  belongs_to :user
+  has_many :room_furnitures, dependent: :destroy
+  has_many :room_likes, dependent: :destroy
+  def ensure_default_size!
+    return if width == GRID_WIDTH && height == GRID_HEIGHT
+
+    update!(width: GRID_WIDTH, height: GRID_HEIGHT)
+  end
+end
+
+===== USER INTEREST PROGRESS MODEL =====
+class UserInterestProgress < ApplicationRecord
+  belongs_to :user
+  belongs_to :interest
+end
+
+===== RELEVANT SCHEMA =====
+98:  create_table "furnitures", force: :cascade do |t|
+99-    t.datetime "created_at", null: false
+100-    t.integer "height"
+101-    t.string "image_url"
+102-    t.bigint "interest_id", null: false
+103-    t.string "name"
+104-    t.integer "required_xp"
+105-    t.datetime "updated_at", null: false
+106-    t.integer "width"
+107-    t.index ["interest_id"], name: "index_furnitures_on_interest_id"
+108-  end
+109-
+110-  create_table "interests", force: :cascade do |t|
+111-    t.datetime "created_at", null: false
+112-    t.string "name"
+113-    t.datetime "updated_at", null: false
+114-  end
+115-
+116-  create_table "language_items", force: :cascade do |t|
+117-    t.string "answer"
+118-    t.datetime "created_at", null: false
+119-    t.string "item_type"
+120-    t.string "language"
+121-    t.text "prompt"
+122-    t.text "translation"
+123-    t.datetime "updated_at", null: false
+124-  end
+125-
+126-  create_table "locations", force: :cascade do |t|
+127-    t.datetime "created_at", null: false
+128-    t.string "name"
+129-    t.datetime "updated_at", null: false
+130-  end
+131-
+132-  create_table "melodies", force: :cascade do |t|
+133-    t.string "category", null: false
+174:  create_table "room_furnitures", force: :cascade do |t|
+175-    t.datetime "created_at", null: false
+176-    t.bigint "furniture_id", null: false
+177-    t.bigint "room_id", null: false
+178-    t.integer "rotation"
+179-    t.datetime "updated_at", null: false
+180-    t.integer "x"
+181-    t.integer "y"
+182-    t.integer "z"
+183-    t.index ["furniture_id"], name: "index_room_furnitures_on_furniture_id"
+184-    t.index ["room_id"], name: "index_room_furnitures_on_room_id"
+185-  end
+186-
+187-  create_table "room_likes", force: :cascade do |t|
+188-    t.datetime "created_at", null: false
+189-    t.bigint "room_id", null: false
+190-    t.datetime "updated_at", null: false
+191-    t.bigint "user_id", null: false
+192-    t.index ["room_id"], name: "index_room_likes_on_room_id"
+193-    t.index ["user_id"], name: "index_room_likes_on_user_id"
+194-  end
+195-
+196-  create_table "rooms", force: :cascade do |t|
+197-    t.datetime "created_at", null: false
+198-    t.integer "height"
+199-    t.datetime "updated_at", null: false
+200-    t.bigint "user_id", null: false
+201-    t.integer "width"
+202-    t.index ["user_id"], name: "index_rooms_on_user_id"
+203-  end
+204-
+205-  create_table "solid_cable_messages", force: :cascade do |t|
+206-    t.binary "channel", null: false
+207-    t.bigint "channel_hash", null: false
+208-    t.datetime "created_at", null: false
+209-    t.binary "payload", null: false
+196:  create_table "rooms", force: :cascade do |t|
+197-    t.datetime "created_at", null: false
+198-    t.integer "height"
+199-    t.datetime "updated_at", null: false
+200-    t.bigint "user_id", null: false
+201-    t.integer "width"
+202-    t.index ["user_id"], name: "index_rooms_on_user_id"
+203-  end
+204-
+205-  create_table "solid_cable_messages", force: :cascade do |t|
+206-    t.binary "channel", null: false
+207-    t.bigint "channel_hash", null: false
+208-    t.datetime "created_at", null: false
+209-    t.binary "payload", null: false
+210-    t.index ["channel"], name: "index_solid_cable_messages_on_channel"
+211-    t.index ["channel_hash"], name: "index_solid_cable_messages_on_channel_hash"
+212-    t.index ["created_at"], name: "index_solid_cable_messages_on_created_at"
+213-  end
+214-
+215-  create_table "solid_cache_entries", force: :cascade do |t|
+216-    t.integer "byte_size", null: false
+217-    t.datetime "created_at", null: false
+218-    t.binary "key", null: false
+219-    t.bigint "key_hash", null: false
+220-    t.binary "value", null: false
+221-    t.index ["byte_size"], name: "index_solid_cache_entries_on_byte_size"
+347:  create_table "user_interest_progresses", force: :cascade do |t|
+348-    t.datetime "created_at", null: false
+349-    t.bigint "interest_id", null: false
+350-    t.datetime "updated_at", null: false
+351-    t.bigint "user_id", null: false
+352-    t.integer "xp"
+353-    t.index ["interest_id"], name: "index_user_interest_progresses_on_interest_id"
+354-    t.index ["user_id"], name: "index_user_interest_progresses_on_user_id"
+355-  end
+356-
+357-  create_table "user_interests", force: :cascade do |t|
+358-    t.datetime "created_at", null: false
+359-    t.bigint "interest_id", null: false
+360-    t.datetime "updated_at", null: false
+361-    t.bigint "user_id", null: false
+362-    t.index ["interest_id"], name: "index_user_interests_on_interest_id"
+363-    t.index ["user_id", "interest_id"], name: "index_user_interests_on_user_id_and_interest_id", unique: true
+364-    t.index ["user_id"], name: "index_user_interests_on_user_id"
+365-  end
+366-
+367-  create_table "users", force: :cascade do |t|
+368-    t.string "avatar"
+369-    t.datetime "created_at", null: false
+370-    t.string "email", default: "", null: false
+371-    t.string "encrypted_password", default: "", null: false
+372-    t.string "first_name"
+38:  create_table "activity_sessions", force: :cascade do |t|
+39-    t.bigint "activity_id", null: false
+40-    t.jsonb "candidate_activity_ids", default: [], null: false
+41-    t.datetime "created_at", null: false
+42-    t.date "date"
+43-    t.integer "elapsed_seconds", default: 0, null: false
+44-    t.boolean "finished", default: false, null: false
+45-    t.datetime "furniture_unlocks_seen_at"
+46-    t.string "language"
+47-    t.jsonb "newly_unlocked_furniture_ids", default: [], null: false
+48-    t.jsonb "progress_data", default: {}, null: false
+49-    t.integer "rating"
+50-    t.string "status", default: "selecting", null: false
+51-    t.datetime "timer_started_at"
+52-    t.datetime "updated_at", null: false
+53-    t.bigint "user_id", null: false
+54-    t.datetime "xp_awarded_at"
+55-    t.integer "xp_earned", default: 0, null: false
+56-    t.index ["activity_id"], name: "index_activity_sessions_on_activity_id"
+57-    t.index ["status"], name: "index_activity_sessions_on_status"
+58-    t.index ["user_id"], name: "index_activity_sessions_on_user_id"
+59-  end
+60-
+61-  create_table "code_questions", force: :cascade do |t|
+62-    t.string "category", null: false
+63-    t.string "correct_answer", null: false
+64-    t.datetime "created_at", null: false
+65-    t.string "difficulty", null: false
+66-    t.string "family"
+67-    t.string "question", null: false
+68-    t.string "source"
+69-    t.string "topic"
+70-    t.datetime "updated_at", null: false
+71-    t.string "wrong_answer_1", null: false
+72-    t.string "wrong_answer_2", null: false
+73-    t.string "wrong_answer_3", null: false
+
+===== XP CALCULATOR =====
+app/services/api_ninjas_exporter.rb
+# app/services/api_ninjas_exporter.rb
+
+require "net/http"
+require "json"
+require "csv"
+
+class ApiNinjasExporter
+
+  MUSCLES = [
+    "abdominals",
+    "abductors",
+    "adductors",
+    "biceps",
+    "calves",
+    "chest",
+    "forearms",
+    "glutes",
+    "hamstrings",
+    "lats",
+    "lower_back",
+    "middle_back",
+    "neck",
+    "quadriceps",
+    "traps",
+    "triceps"
+  ]
+
+  def call
+    exercises = []
+
+    MUSCLES.each do |muscle|
+
+      puts "Fetching #{muscle}..."
+
+      fetch_exercises(muscle).each do |exercise|
+
+        next unless exercise["equipments"].empty?
+
+        exercises << {
+          name: exercise["name"],
+          type: exercise["type"],
+          muscle: exercise["muscle"],
+          difficulty: exercise["difficulty"],
+          instructions: exercise["instructions"],
+          safety_info: exercise["safety_info"]
+        }
+      end
+    end
+
+    exercises.uniq! { |exercise| exercise[:name] }
+
+    export_csv(exercises)
+
+    puts "✅ #{exercises.count} unique exercises exported"
+  end
+
+  private
+
+  def fetch_exercises(muscle)
+
+    uri = URI(
+      "https://api.api-ninjas.com/v1/exercises?muscle=#{muscle}"
+    )
+
+    request = Net::HTTP::Get.new(uri)
+    request["X-Api-Key"] = ENV["API_NINJAS_KEY"]
+
+    response = Net::HTTP.start(
+      uri.hostname,
+      uri.port,
+      use_ssl: true
+    ) do |http|
+      http.request(request)
+    end
+
+    JSON.parse(response.body)
+  end
+
+  def export_csv(exercises)
+
+    filepath =
+      Rails.root.join(
+        "tmp",
+        "api_ninjas_exercises.csv"
+      )
+
+    CSV.open(filepath, "wb") do |csv|
+
+      csv << [
+        "name",
+        "type",
+        "muscle",
+        "difficulty",
+        "instructions",
+        "safety_info"
+      ]
+
+      exercises.each do |exercise|
+
+        csv << [
+          exercise[:name],
+          exercise[:type],
+          exercise[:muscle],
+          exercise[:difficulty],
+          exercise[:instructions],
+          exercise[:safety_info]
+        ]
+      end
+    end
+
+    puts "📁 File created : #{filepath}"
+  end
+end
+app/services/xp_calculator.rb
+class XpCalculator
+  def self.reward_for(activity_session)
+    new(activity_session).call
+  end
+
+  def self.awarded_xp_for(activity_session)
+    return 0 if activity_session.xp_awarded_at.blank?
+
+    activity_session.xp_earned.to_i
+  end
+
+  def self.award!(activity_session)
+    return awarded_xp_for(activity_session) if activity_session.xp_awarded_at.present?
+
+    ActivitySession.transaction do
+      activity_session.lock!
+
+      next if activity_session.xp_awarded_at.present?
+
+      xp_earned = reward_for(activity_session)
+      activity_session.update!(
+        xp_earned: xp_earned,
+        xp_awarded_at: Time.current
+      )
+
+      sync_interest_progress!(
+        activity_session.user,
+        activity_session.activity.interest
+      )
+    end
+
+    awarded_xp_for(activity_session)
+  end
+
+  def self.total_for(user)
+    awarded_sessions_for(user).sum(:xp_earned)
+  end
+
+  def self.total_for_interest(user, interest)
+    awarded_sessions_for(user)
+      .joins(:activity)
+      .where(activities: { interest_id: interest.id })
+      .sum(:xp_earned)
+  end
+
+  def self.sync_interest_progress!(user, interest)
+    progress = UserInterestProgress.find_or_initialize_by(
+      user: user,
+      interest: interest
+    )
+
+    progress.xp = total_for_interest(user, interest)
+    progress.save!
+  end
+
+  def self.awarded_sessions_for(user)
+    user.activity_sessions.where.not(xp_awarded_at: nil)
+  end
+
+  def initialize(activity_session)
+    @activity_session = activity_session
+    @activity = activity_session.activity
+  end
+
+  def call
+    (base_xp * mood_multiplier).round
+  end
+
+  private
+
+  attr_reader :activity_session, :activity
+
+  def base_xp
+    case activity.duration.value.to_i
+    when 5
+      10
+    when 15
+      22
+    when 30
+      40
+    else
+      10
+    end
+  end
+
+  def mood_multiplier
+    case activity.mood.name
+    when "À plat"
+      1.3
+    when "Bof", "Mitigé"
+      1.15
+    when "En forme"
+      1.0
+    else
+      1.0
+    end
+  end
+end
+
+===== API ACTIVITY FINISH =====
+192-        activity_session.update!(
+193-          status: "in_progress",
+194-          timer_started_at: Time.current
+195-        )
+196-
+197-        render json: {
+198-          activity_session: serialize_activity_session(activity_session),
+199-          activity: serialize_activity(
+200-            activity_session.activity,
+201-            activity_session: activity_session,
+202-            include_payload: true
+203-          )
+204-        }
+205-      end
+206-
+207:      def finish
+208-        user = current_api_user!
+209-        return unless user
+210-
+211-        activity_session = user.activity_sessions.find(params[:id])
+212-        was_already_finished = activity_session.finished?
+213-
+214-        activity_session.update!(
+215-          elapsed_seconds: safe_elapsed_seconds,
+216-          finished: true,
+217-          status: "finished"
+218-        )
+219-
+220-        record_new_furniture_unlocks_for(activity_session) unless was_already_finished
+221-
+222-        render json: {
+223-          activity_session: serialize_activity_session(activity_session),
+224-          activity: serialize_activity(
+225-            activity_session.activity,
+226-            activity_session: activity_session,
+227-            include_payload: true
+228-          )
+229-        }
+230-      end
+231-
+232-      private
+233-
+234-      def activity_session_params
+235-        params
+236-          .require(:activity_session)
+237-          .permit(:mood_id, :location_id, :duration_id)
+238-      end
+239-
+240-      def matching_activities_for(user)
+241-        interest_ids = user.interest_ids
+242-
+243-        return Activity.none if interest_ids.empty?
+244-
+245-        Activity.where(
+246-          active: true,
+247-          interest_id: interest_ids,
+248-          mood_id: activity_session_params[:mood_id],
+249-          duration_id: activity_session_params[:duration_id],
+250-          location_id: allowed_location_ids(
+251-            activity_session_params[:location_id]
+252-          )
+253-        )
+254-      end
+255-
+256-      def activity_recommendations_for(user, reference_activity)
+257-        interest_ids = user.interest_ids
+258-
+259-        return Activity.none if interest_ids.empty?
+260-
+261-        Activity
+262-          .where(
+263-            active: true,
+264-            interest_id: interest_ids,
+265-            mood: reference_activity.mood,
+266-            duration: reference_activity.duration,
+267-            location_id: allowed_location_ids(
+268-              reference_activity.location_id
+269-            )
+270-          )
+271-          .includes(:interest, :duration, :location, :mood)
+272-          .group_by(&:interest_id)
+273-          .values
+274-          .map(&:sample)
+275-          .compact
+276-          .sample(3)
+277-      end
+278-
+279-      def activities_in_saved_order(activity_ids)
+280-        ids = activity_ids.map(&:to_i)
+281-
+282-        activities_by_id = Activity
+283-                           .includes(
+284-                             :interest,
+285-                             :duration,
+286-                             :location,
+287-                             :mood
+288-                           )
+289-                           .where(id: ids)
+290-                           .index_by(&:id)
+291-
+292-        ids.filter_map { |id| activities_by_id[id] }
+293-      end
+294-
+295-      def allowed_location_ids(selected_location_id)
+296-        ids = [selected_location_id]
+297-
+298-        anywhere = Location.find_by(name: "N'importe où")
+299-        ids << anywhere.id if anywhere.present?
+300-
+301-        ids
+302-      end
+303-
+304-      def safe_elapsed_seconds
+305-        elapsed_seconds = params[:elapsed_seconds].to_i
+306-
+307-        elapsed_seconds.negative? ? 0 : elapsed_seconds
+308-      end
+309-
+310-      def serialize_activity_session(activity_session)
+311-        {
+312-          id: activity_session.id,
+313-          status: activity_session.status,
+314-          finished: activity_session.finished,
+315-          elapsed_seconds: activity_session.elapsed_seconds,
+316-          activity_id: activity_session.activity_id,
+317-          timer_started_at: activity_session.timer_started_at,
+318-          language: activity_session.language
+319-        }
+320-      end
+321-
+322-      def serialize_activity_session_summary(activity_session)
+323-        {
+324-          id: activity_session.id,
+325-          status: activity_session.status,
+326-          finished: activity_session.finished,
+327-          elapsed_seconds: activity_session.elapsed_seconds,
+
+===== WEB ROOM CONTROLLERS =====
+class RoomsController < ApplicationController
+  include TopbarData
+
+  before_action :authenticate_user!
+  before_action :set_topbar_data, only: [:show]
+
+  def index
+    @rooms = Room
+      .includes(:user, :room_likes, room_furnitures: :furniture)
+      .left_joins(:room_likes)
+      .group("rooms.id")
+      .order("COUNT(room_likes.id) DESC")
+  end
+  def show
+    @room = current_user.room || current_user.create_room!(width: Room::GRID_WIDTH, height: Room::GRID_HEIGHT)
+    @room.ensure_default_size!
+
+    @available_furnitures = Furniture
+                            .joins(:interest)
+                            .select do |furniture|
+                              user_xp = XpCalculator.total_for_interest(
+                                current_user,
+                                furniture.interest
+                              )
+
+                              user_xp >= furniture.required_xp
+                            end
+
+    @room_data = {
+      id: @room.id,
+      width: @room.width,
+      height: @room.height,
+      furnitures: @room.room_furnitures.includes(:furniture).map do |item|
+        {
+          id: item.id,
+          furniture_id: item.furniture_id,
+          name: item.furniture.name,
+          image_url: ActionController::Base.helpers.asset_path(item.furniture.image_url),
+          width: item.furniture.width,
+          height: item.furniture.height,
+          x: item.x,
+          y: item.y,
+          z: item.z,
+          rotation: item.rotation
+        }
+      end
+    }
+  end
+end
+class RoomFurnituresController < ApplicationController
+  before_action :authenticate_user!
+
+  def update
+    item = current_user.room.room_furnitures.find(params[:id])
+
+    new_x = room_furniture_params[:x].to_i
+    new_y = room_furniture_params[:y].to_i
+
+    if can_place?(item, new_x, new_y)
+      item.update!(room_furniture_params)
+      render json: item
+    else
+      render json: { error: "Position invalide" }, status: :unprocessable_entity
+    end
+  end
+
+  def create
+    furniture = Furniture.find(params[:room_furniture][:furniture_id])
+    position = first_free_position(current_user.room, furniture)
+
+    unless position
+      respond_to do |format|
+        format.turbo_stream { head :unprocessable_entity }
+        format.json { render json: { error: "Aucune place disponible" }, status: :unprocessable_entity }
+        format.html { redirect_to user_path, alert: "Aucune place disponible" }
+      end
+
+      return
+    end
+
+    item = current_user.room.room_furnitures.create!(
+      furniture: furniture,
+      x: position[:x],
+      y: position[:y],
+      z: params[:room_furniture][:z],
+      rotation: params[:room_furniture][:rotation]
+    )
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "profile-room",
+          partial: "users/room",
+          locals: {
+            room_data: room_data(current_user.room),
+            editable: true
+          }
+        )
+      end
+
+      format.json { render json: room_furniture_json(item) }
+      format.html { redirect_to user_path }
+    end
+  end
+
+  def destroy
+    item = current_user
+      .room
+      .room_furnitures
+      .find(params[:id])
+
+    item.destroy!
+
+    head :ok
+  end
+
+  private
+
+  def room_furniture_params
+    params.require(:room_furniture).permit(:x, :y, :z, :rotation)
+  end
+
+  def can_place?(item, new_x, new_y)
+    return false if new_x < 0 || new_y < 0
+    return false if new_x + item.furniture.width > item.room.width
+    return false if new_y + item.furniture.height > item.room.height
+
+    item.room.room_furnitures.where.not(id: item.id).includes(:furniture).none? do |other|
+      new_x < other.x + other.furniture.width &&
+        new_x + item.furniture.width > other.x &&
+        new_y < other.y + other.furniture.height &&
+        new_y + item.furniture.height > other.y
+    end
+  end
+
+  def room_data(room)
+    {
+      id: room.id,
+      width: room.width,
+      height: room.height,
+      furnitures: room.room_furnitures.includes(:furniture).map do |item|
+        room_furniture_json(item)
+      end
+    }
+  end
+
+  def room_furniture_json(item)
+    {
+      id: item.id,
+      furniture_id: item.furniture_id,
+      name: item.furniture.name,
+      image_url: helpers.asset_path(item.furniture.image_url),
+      width: item.furniture.width,
+      height: item.furniture.height,
+      x: item.x,
+      y: item.y,
+      z: item.z,
+      rotation: item.rotation
+    }
+  end
+
+  def first_free_position(room, furniture)
+    (0..(room.height - furniture.height)).each do |y|
+      (0..(room.width - furniture.width)).each do |x|
+        return { x: x, y: y } if free_position?(room, furniture, x, y)
+      end
+    end
+
+    nil
+  end
+
+  def free_position?(room, furniture, x, y)
+    room.room_furnitures.includes(:furniture).none? do |item|
+      x < item.x + item.furniture.width &&
+        x + furniture.width > item.x &&
+        y < item.y + item.furniture.height &&
+        y + furniture.height > item.y
+    end
+  end
+end
+
+===== ROOM VIEWS =====
+app/views/users/_room.html.erb
+<div
+  id="profile-room"
+  class="profile-room"
+  data-controller="room"
+  data-room-room-value="<%= room_data.to_json %>"
+  data-room-editable-value="<%= editable %>"
+>
+  <%= image_tag "rooms/empty_room.png",
+      class: "room-background" %>
+</div>
+app/views/rooms/index.html.erb
+<div class="phone-page social-rooms-page">
+  <header class="profile-header-bar profile-title-topbar social-rooms-title-topbar">
+    <%= link_to root_path, class: "profile-back-link", aria: { label: "Retour" } do %>
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Retour</span>
+    <% end %>
+
+    <div class="profile-page-heading">
+      <h1>Rooms</h1>
+      <p>Galerie sociale</p>
+    </div>
+
+    <div class="profile-header-balancer" aria-hidden="true"></div>
+  </header>
+
+  <main class="social-rooms-list">
+    <% @rooms.each_with_index do |room, index| %>
+      <% liked = current_user.room_likes.exists?(room: room) %>
+
+      <section class="social-room-card">
+        <div class="social-room-card-header">
+          <div class="social-room-rank">
+            <span>#<%= index + 1 %></span>
+          </div>
+
+          <div class="social-room-meta">
+            <p class="social-room-owner">
+              <%= room.user.first_name %>
+            </p>
+
+            <h2 class="social-room-title">
+              Room de <%= room.user.first_name %>
+            </h2>
+          </div>
+
+          <div class="social-room-likes">
+            <i class="fa-solid fa-heart"></i>
+            <span><%= room.room_likes.size %></span>
+          </div>
+        </div>
+
+        <div class="social-room-preview">
+          <%= render "users/room",
+              room_data: {
+                id: room.id,
+                width: room.width,
+                height: room.height,
+                furnitures: room.room_furnitures.includes(:furniture).map do |item|
+                  {
+                    id: item.id,
+                    furniture_id: item.furniture_id,
+                    name: item.furniture.name,
+                    image_url: asset_path(item.furniture.image_url),
+                    width: item.furniture.width,
+                    height: item.furniture.height,
+                    x: item.x,
+                    y: item.y,
+                    z: item.z,
+                    rotation: item.rotation
+                  }
+                end
+              },
+              editable: false %>
+        </div>
+
+        <% if liked %>
+          <%= button_to room_like_path(room),
+              method: :delete,
+              class: "social-like-button liked" do %>
+            <i class="fa-solid fa-heart"></i>
+            <span>Aimée</span>
+          <% end %>
+        <% else %>
+          <%= button_to room_like_path(room),
+              method: :post,
+              class: "social-like-button" do %>
+            <i class="fa-regular fa-heart"></i>
+            <span>J’aime</span>
+          <% end %>
+        <% end %>
+      </section>
+    <% end %>
+  </main>
+</div>
+app/views/rooms/show.html.erb
+<div class="phone-page room-editor-page">
+  <header class="profile-header-bar profile-title-topbar room-editor-title-topbar">
+    <%= link_to user_path, class: "profile-back-link", aria: { label: "Retour au profil" } do %>
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Retour</span>
+    <% end %>
+
+    <div class="profile-page-heading">
+      <h1>Room</h1>
+      <p>Ton espace personnel</p>
+    </div>
+
+    <div class="profile-header-balancer" aria-hidden="true"></div>
+  </header>
+
+  <main class="room-editor-content">
+    <section class="room-editor-intro-card">
+      <div>
+        <p class="room-editor-kicker">
+          Espace personnel
+        </p>
+
+        <h2>
+          Organise ta pièce
+        </h2>
+      </div>
+
+      <button
+        class="room-editor-mini-help"
+        type="button"
+        aria-label="Aide"
+      >
+        <i class="fa-solid fa-hand-pointer"></i>
+      </button>
+    </section>
+
+    <section class="room-editor-room-shell">
+      <div class="room-wrapper">
+        <%= render "users/room",
+            room_data: @room_data,
+            editable: true %>
+      </div>
+    </section>
+
+    <p class="room-editor-hint">
+      Déplace tes meubles dans la pièce. Glisse un meuble hors de la room pour le retirer.
+    </p>
+  </main>
+
+  <div class="room-editor-inventory" data-controller="inventory">
+    <button
+      class="room-editor-inventory-toggle"
+      type="button"
+      data-action="click->inventory#toggle"
+      aria-label="Ouvrir l'inventaire"
+    >
+      <span class="room-editor-inventory-toggle-icon">
+        <i class="fa-solid fa-box-open"></i>
+      </span>
+
+      <span class="room-editor-inventory-toggle-label">
+        Inventaire
+      </span>
+
+      <span class="room-editor-inventory-toggle-chevron">
+        <i class="fa-solid fa-chevron-up"></i>
+      </span>
+    </button>
+
+    <div class="room-editor-inventory-panel" data-inventory-target="panel">
+      <div class="room-editor-panel-handle"></div>
+
+      <div class="room-editor-panel-header">
+        <div>
+          <p class="room-editor-kicker">
+            Meubles débloqués
+          </p>
+
+          <h2 class="room-editor-panel-title">
+            Inventaire
+          </h2>
+        </div>
+      </div>
+
+      <% if @available_furnitures.any? %>
+        <div class="room-editor-inventory-grid">
+          <% @available_furnitures.each do |furniture| %>
+            <div class="room-editor-inventory-item">
+              <div class="room-editor-inventory-image-frame">
+                <%= image_tag furniture.image_url,
+                    class: "room-editor-inventory-image" %>
+              </div>
+
+              <p class="room-editor-inventory-name">
+                <%= furniture.name %>
+              </p>
+
+              <%= button_to "Placer",
+                  room_furnitures_path,
+                  method: :post,
+                  data: { action: "click->inventory#close" },
+                  params: {
+                    room_furniture: {
+                      furniture_id: furniture.id,
+                      x: 0,
+                      y: 0,
+                      z: 0,
+                      rotation: 0
+                    }
+                  },
+                  class: "room-editor-place-btn" %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="room-editor-empty">
+          Tu n’as pas encore débloqué de meuble.
+        </p>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+===== ROOM JAVASCRIPT =====
+app/javascript/controllers/room_controller.js
+import { Controller } from "@hotwired/stimulus"
+
+export default class extends Controller {
+  static values = {
+    room: Object,
+    editable: Boolean
+  }
+
+  connect() {
+    this.room = this.roomValue
+
+    console.log("[room] connect", {
+      roomValue: this.roomValue,
+      editableValue: this.editableValue,
+      furnitureCount: this.roomValue.furnitures.length
+    })
+
+    this.tileWidth = 85
+    this.tileHeight = 45
+
+    this.offsetX = 460
+    this.offsetY = 260
+    this.tileHeight += 3
+    this.furnitureScale = 1.35
+    this.furnitureOffsetX = 25
+    this.furnitureOffsetY = 115
+
+    this.dragMove = this.dragMove.bind(this)
+    this.dragEnd = this.dragEnd.bind(this)
+
+    this.renderRoom()
+  }
+
+  gridToIso(x, y) {
+    return {
+      x: this.offsetX + (x - y) * this.tileWidth / 2,
+      y: this.offsetY + (x + y) * this.tileHeight / 2
+    }
+  }
+
+  isoToGrid(screenX, screenY) {
+    const x = (
+      (screenY - this.offsetY) / (this.tileHeight / 2) +
+      (screenX - this.offsetX) / (this.tileWidth / 2)
+    ) / 2
+
+    const y = (
+      (screenY - this.offsetY) / (this.tileHeight / 2) -
+      (screenX - this.offsetX) / (this.tileWidth / 2)
+    ) / 2
+
+    return {
+      x: Math.floor(x),
+      y: Math.floor(y)
+    }
+  }
+
+  renderRoom() {
+    this.element.querySelectorAll(".tile, .furniture").forEach(element => {
+      element.remove()
+    })
+
+    // for (let y = 0; y < this.room.height; y++) {
+    //   for (let x = 0; x < this.room.width; x++) {
+    //     const pos = this.gridToIso(x, y)
+
+    //     const tile = document.createElement("div")
+    //     tile.className = "tile"
+
+    //     tile.style.position = "absolute"
+    //     tile.style.left = `${pos.x - this.tileWidth / 2}px`
+    //     tile.style.top = `${pos.y - this.tileHeight / 2}px`
+
+    //     tile.style.width = `${this.tileWidth}px`
+    //     tile.style.height = `${this.tileHeight}px`
+
+    //     tile.style.border = "1px solid rgba(255, 0, 0, 0.4)"
+    //     tile.style.background = "rgba(255, 0, 0, 0.10)"
+
+    //     tile.style.clipPath = "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)"
+    //     tile.style.pointerEvents = "none"
+
+    //     this.element.appendChild(tile)
+    //   }
+    // }
+
+    this.room.furnitures.forEach(item => {
+      this.renderFurniture(item)
+    })
+  }
+
+  renderFurniture(item) {
+    const pos = this.gridToIso(item.x, item.y)
+
+    const footprintWidth = item.width * this.tileWidth
+    const footprintHeight = item.height * this.tileHeight
+    const visualWidth = this.tileWidth * 2
+    const visualHeight = this.tileHeight * 4
+
+    console.log("[room] renderFurniture:start", {
+      item,
+      pos,
+      footprintWidth,
+      footprintHeight,
+      visualWidth,
+      visualHeight,
+      furnitureScale: this.furnitureScale,
+      furnitureOffsetX: this.furnitureOffsetX,
+      furnitureOffsetY: this.furnitureOffsetY
+    })
+
+    // DEBUG : cases réellement occupées par le meuble
+    // for (let dy = 0; dy < item.height; dy++) {
+    //   for (let dx = 0; dx < item.width; dx++) {
+    //     const footprintPos = this.gridToIso(item.x + dx, item.y + dy)
+
+    //     const footprintTile = document.createElement("div")
+    //     footprintTile.className = "furniture-footprint"
+
+    //     footprintTile.style.position = "absolute"
+    //     footprintTile.style.left = `${footprintPos.x - this.tileWidth / 2}px`
+    //     footprintTile.style.top = `${footprintPos.y - this.tileHeight / 2}px`
+    //     footprintTile.style.width = `${this.tileWidth}px`
+    //     footprintTile.style.height = `${this.tileHeight}px`
+    //     footprintTile.style.zIndex = item.x + item.y - 1
+
+    //     this.element.appendChild(footprintTile)
+    //   }
+    // }
+
+    const img = document.createElement("img")
+
+    img.src = item.image_url
+    img.className = "furniture"
+    img.addEventListener("load", () => {
+      console.log("[room] furniture image loaded", {
+        id: item.id,
+        src: img.src,
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight
+      })
+    })
+    img.addEventListener("error", () => {
+      console.warn("[room] furniture image failed to load", {
+        id: item.id,
+        src: img.src
+      })
+    })
+    img.dataset.id = item.id
+    img.dataset.x = item.x
+    img.dataset.y = item.y
+
+    img.style.position = "absolute"
+    img.style.width = `${visualWidth}px`
+    img.style.height = "auto"
+
+    img.style.left = `${pos.x - visualWidth / 2 + this.furnitureOffsetX}px`
+    img.style.top = `${pos.y - visualHeight + this.furnitureOffsetY}px`
+    img.style.zIndex = item.x + item.y
+    img.style.transform = `scale(${this.furnitureScale})`
+    img.style.transformOrigin = "bottom center"
+
+    console.log("[room] renderFurniture:styles", {
+      id: item.id,
+      src: img.src,
+      width: img.style.width,
+      height: img.style.height,
+      left: img.style.left,
+      top: img.style.top,
+      transform: img.style.transform,
+      transformOrigin: img.style.transformOrigin
+    })
+
+    img.addEventListener("pointerdown", (event) => {
+      this.startDragging(event, item, img)
+    })
+
+    img.addEventListener("contextmenu", (event) => {
+      this.removeFurniture(event, item, img)
+    })
+
+    this.element.appendChild(img)
+    console.log("[room] renderFurniture:appended", {
+      id: item.id,
+      isConnected: img.isConnected,
+      childCount: this.element.children.length
+    })
+  }
+
+  startDragging(event, item, element) {
+    console.log("drag start", item)
+    if (!this.editableValue) return
+
+    event.preventDefault()
+
+    this.draggedItem = item
+    this.draggedElement = element
+
+    document.addEventListener("pointermove", this.dragMove)
+    document.addEventListener("pointerup", this.dragEnd)
+  }
+
+  dragMove(event) {
+    if (!this.draggedItem || !this.draggedElement) return
+
+    const rect = this.element.getBoundingClientRect()
+
+    const scaleX = rect.width / this.element.offsetWidth
+    const scaleY = rect.height / this.element.offsetHeight
+
+    const screenX = (event.clientX - rect.left) / scaleX
+    const screenY = (event.clientY - rect.top) / scaleY
+
+    const grid = this.isoToGrid(screenX, screenY)
+
+    this.draggedOutsideGrid = this.isOutsideGrid(this.draggedItem, grid.x, grid.y)
+
+    if (this.draggedOutsideGrid) {
+      this.draggedElement.classList.remove("invalid-placement")
+      this.draggedElement.classList.add("delete-placement")
+      return
+    }
+
+    if (!this.canPlace(this.draggedItem, grid.x, grid.y)) {
+      this.draggedElement.classList.remove("delete-placement")
+      this.draggedElement.classList.add("invalid-placement")
+      return
+    }
+
+    this.draggedElement.classList.remove("delete-placement")
+    this.draggedElement.classList.remove("invalid-placement")
+
+    const pos = this.gridToIso(grid.x, grid.y)
+    const visualWidth = this.tileWidth * 2
+    const visualHeight = this.tileHeight * 4
+
+    this.draggedItem.x = grid.x
+    this.draggedItem.y = grid.y
+
+    this.draggedElement.style.left = `${pos.x - visualWidth / 2 + this.furnitureOffsetX}px`
+    this.draggedElement.style.top = `${pos.y - visualHeight + this.furnitureOffsetY}px`
+    this.draggedElement.style.zIndex = grid.x + grid.y
+  }
+
+  dragEnd() {
+    if (this.draggedOutsideGrid) {
+      this.deleteFurniture(this.draggedItem, this.draggedElement)
+      this.cleanupDrag()
+      return
+    }
+    if (!this.draggedItem) return
+
+    this.saveFurniturePosition(this.draggedItem)
+
+    document.removeEventListener("pointermove", this.dragMove)
+    document.removeEventListener("pointerup", this.dragEnd)
+
+    this.draggedItem = null
+    this.draggedElement = null
+  }
+
+  cleanupDrag() {
+    document.removeEventListener("pointermove", this.dragMove)
+    document.removeEventListener("pointerup", this.dragEnd)
+
+    this.draggedItem = null
+    this.draggedElement = null
+    this.draggedOutsideGrid = false
+  }
+
+  saveFurniturePosition(item) {
+    fetch(`/room_furnitures/${item.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": this.csrfToken()
+      },
+      body: JSON.stringify({
+        room_furniture: {
+          x: item.x,
+          y: item.y,
+          z: item.z || 0,
+          rotation: item.rotation || 0
+        }
+      })
+    })
+  }
+
+  csrfToken() {
+    const token =
+      document.querySelector("meta[name='csrf-token']")
+
+    return token ? token.content : ""
+  }
+
+  canPlace(item, newX, newY) {
+    if (newX < 0 || newY < 0) return false
+
+    if (newX + item.width > this.room.width)
+      return false
+
+    if (newY + item.height > this.room.height)
+      return false
+
+    return !this.room.furnitures.some(other => {
+      if (other.id === item.id) return false
+
+      return (
+        newX < other.x + other.width &&
+        newX + item.width > other.x &&
+        newY < other.y + other.height &&
+        newY + item.height > other.y
+      )
+    })
+  }
+
+  isOutsideGrid(item, x, y) {
+    return (
+      x < 0 ||
+      y < 0 ||
+      x + item.width > this.room.width ||
+      y + item.height > this.room.height
+    )
+  }
+
+  deleteFurniture(item, element) {
+    fetch(`/room_furnitures/${item.id}`, {
+      method: "DELETE",
+      headers: {
+        "X-CSRF-Token": this.csrfToken()
+      }
+    }).then(response => {
+      if (response.ok) {
+        element.remove()
+        this.room.furnitures = this.room.furnitures.filter(f => f.id !== item.id)
+      }
+    })
+  }
+}
+
+===== FURNITURE ASSETS =====
+app/assets/images/furnitures/Bed.png
+app/assets/images/furnitures/Biblio.png
+app/assets/images/furnitures/books.png
+app/assets/images/furnitures/Bureau.png
+app/assets/images/furnitures/Camping van.png
+app/assets/images/furnitures/Canap.png
+app/assets/images/furnitures/chair.png
+app/assets/images/furnitures/Chaisebureau.png
+app/assets/images/furnitures/Coussin.png
+app/assets/images/furnitures/Dino.png
+app/assets/images/furnitures/Escalade.png
+app/assets/images/furnitures/Fondphoto.png
+app/assets/images/furnitures/Guitare.png
+app/assets/images/furnitures/jasky.gif
+app/assets/images/furnitures/Joconde.png
+app/assets/images/furnitures/Meublvynil.png
+app/assets/images/furnitures/Photo.png
+app/assets/images/furnitures/Piano.png
+app/assets/images/furnitures/Polaroids.png
+app/assets/images/furnitures/pool.png
+app/assets/images/furnitures/Pots.png
+app/assets/images/furnitures/punching_ball.png
+app/assets/images/furnitures/Sacados.png
+app/assets/images/furnitures/sport_mat.png
+app/assets/images/furnitures/Tablo.png
+app/assets/images/furnitures/Travelshelf.png
+app/assets/images/furnitures/Wagonrails.gif
+app/assets/images/mascot/room-preview.png
+app/assets/images/rooms/empty_room.png
+app/assets/images/rooms/empty_roomold.png
+
+===== FURNITURE SEEDS =====
+1-  require "csv"
+2-
+3-  puts "🧹 Cleaning database..."
+4-
+5-  ActivitySession.destroy_all
+6-  UserInterest.destroy_all
+7-  Activity.destroy_all
+8-  LanguageItem.destroy_all
+9-  CultureQuestion.destroy_all if defined?(CultureQuestion)
+10:  RoomFurniture.destroy_all
+11:  Furniture.destroy_all
+12-  User.destroy_all
+13-  Interest.destroy_all
+14-  Mood.destroy_all
+15-  Location.destroy_all
+16-  Duration.destroy_all
+17-
+18-  puts "😊 Creating moods..."
+19-
+20-  en_forme = Mood.create!(name: "En forme")
+21-  mitige   = Mood.create!(name: "Mitigé")
+22-  a_plat   = Mood.create!(name: "À plat")
+23-
+24-  puts "⏱ Creating durations..."
+25-
+26-  five_minutes    = Duration.create!(value: 5)
+27-  fifteen_minutes = Duration.create!(value: 15)
+28-  thirty_minutes  = Duration.create!(value: 30)
+29-
+30-  puts "📍 Creating locations..."
+31-
+32-  home     = Location.create!(name: "Maison")
+33-  outside  = Location.create!(name: "Extérieur")
+34-  office   = Location.create!(name: "Bureau")
+35-  anywhere = Location.create!(name: "N'importe où")
+36-
+37-  puts "🎯 Creating interests..."
+38-
+39-  sport          = Interest.create!(name: "Sport")
+40-  wellbeing      = Interest.create!(name: "Bien-être")
+41-  photo_interest = Interest.create!(name: "Photo")
+42-  drawing        = Interest.create!(name: "Dessin")
+43-  languages      = Interest.create!(name: "Langues")
+44-  culture        = Interest.create!(name: "Culture")
+45-  productivite   = Interest.create!(name: "Productivité")
+46-  code           = Interest.create!(name: "Code")
+47-  musique        = Interest.create!(name: "Musique")
+48-
+49- puts "🌍 Creating language activities..."
+50-
+51-  Activity.create!(
+52-    name: "Apprendre quelques mots",
+53-    content: "Découvre des mots simples dans une langue choisie au hasard. Lis-les, répète-les, puis essaie de retenir leur traduction.",
+54-    mood: a_plat,
+55-    location: anywhere,
+56-    duration: five_minutes,
+57-    interest: languages,
+58-    activity_type: "word_learning",
+59-    active: true
+60-  )
+61-
+62-  Activity.create!(
+63-    name: "Apprendre quelques mots",
+64-    content: "Prends un moment calme pour apprendre plusieurs mots dans une langue choisie au hasard.",
+65-    mood: a_plat,
+66-    location: anywhere,
+67-    duration: fifteen_minutes,
+68-    interest: languages,
+69-    activity_type: "word_learning",
+70-    active: true
+71-  )
+72-
+73-  Activity.create!(
+74-    name: "Apprendre quelques mots",
+75-    content: "Découvre quelques mots simples dans une langue choisie au hasard.",
+76-    mood: mitige,
+77-    location: anywhere,
+78-    duration: five_minutes,
+79-    interest: languages,
+80-    activity_type: "word_learning",
+81-    active: true
+82-  )
+83-
+84-  Activity.create!(
+85-    name: "Compléter des phrases",
+86-    content: "Complète des phrases simples avec le bon mot dans une langue choisie au hasard.",
+87-    mood: mitige,
+88-    location: anywhere,
+89-    duration: fifteen_minutes,
+90-    interest: languages,
+91-    activity_type: "sentence_completion",
+92-    active: true
+93-  )
+94-
+95-  Activity.create!(
+96-    name: "Compléter des phrases",
+97-    content: "Prends le temps de compléter plusieurs phrases simples avec les bons mots.",
+98-    mood: mitige,
+99-    location: anywhere,
+100-    duration: thirty_minutes,
+101-    interest: languages,
+102-    activity_type: "sentence_completion",
+103-    active: true
+104-  )
+105-
+106-  Activity.create!(
+107-    name: "Dialogue guidé",
+108-    content: "Pratique une courte conversation dans une langue choisie au hasard.",
+109-    mood: en_forme,
+110-    location: anywhere,
+111-    duration: five_minutes,
+112-    interest: languages,
+113-    activity_type: "llm_chat",
+114-    active: false
+115-  )
+116-
+117-  Activity.create!(
+118-    name: "Dialogue guidé",
+119-    content: "Pratique une conversation simple avec un assistant dans une langue choisie au hasard.",
+120-    mood: en_forme,
+121-    location: anywhere,
+122-    duration: fifteen_minutes,
+123-    interest: languages,
+124-    activity_type: "llm_chat",
+125-    active: false
+126-  )
+127-
+128-  Activity.create!(
+129-    name: "Dialogue guidé",
+130-    content: "Lance une conversation plus longue pour pratiquer une langue avec un assistant.",
+131-    mood: en_forme,
+132-    location: anywhere,
+133-    duration: thirty_minutes,
+134-    interest: languages,
+135-    activity_type: "llm_chat",
+136-    active: false
+137-  )
+138-
+139-  puts "🧠 Creating culture quiz activities..."
+140-
+141-  [
+142-    {
+143-      mood: a_plat,
+144-      duration: five_minutes,
+145-      content: "Réponds à quelques questions simples pour réveiller doucement ta curiosité."
+146-    },
+147-    {
+148-      mood: a_plat,
+149-      duration: fifteen_minutes,
+150-      content: "Installe-toi tranquillement et teste ta culture générale avec des questions accessibles."
+151-    },
+152-    {
+153-      mood: a_plat,
+154-      duration: thirty_minutes,
+155-      content: "Prends ton temps pour explorer plusieurs questions de culture générale sans pression."
+156-    },
+157-    {
+158-      mood: mitige,
+159-      duration: five_minutes,
+160-      content: "Challenge rapide : quelques questions pour stimuler ton esprit sans te fatiguer."
+161-    },
+162-    {
+163-      mood: mitige,
+164-      duration: fifteen_minutes,
+165-      content: "Teste tes connaissances avec un quiz équilibré, ni trop facile ni trop intense."
+166-    },
+167-    {
+168-      mood: mitige,
+169-      duration: thirty_minutes,
+170-      content: "Plonge dans un quiz plus complet pour entraîner ta mémoire et ta logique."
+171-    },
+172-    {
+173-      mood: en_forme,
+174-      duration: five_minutes,
+175-      content: "Défi express : affronte quelques questions plus exigeantes."
+176-    },
+177-    {
+178-      mood: en_forme,
+179-      duration: fifteen_minutes,
+180-      content: "Teste-toi avec un quiz plus relevé et garde le rythme."
+181-    },
+182-    {
+183-      mood: en_forme,
+184-      duration: thirty_minutes,
+185-      content: "Lance-toi dans une vraie session de culture générale avec des questions plus ambitieuses."
+186-    }
+187-  ].each do |activity_data|
+188-    Activity.create!(
+189-      name: "Quiz culture générale",
+190-      content: activity_data[:content],
+191-      mood: activity_data[:mood],
+192-      location: anywhere,
+193-      duration: activity_data[:duration],
+194-      interest: culture,
+195-      activity_type: "culture_quiz",
+196-      active: true
+197-    )
+198-  end
+199-
+200-  puts "💻 Creating code quiz activities..."
+201-
+202-  [
+203-    { mood: en_forme, duration: five_minutes },
+204-    { mood: en_forme, duration: fifteen_minutes },
+205-    { mood: en_forme, duration: thirty_minutes },
+206-    { mood: mitige,   duration: five_minutes },
+207-    { mood: mitige,   duration: fifteen_minutes },
+208-    { mood: mitige,   duration: thirty_minutes },
+209-    { mood: a_plat,   duration: five_minutes },
+210-    { mood: a_plat,   duration: fifteen_minutes },
+211-    { mood: a_plat,   duration: thirty_minutes }
+212-  ].each do |data|
+213-    Activity.create!(
+214-      name: "Quiz code",
+215-      content: "Teste tes connaissances en développement web et IA.",
+216-      mood: data[:mood],
+217-      location: anywhere,
+218-      duration: data[:duration],
+219-      interest: code,
+220-      activity_type: "code_quiz",
+221-      active: true
+222-    )
+223-  end
+224-
+225-  puts "🎹 Creating melody activities..."
+226-  [
+227-    { mood: en_forme, duration: five_minutes },
+228-    { mood: mitige,   duration: five_minutes },
+229-    { mood: a_plat,   duration: five_minutes }
+230-  ].each do |data|
+231-    Activity.create!(
+--
+358-
+359-  puts "#{User.count} users created"
+360-  puts "#{Interest.count} interests created"
+361-  puts "#{Location.count} locations created"
+362-  puts "#{Duration.count} durations created"
+363-  puts "#{Activity.count} activities created"
+364-  puts "#{LanguageItem.count} language items created"
+365-  puts "#{CultureQuestion.count} culture questions created" if defined?(CultureQuestion)
+366-
+367-  puts "#{Activity.where(interest: sport, active: true).count} active sport activities created"
+368-  puts "#{Activity.where(interest: languages, active: true).count} active language activities created"
+369-  puts "#{Activity.where(interest: culture, active: true).count} active culture activities created"
+370-
+371-  puts "#{Activity.where(activity_type: "word_learning", active: true).count} word learning activities created"
+372-  puts "#{Activity.where(activity_type: "sentence_completion", active: true).count} sentence completion activities created"
+373-  puts "#{Activity.where(activity_type: "llm_chat", active: false).count} inactive LLM chat activities created"
+374-  puts "#{Activity.where(activity_type: "culture_quiz", active: true).count} culture quiz activities created"
+375-
+376-  puts "Creating furnitures..."
+377-##################CULTURE###################
+378:  Furniture.create!(
+379-    name: "Livres",
+380-    image_url: "furnitures/books.png",
+381-    required_xp: 25,
+382-    width: 1,
+383-    height: 1,
+384-    interest: culture
+385-  )
+386:  Furniture.create!(
+387-    name: "Bibliothéque",
+388-    image_url: "furnitures/Biblio.png",
+389-    interest: culture ,
+390-    required_xp: 150,
+391-    width: 2,
+392-    height: 1
+393-  )
+394:    Furniture.create!(
+395-    name: "Fossile",
+396-    image_url: "furnitures/Dino.png",
+397-    required_xp: 500,
+398-    width: 2,
+399-    height: 1,
+400-    interest: culture
+401-  )
+402-##################SPORT###################
+403:  Furniture.create!(
+404-    name: "Tapis de sport",
+405-    image_url: "furnitures/sport_mat.png",
+406-    width: 2,
+407-    height: 1,
+408-    interest: sport,
+409-    required_xp: 25
+410-  )
+411:  Furniture.create!(
+412-    name: "Punching Ball",
+413-    image_url: "furnitures/punching_ball.png",
+414-    width: 1,
+415-    height: 1,
+416-    interest: sport,
+417-    required_xp: 150
+418-  )
+419:  Furniture.create!(
+420-    name: "mur d'escalade",
+421-    image_url: "furnitures/Escalade.png",
+422-    interest: sport,
+423-    required_xp: 500,
+424-    width: 2,
+425-    height: 1
+426-  )
+427-##################PRODUCTIVITE###################
+428:  Furniture.create!(
+429-    name: "Chaise de salon",
+430-    image_url: "furnitures/chair.png",
+431-    interest: productivite,
+432-    required_xp: 25,
+433-    width: 1,
+434-    height: 1
+435-  )
+436:  Furniture.create!(
+437-    name: "Canapé",
+438-    image_url: "furnitures/Canap.png",
+439-    interest: productivite,
+440-    required_xp: 150,
+441-    width: 1,
+442-    height: 2
+443-  )
+444:  Furniture.create!(
+445-    name: "Lit",
+446-    image_url: "furnitures/Bed.png",
+447-    interest: productivite,
+448-    required_xp: 500,
+449-    width: 2,
+450-    height: 2
+451-  )
+452-##################BIENETRE###################
+453:  Furniture.create!(
+454-    name: "Coussin",
+455-    image_url: "furnitures/Coussin.png",
+456-    width: 1,
+457-    height: 1,
+458-    interest: wellbeing,
+459-    required_xp: 20
+460-  )
+461:  Furniture.create!(
+462-    name: "Pool",
+463-    image_url: "furnitures/pool.png",
+464-    width: 1,
+465-    height: 1,
+466-    interest: wellbeing,
+467-    required_xp: 150
+468-  )
+469:  Furniture.create!(
+470-    name: "Jasky",
+471-    image_url: "furnitures/jasky.gif",
+472-    width: 1,
+473-    height: 1,
+474-    interest: wellbeing,
+475-    required_xp: 500
+476-  )
+477-##################LANGUE###################
+478:  Furniture.create!(
+479-    name: "Sac de voyage",
+480-    image_url: "furnitures/Sacados.png",
+481-    width: 1,
+482-    height: 1,
+483-    interest: languages,
+484-    required_xp: 25
+485-  )
+486:  Furniture.create!(
+487-    name: "etagere à souvenir",
+488-    image_url: "furnitures/Travelshelf.png",
+489-    width: 1,
+490-    height: 1,
+491-    interest: languages,
+492-    required_xp: 150
+493-  )
+494:  Furniture.create!(
+495-    name: "Van",
+496-    image_url: "furnitures/Camping van.png",
+497-    width: 2,
+498-    height: 2,
+499-    interest: languages,
+500-    required_xp: 500
+501-  )
+502-##################CODE###################
+503:  Furniture.create!(
+504-    name: "Chaise de bureau",
+505-    image_url: "furnitures/Chaisebureau.png",
+506-    width: 1,
+507-    height: 1,
+508-    interest: code,
+509-    required_xp: 20
+510-  )
+511:  Furniture.create!(
+512-    name: "Bureau",
+513-    image_url: "furnitures/Bureau.png",
+514-    width: 1,
+515-    height: 2,
+516-    interest: code,
+517-    required_xp: 150
+518-  )
+519:    Furniture.create!(
+520-    name: "Merci Wagon",
+521-    image_url: "furnitures/Wagonrails.gif",
+522-    width: 2,
+523-    height: 2,
+524-    interest: code,
+525-    required_xp: 500
+526-  )
+527-##################DESSIN###################
+528:  Furniture.create!(
+529-    name: "Pot de peinture",
+530-    image_url: "furnitures/Pots.png",
+531-    width: 1,
+532-    height: 1,
+533-    interest: drawing,
+534-    required_xp: 20
+535-  )
+536:  Furniture.create!(
+537-    name: "Toile",
+538-    image_url: "furnitures/Tablo.png",
+539-    width: 1,
+540-    height: 1,
+541-    interest: drawing,
+542-    required_xp: 150
+543-  )
+544:  Furniture.create!(
+545-    name: "Chef d'oeuvre",
+546-    image_url: "furnitures/Joconde.png",
+547-    width: 2,
+548-    height: 1,
+549-    interest: drawing,
+550-    required_xp: 500
+551-  )
+552-##################PHOTO###################
+553:  Furniture.create!(
+554-    name: "Polaroids",
+555-    image_url: "furnitures/Polaroids.png",
+556-    width: 1,
+557-    height: 1,
+558-    interest: photo_interest,
+559-    required_xp: 20
+560-  )
+561:  Furniture.create!(
+562-    name: "Appareil",
+563-    image_url: "furnitures/Photo.png",
+564-    width: 1,
+565-    height: 1,
+566-    interest: photo_interest,
+567-    required_xp: 150
+568-  )
+569:  Furniture.create!(
+570-    name: "Fond photo",
+571-    image_url: "furnitures/Fondphoto.png",
+572-    width: 2,
+573-    height: 1,
+574-    interest: photo_interest,
+575-    required_xp: 500
+576-  )
+577-##################MUSIQUE###################
+578:  Furniture.create!(
+579-    name: "guitare",
+580-    image_url: "furnitures/Guitare.png",
+581-    width: 1,
+582-    height: 1,
+583-    interest: musique,
+584-    required_xp: 20
+585-  )
+586:  Furniture.create!(
+587-    name: "Meuble vynil",
+588-    image_url: "furnitures/Meuble vanille.png",
+589-    width: 1,
+590-    height: 2,
+591-    interest: musique,
+592-    required_xp: 150
+593-  )
+594:  Furniture.create!(
+595-    name: "Piano",
+596-    image_url: "furnitures/Piano.png",
+597-    width: 2,
+598-    height: 1,
+599-    interest: musique,
+600-    required_xp: 500
+601-  )
+602-
+603:  puts "#{Furniture.count} furnitures created!"
+604-
+605:  max_required_xp_by_interest_id = Furniture
+606-    .group(:interest_id)
+607-    .maximum(:required_xp)
+608-
+609-  users.each do |user|
+610-    Interest.find_each do |interest|
+611-      UserInterest.find_or_create_by!(user: user, interest: interest)
+612-
+613-      max_required_xp = max_required_xp_by_interest_id[interest.id].to_i
+614-      unlock_xp = max_required_xp.positive? ? max_required_xp + 100 : 0
+615-
+616-      UserInterestProgress
+617-        .find_or_create_by!(user: user, interest: interest)
+618-        .update!(xp: unlock_xp)
+619-
+620-      next unless unlock_xp.positive?
+621-
+622-      current_session_xp = XpCalculator.total_for_interest(user, interest)
+623-      xp_to_seed = unlock_xp - current_session_xp
+624-      next unless xp_to_seed.positive?
+625-
+626-      activity = Activity.where(interest: interest, active: true).first ||
+627-                 Activity.where(interest: interest).first
+628-      activity ||= Activity.create!(
+629-        name: "Progression démo",
+630-        content: "Progression de démonstration pour débloquer les meubles.",
+631-        mood: mitige,
+632-        location: anywhere,
+633-        duration: five_minutes,
+634-        interest: interest,
+635-        activity_type: "standard",
+636-        active: false
+637-      )
+638-
+639-      ActivitySession.create!(
+640-        user: user,
+641-        activity: activity,
+642-        date: Date.current,
+643-        finished: true,
+644-        status: "finished",
+645-        elapsed_seconds: activity.duration.value.to_i * 60,
+646-        xp_earned: xp_to_seed,
+647-        xp_awarded_at: Time.current,
+648-        furniture_unlocks_seen_at: Time.current
+649-      )
+650-    end
+651-  end
+652-
+653-  puts "✅ Featured users updated with furniture unlock XP"
+
+===== API BASE CONTROLLER =====
+module Api
+  module V1
+    class BaseController < ApplicationController
+      skip_before_action :authenticate_user!
+      skip_forgery_protection
+
+      before_action :authenticate_api_user!
+
+      attr_reader :current_api_user
+
+      rescue_from ActiveRecord::RecordNotFound do
+        render json: {
+          error: "Ressource introuvable."
+        }, status: :not_found
+      end
+
+      private
+
+      def authenticate_api_user!
+        @current_api_user =
+          User.find_by_mobile_api_token(bearer_token)
+
+        return if @current_api_user.present?
+
+        render json: {
+          error: "Authentification requise."
+        }, status: :unauthorized
+      end
+
+      def current_api_user!
+        current_api_user
+      end
+
+      def bearer_token
+        scheme, token =
+          request.authorization.to_s.split(" ", 2)
+
+        return nil if scheme.blank?
+        return nil if token.blank?
+        return nil unless scheme.casecmp("Bearer").zero?
+
+        token
+      end
+
+      def serialize_api_user(user)
+        {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          avatar: user.avatar,
+          interest_ids: user.interest_ids,
+          onboarding_complete:
+            user.interests.exists? && user.avatar.present?
+        }
+      end
+    end
+  end
+end
+
+===== MOBILE API =====
+import {
+  ActivityProgressData,
+  ActivityProgressResponse,
+  ActivitySessionDetailsResponse,
+  ActivitySessionSummary,
+  CreateActivitySessionPayload,
+  CreateActivitySessionResponse,
+  CurrentUserResponse,
+  Duration,
+  FinishActivitySessionResponse,
+  InitialDataResponse,
+  Location,
+  LoginResponse,
+  Mood,
+  PauseActivitySessionResponse,
+  ResumeActivitySessionResponse,
+  SelectActivityResponse,
+  StartActivitySessionResponse,
+} from "../types/tinyAct";
+
+import { getAuthToken } from "./authStorage";
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+async function fetchJson<T>(
+  url: string,
+  options?: RequestInit
+): Promise<T> {
+  const token = await getAuthToken();
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...((options?.headers || {}) as Record<string, string>),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  const text = await response.text();
+
+  let data: unknown = null;
+
+  if (text.length > 0) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      const preview = text
+        .slice(0, 160)
+        .replace(/\s+/g, " ");
+
+      throw new Error(
+        `Rails n'a pas renvoyé du JSON. Status ${response.status}. URL appelée : ${url}. Début de réponse : ${preview}`
+      );
+    }
+  }
+
+  if (!response.ok) {
+    const errorMessage =
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : `Erreur API : ${response.status}`;
+
+    throw new Error(errorMessage);
+  }
+
+  return data as T;
+}
+
+export async function loginMobile(
+  email: string,
+  password: string
+): Promise<LoginResponse> {
+  return fetchJson<LoginResponse>(
+    `${API_URL}/api/v1/auth/login`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    }
+  );
+}
+
+export async function loadCurrentUser(): Promise<
+  CurrentUserResponse
+> {
+  return fetchJson<CurrentUserResponse>(
+    `${API_URL}/api/v1/auth/me`
+  );
+}
+
+export async function logoutMobile(): Promise<void> {
+  return fetchJson<void>(
+    `${API_URL}/api/v1/auth/logout`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+export async function loadInitialData(): Promise<
+  InitialDataResponse
+> {
+  const [moods, locations, durations] =
+    await Promise.all([
+      fetchJson<Mood[]>(`${API_URL}/api/v1/moods`),
+      fetchJson<Location[]>(
+        `${API_URL}/api/v1/locations`
+      ),
+      fetchJson<Duration[]>(
+        `${API_URL}/api/v1/durations`
+      ),
+    ]);
+
+  return {
+    moods,
+    locations,
+    durations,
+  };
+}
+
+export async function loadActivitySessions(): Promise<
+  ActivitySessionSummary[]
+> {
+  return fetchJson<ActivitySessionSummary[]>(
+    `${API_URL}/api/v1/activity_sessions`
+  );
+}
+
+export async function loadActivitySession(
+  activitySessionId: number
+): Promise<ActivitySessionDetailsResponse> {
+  return fetchJson<ActivitySessionDetailsResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}`
+  );
+}
+
+export async function loadActivityProgress(
+  activitySessionId: number
+): Promise<ActivityProgressResponse> {
+  return fetchJson<ActivityProgressResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`
+  );
+}
+
+export async function saveActivityProgress(
+  activitySessionId: number,
+  progressData: ActivityProgressData
+): Promise<ActivityProgressResponse> {
+  return fetchJson<ActivityProgressResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        progress_data: progressData,
+      }),
+    }
+  );
+}
+
+export async function createActivitySession(
+  payload: CreateActivitySessionPayload
+): Promise<CreateActivitySessionResponse> {
+  return fetchJson<CreateActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        activity_session: payload,
+      }),
+    }
+  );
+}
+
+export async function selectActivity(
+  activitySessionId: number,
+  activityId: number
+): Promise<SelectActivityResponse> {
+  return fetchJson<SelectActivityResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/select_activity`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        activity_id: activityId,
+      }),
+    }
+  );
+}
+
+export async function startActivitySession(
+  activitySessionId: number
+): Promise<StartActivitySessionResponse> {
+  return fetchJson<StartActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/start`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    }
+  );
+}
+
+export async function pauseActivitySession(
+  activitySessionId: number,
+  elapsedSeconds: number
+): Promise<PauseActivitySessionResponse> {
+  return fetchJson<PauseActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/pause`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        elapsed_seconds: elapsedSeconds,
+      }),
+    }
+  );
+}
+
+export async function resumeActivitySession(
+  activitySessionId: number
+): Promise<ResumeActivitySessionResponse> {
+  return fetchJson<ResumeActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/resume`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    }
+  );
+}
+
+export async function finishActivitySession(
+  activitySessionId: number,
+  elapsedSeconds: number
+): Promise<FinishActivitySessionResponse> {
+  return fetchJson<FinishActivitySessionResponse>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/finish`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        elapsed_seconds: elapsedSeconds,
+      }),
+    }
+  );
+}
+
+===== MOBILE TYPES =====
+export type AuthUser = {
+  id: number;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar?: string | null;
+  interest_ids: number[];
+  onboarding_complete: boolean;
+};
+
+export type Interest = {
+  id: number;
+  name: string;
+};
+
+export type InterestsResponse = {
+  interests: Interest[];
+  selected_interest_ids: number[];
+};
+
+export type UpdateInterestsResponse = InterestsResponse & {
+  user: AuthUser;
+};
+
+export type LoginResponse = {
+  token: string;
+  user: AuthUser;
+};
+
+export type CurrentUserResponse = {
+  user: AuthUser;
+};
+
+export type AuthProvidersResponse = {
+  google: boolean;
+  facebook: boolean;
+};
+
+export type AuthMessageResponse = {
+  message: string;
+};
+
+export type ProfileResponse = {
+  user: AuthUser;
+};
+
+export type Mood = {
+  id: number;
+  name: string;
+};
+
+export type Location = {
+  id: number;
+  name: string;
+};
+
+export type Duration = {
+  id: number;
+  value: number;
+  label: string;
+};
+
+export type QuizQuestion = {
+  id: number;
+  question: string;
+  category?: string | null;
+  family?: string | null;
+  difficulty?: string | null;
+  correct_answer: string;
+  answers: string[];
+};
+
+export type LanguageItem = {
+  id: number;
+  prompt: string;
+  answer: string;
+  translation?: string | null;
+  item_type: "word" | "sentence" | string;
+  language?: string | null;
+};
+
+export type MelodyPayload = {
+  name: string;
+  notes: string[];
+  difficulty?: string | null;
+  category?: string | null;
+  source?: string | null;
+};
+
+export type ActivityPayload = {
+  duration_seconds?: number;
+  activity_session_id?: number | null;
+
+  quiz_kind?: "culture" | "code";
+  quiz_questions?: QuizQuestion[];
+
+  language?: string | null;
+  language_label?: string | null;
+  language_mode?: "word" | "sentence" | string;
+  language_items?: LanguageItem[];
+
+  melody?: MelodyPayload | null;
+};
+
+export type Activity = {
+  id: number;
+  name: string;
+  description?: string;
+  content?: string;
+  activity_type: string;
+  payload?: ActivityPayload;
+
+  interest?: {
+    id: number;
+    name: string;
+  };
+
+  duration?: Duration;
+  location?: Location;
+  mood?: Mood;
+};
+
+export type QuizProgress = {
+  questions: QuizQuestion[];
+  current_index: number;
+  selected_answer: string | null;
+  score: number;
+  completed: boolean;
+};
+
+export type WordLearningProgress = {
+  items: LanguageItem[];
+  current_index: number;
+  show_translation: boolean;
+  completed: boolean;
+};
+
+export type SentenceFeedback =
+  | "correct"
+  | "wrong"
+  | "revealed"
+  | null;
+
+export type SentenceCompletionProgress = {
+  items: LanguageItem[];
+  current_index: number;
+  input_value: string;
+  attempts: number;
+  score: number;
+  feedback: SentenceFeedback;
+  completed: boolean;
+};
+
+export type MelodyProgress = {
+  notes: string[];
+  current_index: number;
+  played_notes: string[];
+  wrong_note: string | null;
+  completed: boolean;
+};
+
+export type ActivityProgressData = {
+  quiz?: QuizProgress;
+  word_learning?: WordLearningProgress;
+  sentence_completion?: SentenceCompletionProgress;
+  melody?: MelodyProgress;
+};
+
+export type ActivityProgressResponse = {
+  activity_session_id: number;
+  progress_data: ActivityProgressData;
+};
+
+export type ActivitySession = {
+  id: number;
+  status: string;
+  finished: boolean;
+  elapsed_seconds: number;
+  activity_id: number;
+  timer_started_at?: string | null;
+  language?: string | null;
+};
+
+export type ActivitySessionSummary = ActivitySession & {
+  xp_earned?: number;
+  created_at?: string;
+  updated_at?: string;
+  activity: Activity;
+};
+
+export type ActivitySessionDetailsResponse = {
+  activity_session: ActivitySession;
+  activities: Activity[];
+};
+
+export type CreateActivitySessionPayload = {
+  mood_id: number;
+  location_id: number;
+  duration_id: number;
+};
+
+export type CreateActivitySessionResponse = {
+  activity_session: ActivitySession;
+  activities: Activity[];
+};
+
+export type ActivitySessionActionResponse = {
+  activity_session: ActivitySession;
+  activity: Activity;
+};
+
+export type SelectActivityResponse =
+  ActivitySessionActionResponse;
+
+export type StartActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type PauseActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type ResumeActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type FinishActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type InitialDataResponse = {
+  moods: Mood[];
+  locations: Location[];
+  durations: Duration[];
+};
+
+export type Step =
+  | "mood"
+  | "location"
+  | "duration"
+  | "recommendations"
+  | "preview"
+  | "activity"
+  | "finished";
+
+===== MOBILE EXPLORE =====
+import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
+import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ExternalLink } from '@/components/external-link';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Collapsible } from '@/components/ui/collapsible';
+import { WebBadge } from '@/components/web-badge';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+
+export default function TabTwoScreen() {
+  const safeAreaInsets = useSafeAreaInsets();
+  const insets = {
+    ...safeAreaInsets,
+    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
+  };
+  const theme = useTheme();
+
+  const contentPlatformStyle = Platform.select({
+    android: {
+      paddingTop: insets.top,
+      paddingLeft: insets.left,
+      paddingRight: insets.right,
+      paddingBottom: insets.bottom,
+    },
+    web: {
+      paddingTop: Spacing.six,
+      paddingBottom: Spacing.four,
+    },
+  });
+
+  return (
+    <ScrollView
+      style={[styles.scrollView, { backgroundColor: theme.background }]}
+      contentInset={insets}
+      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
+      <ThemedView style={styles.container}>
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText type="subtitle">Explore</ThemedText>
+          <ThemedText style={styles.centerText} themeColor="textSecondary">
+            This starter app includes example{'\n'}code to help you get started.
+          </ThemedText>
+
+          <ExternalLink href="https://docs.expo.dev" asChild>
+            <Pressable style={({ pressed }) => pressed && styles.pressed}>
+              <ThemedView type="backgroundElement" style={styles.linkButton}>
+                <ThemedText type="link">Expo documentation</ThemedText>
+                <SymbolView
+                  tintColor={theme.text}
+                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
+                  size={12}
+                />
+              </ThemedView>
+            </Pressable>
+          </ExternalLink>
+        </ThemedView>
+
+        <ThemedView style={styles.sectionsWrapper}>
+          <Collapsible title="File-based routing">
+            <ThemedText type="small">
+              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
+              <ThemedText type="code">src/app/explore.tsx</ThemedText>
+            </ThemedText>
+            <ThemedText type="small">
+              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
+              the tab navigator.
+            </ThemedText>
+            <ExternalLink href="https://docs.expo.dev/router/introduction">
+              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            </ExternalLink>
+          </Collapsible>
+
+          <Collapsible title="Android, iOS, and web support">
+            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
+              <ThemedText type="small">
+                You can open this project on Android, iOS, and the web. To open the web version,
+                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
+                project.
+              </ThemedText>
+              <Image
+                source={require('@/assets/images/tutorial-web.png')}
+                style={styles.imageTutorial}
+              />
+            </ThemedView>
+          </Collapsible>
+
+          <Collapsible title="Images">
+            <ThemedText type="small">
+              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
+              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
+              screen densities.
+            </ThemedText>
+            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
+            <ExternalLink href="https://reactnative.dev/docs/images">
+              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            </ExternalLink>
+          </Collapsible>
+
+          <Collapsible title="Light and dark mode components">
+            <ThemedText type="small">
+              This template has light and dark mode support. The{' '}
+              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
+              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
+            </ThemedText>
+            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
+              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            </ExternalLink>
+          </Collapsible>
+
+          <Collapsible title="Animations">
+            <ThemedText type="small">
+              This template includes an example of an animated component. The{' '}
+              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
+              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
+              animate opening this hint.
+            </ThemedText>
+          </Collapsible>
+        </ThemedView>
+        {Platform.OS === 'web' && <WebBadge />}
+      </ThemedView>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  container: {
+    maxWidth: MaxContentWidth,
+    flexGrow: 1,
+  },
+  titleContainer: {
+    gap: Spacing.three,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.six,
+  },
+  centerText: {
+    textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  linkButton: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.five,
+    justifyContent: 'center',
+    gap: Spacing.one,
+    alignItems: 'center',
+  },
+  sectionsWrapper: {
+    gap: Spacing.five,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+  },
+  collapsibleContent: {
+    alignItems: 'center',
+  },
+  imageTutorial: {
+    width: '100%',
+    aspectRatio: 296 / 171,
+    borderRadius: Spacing.three,
+    marginTop: Spacing.two,
+  },
+  imageReact: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+  },
+});
+
+===== MOBILE NAV =====
+import { useState } from "react";
+
+import {
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+
+import { Link } from "expo-router";
+
+import { useAuth } from "../context/AuthContext";
+import { AvatarImage } from "./AvatarPicker";
+
+type MobileNavProps = {
+  active: "new" | "history" | "profile";
+};
+
+type NavItemProps = {
+  href: "/" | "/history" | "/profile";
+  label: string;
+  isActive: boolean;
+};
+
+function NavItem({
+  href,
+  label,
+  isActive,
+}: NavItemProps) {
+  return (
+    <Link href={href} asChild>
+      <Pressable
+        style={({ pressed }) => ({
+          flex: 1,
+          minHeight: 48,
+          paddingVertical: 12,
+          paddingHorizontal: 8,
+          borderRadius: 16,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: isActive
+            ? "#FF4B2B"
+            : "transparent",
+          opacity: pressed ? 0.8 : 1,
+        })}
+      >
+        <Text
+          numberOfLines={1}
+          style={{
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: "900",
+            textAlign: "center",
+          }}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Link>
+  );
+}
+
+export function MobileNav({
+  active,
+}: MobileNavProps) {
+  const {
+    user,
+    signOut,
+  } = useAuth();
+
+  const [loggingOut, setLoggingOut] =
+    useState(false);
+
+  async function handleLogout() {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+
+    try {
+      await signOut();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
+  return (
+    <View
+      style={{
+        width: "100%",
+        marginTop: 14,
+        gap: 12,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          padding: 8,
+          borderRadius: 28,
+          backgroundColor: "#17152F",
+          gap: 4,
+        }}
+      >
+        <NavItem
+          href="/"
+          label="Nouvelle"
+          isActive={active === "new"}
+        />
+
+        <NavItem
+          href="/history"
+          label="Historique"
+          isActive={active === "history"}
+        />
+
+        <NavItem
+          href="/profile"
+          label="Profil"
+          isActive={active === "profile"}
+        />
+      </View>
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 8,
+          gap: 12,
+        }}
+      >
+        <Link href="/profile" asChild>
+          <Pressable
+            style={({ pressed }) => ({
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <AvatarImage
+              avatar={user?.avatar}
+              size={42}
+            />
+
+            <View style={{ flex: 1 }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: "#17152F",
+                  fontSize: 14,
+                  fontWeight: "900",
+                }}
+              >
+                {user?.first_name || "Mon profil"}
+              </Text>
+
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: "#5D5A70",
+                  fontSize: 12,
+                  fontWeight: "700",
+                }}
+              >
+                {user?.email}
+              </Text>
+            </View>
+          </Pressable>
+        </Link>
+
+        <Pressable
+          onPress={handleLogout}
+          disabled={loggingOut}
+          style={({ pressed }) => ({
+            opacity:
+              loggingOut || pressed ? 0.55 : 1,
+          })}
+        >
+          <Text
+            style={{
+              color: "#FF4B2B",
+              fontSize: 13,
+              fontWeight: "900",
+            }}
+          >
+            {loggingOut
+              ? "Déconnexion..."
+              : "Se déconnecter"}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+===== MOBILE LAYOUT =====
+import { useEffect } from "react";
+
+import {
+  ActivityIndicator,
+  View,
+} from "react-native";
+
+import {
+  Stack,
+  useRouter,
+  useSegments,
+} from "expo-router";
+
+import {
+  AuthProvider,
+  useAuth,
+} from "../context/AuthContext";
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
+  );
+}
+
+function RootNavigator() {
+  const {
+    user,
+    loading,
+  } = useAuth();
+
+  const router = useRouter();
+  const segments = useSegments();
+
+  const currentRoute = segments[0];
+
+  const needsInterests =
+    Boolean(user) &&
+    user!.interest_ids.length === 0;
+
+  const needsAvatar =
+    Boolean(user) &&
+    user!.interest_ids.length > 0 &&
+    !user!.avatar;
+
+  const redirectingToInterests =
+    needsInterests &&
+    currentRoute !== "interests";
+
+  const redirectingToAvatar =
+    needsAvatar &&
+    currentRoute !== "avatar";
+
+  useEffect(() => {
+    if (loading || !user) return;
+
+    if (redirectingToInterests) {
+      router.replace("/interests");
+      return;
+    }
+
+    if (redirectingToAvatar) {
+      router.replace("/avatar");
+    }
+  }, [
+    loading,
+    redirectingToAvatar,
+    redirectingToInterests,
+    router,
+    user,
+  ]);
+
+  if (
+    loading ||
+    redirectingToInterests ||
+    redirectingToAvatar
+  ) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#FFF4EA",
+        }}
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Protected guard={!user}>
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
+        <Stack.Screen name="oauth-callback" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={Boolean(user)}>
+        <Stack.Screen name="interests" />
+        <Stack.Screen name="avatar" />
+        <Stack.Screen name="index" />
+        <Stack.Screen name="history" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="explore" />
+        <Stack.Screen name="session/[id]" />
+      </Stack.Protected>
+    </Stack>
+  );
+}

@@ -1,0 +1,1546 @@
+===== AVATAR ASSETS =====
+app/assets/images/avatars/avatar_01.png
+app/assets/images/avatars/avatar_02.png
+app/assets/images/avatars/avatar_03.png
+app/assets/images/avatars/avatar_04.png
+app/assets/images/avatars/avatar_05.png
+app/assets/images/avatars/avatar_06.png
+app/assets/images/avatars/avatar_07.png
+app/assets/images/avatars/avatar_08.png
+app/assets/images/avatars/avatar_09.png
+app/assets/images/avatars/avatar_10.png
+app/assets/images/avatars/avatar_11.png
+app/assets/images/avatars/avatar_12.png
+app/assets/images/avatars/avatar_13.png
+app/assets/images/avatars/avatar_14.png
+app/assets/images/avatars/avatar_15.png
+app/assets/images/avatars/avatar_16.png
+app/assets/images/avatars/avatar_17.png
+app/assets/images/avatars/avatar_18.png
+app/assets/images/avatars/avatar_19.png
+app/assets/images/avatars/avatar_20.png
+app/assets/images/avatars/avatar_21.png
+app/assets/images/avatars/avatar_22.png
+app/assets/images/avatars/avatar_23.png
+app/assets/images/avatars/avatar_24.png
+app/assets/images/avatars/blueberry.png
+app/assets/images/avatars/cloud.png
+app/assets/images/avatars/clove.png
+app/assets/images/avatars/frog.png
+app/assets/stylesheets/components/_avatar.scss
+app/assets/stylesheets/components/_profileavatar.scss
+
+===== USER MODEL =====
+require "digest"
+
+class User < ApplicationRecord
+  AVATARS = (1..24).map do |number|
+    "avatar_#{number.to_s.rjust(2, '0')}"
+  end
+
+  validates :avatar,
+            inclusion: { in: AVATARS },
+            allow_blank: true
+
+  has_one :room, dependent: :destroy
+
+  has_many :user_interest_progresses,
+           dependent: :destroy
+
+  has_many :activity_sessions,
+           dependent: :destroy
+
+  has_many :user_interests,
+           dependent: :destroy
+
+  has_many :interests,
+           through: :user_interests
+
+  has_many :room_likes,
+           dependent: :destroy
+
+  has_many :liked_rooms,
+           through: :room_likes,
+           source: :room
+
+  has_many :oauth_identities,
+           dependent: :destroy
+
+  has_many :mobile_oauth_codes,
+           dependent: :destroy
+
+  devise :database_authenticatable,
+         :registerable,
+         :recoverable,
+         :rememberable,
+         :validatable,
+         :omniauthable,
+         omniauth_providers: %i[
+           google_oauth2
+           facebook
+         ]
+
+  after_create :create_default_room
+  before_update :revoke_mobile_token_when_password_changes
+
+  def issue_mobile_api_token!
+    raw_token = SecureRandom.hex(32)
+
+    update!(
+      mobile_api_token_digest:
+        self.class.digest_mobile_api_token(raw_token)
+    )
+
+    raw_token
+  end
+
+  def revoke_mobile_api_token!
+    update!(mobile_api_token_digest: nil)
+  end
+
+  def self.find_by_mobile_api_token(raw_token)
+    return nil if raw_token.blank?
+
+    find_by(
+      mobile_api_token_digest:
+        digest_mobile_api_token(raw_token)
+    )
+  end
+
+  def self.digest_mobile_api_token(raw_token)
+    Digest::SHA256.hexdigest(raw_token)
+  end
+
+  private
+
+  def revoke_mobile_token_when_password_changes
+    return unless will_save_change_to_encrypted_password?
+
+    self.mobile_api_token_digest = nil
+  end
+
+  def create_default_room
+    create_room!(
+      width: Room::GRID_WIDTH,
+      height: Room::GRID_HEIGHT
+    )
+  end
+end
+
+===== AUTH PROFILE CONTROLLER =====
+module Api
+  module V1
+    class AuthProfilesController < BaseController
+      def update
+        if current_api_user.update(profile_params)
+          render json: {
+            user: serialize_api_user(current_api_user)
+          }
+        else
+          render json: {
+            error:
+              current_api_user.errors.full_messages.to_sentence
+          }, status: :unprocessable_entity
+        end
+      end
+
+      private
+
+      def profile_params
+        params.require(:user).permit(
+          :first_name,
+          :last_name,
+          :avatar
+        )
+      end
+    end
+  end
+end
+
+===== API BASE SERIALIZER =====
+module Api
+  module V1
+    class BaseController < ApplicationController
+      skip_before_action :authenticate_user!
+      skip_forgery_protection
+
+      before_action :authenticate_api_user!
+
+      attr_reader :current_api_user
+
+      rescue_from ActiveRecord::RecordNotFound do
+        render json: {
+          error: "Ressource introuvable."
+        }, status: :not_found
+      end
+
+      private
+
+      def authenticate_api_user!
+        @current_api_user =
+          User.find_by_mobile_api_token(bearer_token)
+
+        return if @current_api_user.present?
+
+        render json: {
+          error: "Authentification requise."
+        }, status: :unauthorized
+      end
+
+      def current_api_user!
+        current_api_user
+      end
+
+      def bearer_token
+        scheme, token =
+          request.authorization.to_s.split(" ", 2)
+
+        return nil if scheme.blank?
+        return nil if token.blank?
+        return nil unless scheme.casecmp("Bearer").zero?
+
+        token
+      end
+
+      def serialize_api_user(user)
+        {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          avatar: user.avatar,
+          interest_ids: user.interest_ids,
+          onboarding_complete: user.interests.exists?
+        }
+      end
+    end
+  end
+end
+
+===== MOBILE TYPES =====
+export type AuthUser = {
+  id: number;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar?: string | null;
+  interest_ids: number[];
+  onboarding_complete: boolean;
+};
+
+export type Interest = {
+  id: number;
+  name: string;
+};
+
+export type InterestsResponse = {
+  interests: Interest[];
+  selected_interest_ids: number[];
+};
+
+export type UpdateInterestsResponse = InterestsResponse & {
+  user: AuthUser;
+};
+
+export type LoginResponse = {
+  token: string;
+  user: AuthUser;
+};
+
+export type CurrentUserResponse = {
+  user: AuthUser;
+};
+
+export type AuthProvidersResponse = {
+  google: boolean;
+  facebook: boolean;
+};
+
+export type AuthMessageResponse = {
+  message: string;
+};
+
+export type ProfileResponse = {
+  user: AuthUser;
+};
+
+export type Mood = {
+  id: number;
+  name: string;
+};
+
+export type Location = {
+  id: number;
+  name: string;
+};
+
+export type Duration = {
+  id: number;
+  value: number;
+  label: string;
+};
+
+export type QuizQuestion = {
+  id: number;
+  question: string;
+  category?: string | null;
+  family?: string | null;
+  difficulty?: string | null;
+  correct_answer: string;
+  answers: string[];
+};
+
+export type LanguageItem = {
+  id: number;
+  prompt: string;
+  answer: string;
+  translation?: string | null;
+  item_type: "word" | "sentence" | string;
+  language?: string | null;
+};
+
+export type MelodyPayload = {
+  name: string;
+  notes: string[];
+  difficulty?: string | null;
+  category?: string | null;
+  source?: string | null;
+};
+
+export type ActivityPayload = {
+  duration_seconds?: number;
+  activity_session_id?: number | null;
+
+  quiz_kind?: "culture" | "code";
+  quiz_questions?: QuizQuestion[];
+
+  language?: string | null;
+  language_label?: string | null;
+  language_mode?: "word" | "sentence" | string;
+  language_items?: LanguageItem[];
+
+  melody?: MelodyPayload | null;
+};
+
+export type Activity = {
+  id: number;
+  name: string;
+  description?: string;
+  content?: string;
+  activity_type: string;
+  payload?: ActivityPayload;
+
+  interest?: {
+    id: number;
+    name: string;
+  };
+
+  duration?: Duration;
+  location?: Location;
+  mood?: Mood;
+};
+
+export type QuizProgress = {
+  questions: QuizQuestion[];
+  current_index: number;
+  selected_answer: string | null;
+  score: number;
+  completed: boolean;
+};
+
+export type WordLearningProgress = {
+  items: LanguageItem[];
+  current_index: number;
+  show_translation: boolean;
+  completed: boolean;
+};
+
+export type SentenceFeedback =
+  | "correct"
+  | "wrong"
+  | "revealed"
+  | null;
+
+export type SentenceCompletionProgress = {
+  items: LanguageItem[];
+  current_index: number;
+  input_value: string;
+  attempts: number;
+  score: number;
+  feedback: SentenceFeedback;
+  completed: boolean;
+};
+
+export type MelodyProgress = {
+  notes: string[];
+  current_index: number;
+  played_notes: string[];
+  wrong_note: string | null;
+  completed: boolean;
+};
+
+export type ActivityProgressData = {
+  quiz?: QuizProgress;
+  word_learning?: WordLearningProgress;
+  sentence_completion?: SentenceCompletionProgress;
+  melody?: MelodyProgress;
+};
+
+export type ActivityProgressResponse = {
+  activity_session_id: number;
+  progress_data: ActivityProgressData;
+};
+
+export type ActivitySession = {
+  id: number;
+  status: string;
+  finished: boolean;
+  elapsed_seconds: number;
+  activity_id: number;
+  timer_started_at?: string | null;
+  language?: string | null;
+};
+
+export type ActivitySessionSummary = ActivitySession & {
+  xp_earned?: number;
+  created_at?: string;
+  updated_at?: string;
+  activity: Activity;
+};
+
+export type ActivitySessionDetailsResponse = {
+  activity_session: ActivitySession;
+  activities: Activity[];
+};
+
+export type CreateActivitySessionPayload = {
+  mood_id: number;
+  location_id: number;
+  duration_id: number;
+};
+
+export type CreateActivitySessionResponse = {
+  activity_session: ActivitySession;
+  activities: Activity[];
+};
+
+export type ActivitySessionActionResponse = {
+  activity_session: ActivitySession;
+  activity: Activity;
+};
+
+export type SelectActivityResponse =
+  ActivitySessionActionResponse;
+
+export type StartActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type PauseActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type ResumeActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type FinishActivitySessionResponse =
+  ActivitySessionActionResponse;
+
+export type InitialDataResponse = {
+  moods: Mood[];
+  locations: Location[];
+  durations: Duration[];
+};
+
+export type Step =
+  | "mood"
+  | "location"
+  | "duration"
+  | "recommendations"
+  | "preview"
+  | "activity"
+  | "finished";
+
+===== MOBILE PROFILE =====
+import { useEffect, useState } from "react";
+import { Text } from "react-native";
+import { useRouter } from "expo-router";
+
+import {
+  AuthField,
+  AuthLink,
+  AuthScreen,
+} from "../components/AuthScreen";
+
+import { ErrorBox } from "../components/ErrorBox";
+import { MobileNav } from "../components/MobileNav";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { useAuth } from "../context/AuthContext";
+
+export default function ProfileScreen() {
+  const router = useRouter();
+  const { user, updateProfile } = useAuth();
+
+  const [firstName, setFirstName] =
+    useState(user?.first_name || "");
+
+  const [lastName, setLastName] =
+    useState(user?.last_name || "");
+
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    setFirstName(user?.first_name || "");
+    setLastName(user?.last_name || "");
+  }, [user]);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+
+    try {
+      await updateProfile({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      });
+
+      setSaved(true);
+    } catch (profileError) {
+      setError(
+        profileError instanceof Error
+          ? profileError.message
+          : "Impossible de modifier le profil."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <AuthScreen
+      title="Mon profil"
+      subtitle="Modifie les informations liées à ton compte."
+    >
+      <Text
+        style={{
+          color: "#5D5A70",
+          fontWeight: "700",
+        }}
+      >
+        {user?.email}
+      </Text>
+
+      <AuthField
+        label="Prénom"
+        value={firstName}
+        onChangeText={setFirstName}
+      />
+
+      <AuthField
+        label="Nom"
+        value={lastName}
+        onChangeText={setLastName}
+      />
+
+      <Text
+        style={{
+          color: "#5D5A70",
+          fontWeight: "700",
+        }}
+      >
+        {user?.interest_ids.length || 0} centre(s)
+        d’intérêt sélectionné(s)
+      </Text>
+
+      <AuthLink
+        label="Modifier mes centres d’intérêt"
+        onPress={() => router.push("/interests")}
+      />
+
+      {saved && (
+        <Text
+          style={{
+            color: "#176C3A",
+            fontWeight: "900",
+          }}
+        >
+          Profil enregistré.
+        </Text>
+      )}
+
+      {error && <ErrorBox message={error} />}
+
+      <PrimaryButton
+        label={
+          saving
+            ? "Enregistrement..."
+            : "Enregistrer"
+        }
+        onPress={handleSave}
+        disabled={saving}
+      />
+
+      <MobileNav active="profile" />
+    </AuthScreen>
+  );
+}
+
+===== MOBILE INTERESTS =====
+import { useEffect, useState } from "react";
+
+import {
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+
+import { useRouter } from "expo-router";
+
+import { ErrorBox } from "../components/ErrorBox";
+import { MobileNav } from "../components/MobileNav";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { useAuth } from "../context/AuthContext";
+import { loadMobileInterests } from "../services/interestsApi";
+import { Interest } from "../types/tinyAct";
+
+const INTEREST_DETAILS: Record<
+  string,
+  {
+    icon: string;
+    description: string;
+  }
+> = {
+  Sport: {
+    icon: "🏃",
+    description: "Bouger et relancer ton énergie.",
+  },
+  "Bien-être": {
+    icon: "🌿",
+    description: "Respirer, ralentir et te recentrer.",
+  },
+  Photo: {
+    icon: "📷",
+    description: "Regarder autrement ce qui t’entoure.",
+  },
+  Dessin: {
+    icon: "✏️",
+    description: "Dessiner sans pression.",
+  },
+  Langues: {
+    icon: "🌍",
+    description: "Apprendre quelques mots utiles.",
+  },
+  Culture: {
+    icon: "🧠",
+    description: "Nourrir ta curiosité.",
+  },
+  Productivité: {
+    icon: "✓",
+    description: "Clarifier et avancer.",
+  },
+  Code: {
+    icon: "⌨️",
+    description: "Résoudre un petit problème.",
+  },
+  Musique: {
+    icon: "♪",
+    description: "Écouter, créer ou jouer avec le son.",
+  },
+};
+
+export default function InterestsScreen() {
+  const router = useRouter();
+
+  const {
+    user,
+    updateInterests,
+  } = useAuth();
+
+  const editingExistingSelection =
+    user?.onboarding_complete === true;
+
+  const [interests, setInterests] =
+    useState<Interest[]>([]);
+
+  const [selectedIds, setSelectedIds] =
+    useState<number[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        setError(null);
+
+        const response =
+          await loadMobileInterests();
+
+        if (cancelled) return;
+
+        setInterests(response.interests);
+        setSelectedIds(
+          response.selected_interest_ids
+        );
+      } catch (loadError) {
+        if (cancelled) return;
+
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Impossible de charger les centres d’intérêt."
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function toggleInterest(interestId: number) {
+    setSelectedIds((currentIds) => {
+      if (currentIds.includes(interestId)) {
+        return currentIds.filter(
+          (id) => id !== interestId
+        );
+      }
+
+      return [...currentIds, interestId];
+    });
+  }
+
+  async function handleSave() {
+    if (selectedIds.length === 0) {
+      setError(
+        "Choisis au moins un centre d’intérêt."
+      );
+
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      await updateInterests(selectedIds);
+
+      router.replace(
+        editingExistingSelection
+          ? "/profile"
+          : "/"
+      );
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Impossible d’enregistrer tes choix."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: "#FFF4EA",
+      }}
+    >
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: "center",
+          padding: 18,
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 620,
+            gap: 22,
+          }}
+        >
+          <View style={{ gap: 8 }}>
+            <Text
+              style={{
+                color: "#FF4B2B",
+                fontWeight: "900",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Personnalisation
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 36,
+                lineHeight: 42,
+                color: "#17152F",
+                fontWeight: "900",
+              }}
+            >
+              Tes centres d’intérêt
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 16,
+                lineHeight: 24,
+                color: "#5D5A70",
+              }}
+            >
+              Choisis ce que tu souhaites retrouver
+              dans tes recommandations.
+            </Text>
+          </View>
+
+          {loading && <ActivityIndicator />}
+
+          {error && <ErrorBox message={error} />}
+
+          {!loading && (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              {interests.map((interest) => {
+                const selected =
+                  selectedIds.includes(interest.id);
+
+                const details =
+                  INTEREST_DETAILS[interest.name] || {
+                    icon: "✦",
+                    description:
+                      "Ajouter cette catégorie.",
+                  };
+
+                return (
+                  <Pressable
+                    key={interest.id}
+                    onPress={() =>
+                      toggleInterest(interest.id)
+                    }
+                    style={({ pressed }) => ({
+                      width: "48%",
+                      minWidth: 150,
+                      flexGrow: 1,
+                      padding: 18,
+                      borderRadius: 24,
+                      borderWidth: 2,
+                      borderColor: selected
+                        ? "#FF4B2B"
+                        : "#F2D7C8",
+                      backgroundColor: selected
+                        ? "#FFF0EB"
+                        : "#FFFFFF",
+                      gap: 10,
+                      opacity: pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 32,
+                      }}
+                    >
+                      {details.icon}
+                    </Text>
+
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        color: "#17152F",
+                        fontWeight: "900",
+                      }}
+                    >
+                      {interest.name}
+                    </Text>
+
+                    <Text
+                      style={{
+                        color: "#5D5A70",
+                        lineHeight: 20,
+                      }}
+                    >
+                      {details.description}
+                    </Text>
+
+                    <Text
+                      style={{
+                        color: selected
+                          ? "#FF4B2B"
+                          : "#8E8A9D",
+                        fontWeight: "900",
+                      }}
+                    >
+                      {selected
+                        ? "✓ Sélectionné"
+                        : "Sélectionner"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {!loading && (
+            <PrimaryButton
+              label={
+                saving
+                  ? "Enregistrement..."
+                  : "Enregistrer mes choix"
+              }
+              onPress={handleSave}
+              disabled={
+                saving ||
+                selectedIds.length === 0
+              }
+            />
+          )}
+
+          {editingExistingSelection && (
+            <MobileNav active="profile" />
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+===== MOBILE NAV =====
+import { useState } from "react";
+import {
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+import { Link } from "expo-router";
+
+import { useAuth } from "../context/AuthContext";
+
+type MobileNavProps = {
+  active: "new" | "history" | "profile";
+};
+
+type NavItemProps = {
+  href: "/" | "/history" | "/profile";
+  label: string;
+  isActive: boolean;
+};
+
+function NavItem({
+  href,
+  label,
+  isActive,
+}: NavItemProps) {
+  return (
+    <Link href={href} asChild>
+      <Pressable
+        style={({ pressed }) => ({
+          flex: 1,
+          minHeight: 48,
+          paddingVertical: 12,
+          paddingHorizontal: 8,
+          borderRadius: 16,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: isActive
+            ? "#FF4B2B"
+            : "transparent",
+          opacity: pressed ? 0.8 : 1,
+        })}
+      >
+        <Text
+          numberOfLines={1}
+          style={{
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: "900",
+            textAlign: "center",
+          }}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    </Link>
+  );
+}
+
+export function MobileNav({
+  active,
+}: MobileNavProps) {
+  const { user, signOut } = useAuth();
+
+  const [loggingOut, setLoggingOut] =
+    useState(false);
+
+  async function handleLogout() {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+
+    try {
+      await signOut();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
+  return (
+    <View
+      style={{
+        width: "100%",
+        marginTop: 14,
+        gap: 12,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          padding: 8,
+          borderRadius: 28,
+          backgroundColor: "#17152F",
+          gap: 4,
+        }}
+      >
+        <NavItem
+          href="/"
+          label="Nouvelle"
+          isActive={active === "new"}
+        />
+
+        <NavItem
+          href="/history"
+          label="Historique"
+          isActive={active === "history"}
+        />
+
+        <NavItem
+          href="/profile"
+          label="Profil"
+          isActive={active === "profile"}
+        />
+      </View>
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 8,
+          gap: 12,
+        }}
+      >
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            color: "#5D5A70",
+            fontSize: 13,
+            fontWeight: "700",
+          }}
+        >
+          {user?.first_name
+            ? `${user.first_name} · ${user.email}`
+            : user?.email}
+        </Text>
+
+        <Pressable
+          onPress={handleLogout}
+          disabled={loggingOut}
+          style={({ pressed }) => ({
+            opacity:
+              loggingOut || pressed ? 0.55 : 1,
+          })}
+        >
+          <Text
+            style={{
+              color: "#FF4B2B",
+              fontSize: 13,
+              fontWeight: "900",
+            }}
+          >
+            {loggingOut
+              ? "Déconnexion..."
+              : "Se déconnecter"}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+===== MOBILE APP CONFIG =====
+{
+  "expo": {
+    "name": "mobile",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mobile",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/expo.icon"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#208AEF",
+          "android": {
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 76
+          }
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
+
+===== ROOM MODEL =====
+class Room < ApplicationRecord
+  GRID_WIDTH = 5
+  GRID_HEIGHT = 5
+
+  belongs_to :user
+  has_many :room_furnitures, dependent: :destroy
+  has_many :room_likes, dependent: :destroy
+  def ensure_default_size!
+    return if width == GRID_WIDTH && height == GRID_HEIGHT
+
+    update!(width: GRID_WIDTH, height: GRID_HEIGHT)
+  end
+end
+
+===== ROOM CONTROLLERS =====
+app/controllers/room_likes_controller.rb
+class RoomLikesController < ApplicationController
+  before_action :authenticate_user!
+
+  def create
+    room = Room.find(params[:room_id])
+
+    RoomLike.find_or_create_by!(
+      user: current_user,
+      room: room
+    )
+
+    redirect_to rooms_path
+  end
+
+  def destroy
+    room = Room.find(params[:room_id])
+
+    current_user.room_likes.find_by(room: room)&.destroy
+
+    redirect_to rooms_path
+  end
+end
+app/controllers/rooms_controller.rb
+class RoomsController < ApplicationController
+  include TopbarData
+
+  before_action :authenticate_user!
+  before_action :set_topbar_data, only: [:show]
+
+  def index
+    @rooms = Room
+      .includes(:user, :room_likes, room_furnitures: :furniture)
+      .left_joins(:room_likes)
+      .group("rooms.id")
+      .order("COUNT(room_likes.id) DESC")
+  end
+  def show
+    @room = current_user.room || current_user.create_room!(width: Room::GRID_WIDTH, height: Room::GRID_HEIGHT)
+    @room.ensure_default_size!
+
+    @available_furnitures = Furniture
+                            .joins(:interest)
+                            .select do |furniture|
+                              user_xp = XpCalculator.total_for_interest(
+                                current_user,
+                                furniture.interest
+                              )
+
+                              user_xp >= furniture.required_xp
+                            end
+
+    @room_data = {
+      id: @room.id,
+      width: @room.width,
+      height: @room.height,
+      furnitures: @room.room_furnitures.includes(:furniture).map do |item|
+        {
+          id: item.id,
+          furniture_id: item.furniture_id,
+          name: item.furniture.name,
+          image_url: ActionController::Base.helpers.asset_path(item.furniture.image_url),
+          width: item.furniture.width,
+          height: item.furniture.height,
+          x: item.x,
+          y: item.y,
+          z: item.z,
+          rotation: item.rotation
+        }
+      end
+    }
+  end
+end
+app/controllers/room_furnitures_controller.rb
+class RoomFurnituresController < ApplicationController
+  before_action :authenticate_user!
+
+  def update
+    item = current_user.room.room_furnitures.find(params[:id])
+
+    new_x = room_furniture_params[:x].to_i
+    new_y = room_furniture_params[:y].to_i
+
+    if can_place?(item, new_x, new_y)
+      item.update!(room_furniture_params)
+      render json: item
+    else
+      render json: { error: "Position invalide" }, status: :unprocessable_entity
+    end
+  end
+
+  def create
+    furniture = Furniture.find(params[:room_furniture][:furniture_id])
+    position = first_free_position(current_user.room, furniture)
+
+    unless position
+      respond_to do |format|
+        format.turbo_stream { head :unprocessable_entity }
+        format.json { render json: { error: "Aucune place disponible" }, status: :unprocessable_entity }
+        format.html { redirect_to user_path, alert: "Aucune place disponible" }
+      end
+
+      return
+    end
+
+    item = current_user.room.room_furnitures.create!(
+      furniture: furniture,
+      x: position[:x],
+      y: position[:y],
+      z: params[:room_furniture][:z],
+      rotation: params[:room_furniture][:rotation]
+    )
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "profile-room",
+          partial: "users/room",
+          locals: {
+            room_data: room_data(current_user.room),
+            editable: true
+          }
+        )
+      end
+
+      format.json { render json: room_furniture_json(item) }
+      format.html { redirect_to user_path }
+    end
+  end
+
+  def destroy
+    item = current_user
+      .room
+      .room_furnitures
+      .find(params[:id])
+
+    item.destroy!
+
+    head :ok
+  end
+
+  private
+
+  def room_furniture_params
+    params.require(:room_furniture).permit(:x, :y, :z, :rotation)
+  end
+
+  def can_place?(item, new_x, new_y)
+    return false if new_x < 0 || new_y < 0
+    return false if new_x + item.furniture.width > item.room.width
+    return false if new_y + item.furniture.height > item.room.height
+
+    item.room.room_furnitures.where.not(id: item.id).includes(:furniture).none? do |other|
+      new_x < other.x + other.furniture.width &&
+        new_x + item.furniture.width > other.x &&
+        new_y < other.y + other.furniture.height &&
+        new_y + item.furniture.height > other.y
+    end
+  end
+
+  def room_data(room)
+    {
+      id: room.id,
+      width: room.width,
+      height: room.height,
+      furnitures: room.room_furnitures.includes(:furniture).map do |item|
+        room_furniture_json(item)
+      end
+    }
+  end
+
+  def room_furniture_json(item)
+    {
+      id: item.id,
+      furniture_id: item.furniture_id,
+      name: item.furniture.name,
+      image_url: helpers.asset_path(item.furniture.image_url),
+      width: item.furniture.width,
+      height: item.furniture.height,
+      x: item.x,
+      y: item.y,
+      z: item.z,
+      rotation: item.rotation
+    }
+  end
+
+  def first_free_position(room, furniture)
+    (0..(room.height - furniture.height)).each do |y|
+      (0..(room.width - furniture.width)).each do |x|
+        return { x: x, y: y } if free_position?(room, furniture, x, y)
+      end
+    end
+
+    nil
+  end
+
+  def free_position?(room, furniture, x, y)
+    room.room_furnitures.includes(:furniture).none? do |item|
+      x < item.x + item.furniture.width &&
+        x + furniture.width > item.x &&
+        y < item.y + item.furniture.height &&
+        y + furniture.height > item.y
+    end
+  end
+end
+
+===== MOBILE ROOM FILES =====
+mobile/src/app/explore.tsx
+import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
+import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ExternalLink } from '@/components/external-link';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Collapsible } from '@/components/ui/collapsible';
+import { WebBadge } from '@/components/web-badge';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+
+export default function TabTwoScreen() {
+  const safeAreaInsets = useSafeAreaInsets();
+  const insets = {
+    ...safeAreaInsets,
+    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
+  };
+  const theme = useTheme();
+
+  const contentPlatformStyle = Platform.select({
+    android: {
+      paddingTop: insets.top,
+      paddingLeft: insets.left,
+      paddingRight: insets.right,
+      paddingBottom: insets.bottom,
+    },
+    web: {
+      paddingTop: Spacing.six,
+      paddingBottom: Spacing.four,
+    },
+  });
+
+  return (
+    <ScrollView
+      style={[styles.scrollView, { backgroundColor: theme.background }]}
+      contentInset={insets}
+      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
+      <ThemedView style={styles.container}>
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText type="subtitle">Explore</ThemedText>
+          <ThemedText style={styles.centerText} themeColor="textSecondary">
+            This starter app includes example{'\n'}code to help you get started.
+          </ThemedText>
+
+          <ExternalLink href="https://docs.expo.dev" asChild>
+            <Pressable style={({ pressed }) => pressed && styles.pressed}>
+              <ThemedView type="backgroundElement" style={styles.linkButton}>
+                <ThemedText type="link">Expo documentation</ThemedText>
+                <SymbolView
+                  tintColor={theme.text}
+                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
+                  size={12}
+                />
+              </ThemedView>
+            </Pressable>
+          </ExternalLink>
+        </ThemedView>
+
+        <ThemedView style={styles.sectionsWrapper}>
+          <Collapsible title="File-based routing">
+            <ThemedText type="small">
+              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
+              <ThemedText type="code">src/app/explore.tsx</ThemedText>
+            </ThemedText>
+            <ThemedText type="small">
+              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
+              the tab navigator.
+            </ThemedText>
+            <ExternalLink href="https://docs.expo.dev/router/introduction">
+              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            </ExternalLink>
+          </Collapsible>
+
+          <Collapsible title="Android, iOS, and web support">
+            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
+              <ThemedText type="small">
+                You can open this project on Android, iOS, and the web. To open the web version,
+                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
+                project.
+              </ThemedText>
+              <Image
+                source={require('@/assets/images/tutorial-web.png')}
+                style={styles.imageTutorial}
+              />
+            </ThemedView>
+          </Collapsible>
+
+          <Collapsible title="Images">
+            <ThemedText type="small">
+              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
+              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
+              screen densities.
+            </ThemedText>
+            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
+            <ExternalLink href="https://reactnative.dev/docs/images">
+              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            </ExternalLink>
+          </Collapsible>
+
+          <Collapsible title="Light and dark mode components">
+            <ThemedText type="small">
+              This template has light and dark mode support. The{' '}
+              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
+              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
+            </ThemedText>
+            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
+              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            </ExternalLink>
+          </Collapsible>
+
+          <Collapsible title="Animations">
+            <ThemedText type="small">
+              This template includes an example of an animated component. The{' '}
+              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
+              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
+              animate opening this hint.
+            </ThemedText>
+          </Collapsible>
+        </ThemedView>
+        {Platform.OS === 'web' && <WebBadge />}
+      </ThemedView>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  container: {
+    maxWidth: MaxContentWidth,
+    flexGrow: 1,
+  },
+  titleContainer: {
+    gap: Spacing.three,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.six,
+  },
+  centerText: {
+    textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  linkButton: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.five,
+    justifyContent: 'center',
+    gap: Spacing.one,
+    alignItems: 'center',
+  },
+  sectionsWrapper: {
+    gap: Spacing.five,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+  },
+  collapsibleContent: {
+    alignItems: 'center',
+  },
+  imageTutorial: {
+    width: '100%',
+    aspectRatio: 296 / 171,
+    borderRadius: Spacing.three,
+    marginTop: Spacing.two,
+  },
+  imageReact: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+  },
+});

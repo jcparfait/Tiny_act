@@ -230,6 +230,63 @@ export type InitialDataResponse = {
   durations: Duration[];
 };
 
+export type RoomInterest = {
+  id: number;
+  name: string;
+};
+
+export type RoomFurnitureItem = {
+  id: number;
+  furniture_id: number;
+  name: string;
+  image_key: string;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  z: number;
+  rotation: number;
+  interest: RoomInterest;
+};
+
+export type RoomInventoryItem = {
+  id: number;
+  name: string;
+  image_key: string;
+  width: number;
+  height: number;
+  required_xp: number;
+  current_xp: number;
+  unlocked: boolean;
+  placed_count: number;
+  interest: RoomInterest;
+};
+
+export type RoomInterestProgress = {
+  interest: RoomInterest;
+  xp: number;
+  next_required_xp?: number | null;
+};
+
+export type MobileRoom = {
+  id: number;
+  width: number;
+  height: number;
+  furnitures: RoomFurnitureItem[];
+};
+
+export type RoomResponse = {
+  owner: AuthUser;
+  total_xp: number;
+  room: MobileRoom;
+  inventory: RoomInventoryItem[];
+  progress: RoomInterestProgress[];
+};
+
+export type RoomFurnitureResponse = {
+  room_furniture: RoomFurnitureItem;
+};
+
 export type Step =
   | "mood"
   | "location"

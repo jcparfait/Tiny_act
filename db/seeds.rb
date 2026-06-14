@@ -585,7 +585,7 @@ puts "✅ 50 lambda users created without room likes"
   )
   Furniture.create!(
     name: "Meuble vynil",
-    image_url: "furnitures/Meuble vanille.png",
+    image_url: "furnitures/Meublvynil.png",
     width: 1,
     height: 2,
     interest: musique,
