@@ -13,6 +13,7 @@ import { ErrorBox } from "../components/ErrorBox";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { useAuth } from "../context/AuthContext";
 import { loadAuthProviders } from "../services/authApi";
+
 import {
   SocialProvider,
   startSocialAuth,
@@ -27,14 +28,18 @@ export default function LoginScreen() {
   } = useAuth();
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] =
+    useState("");
 
-  const [providers, setProviders] = useState({
-    google: false,
-    facebook: false,
-  });
+  const [providers, setProviders] =
+    useState({
+      google: false,
+      facebook: false,
+    });
 
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] =
+    useState(false);
+
   const [socialLoading, setSocialLoading] =
     useState<SocialProvider | null>(null);
 
@@ -65,7 +70,10 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      await signIn(email, password);
+      await signIn(
+        email.trim(),
+        password
+      );
     } catch (loginError) {
       setError(
         loginError instanceof Error
@@ -84,7 +92,8 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      const code = await startSocialAuth(provider);
+      const code =
+        await startSocialAuth(provider);
 
       if (code) {
         await completeSocialSignIn(code);
@@ -100,30 +109,80 @@ export default function LoginScreen() {
     }
   }
 
+  const isBusy =
+    submitting || socialLoading !== null;
+
   return (
     <AuthScreen
       title="Tiny Act"
-      subtitle="Connecte-toi pour retrouver tes activités et ta progression."
+      subtitle="Transforme une envie de scroll en petite action utile."
     >
-      <AuthField
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        placeholder="email@exemple.fr"
-      />
+      <View
+        style={{
+          padding: 20,
+          borderRadius: 26,
+          backgroundColor: "#17152F",
+          gap: 12,
+        }}
+      >
+        <Text
+          style={{
+            color: "#FFFFFF",
+            fontSize: 28,
+            lineHeight: 34,
+            fontWeight: "900",
+          }}
+        >
+          Reprends là où tu t’es arrêté.
+        </Text>
 
-      <AuthField
-        label="Mot de passe"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        placeholder="Mot de passe"
-        onSubmitEditing={handleLogin}
-      />
+        <Text
+          style={{
+            color: "#FFFFFF",
+            opacity: 0.75,
+            fontSize: 15,
+            lineHeight: 22,
+            fontWeight: "600",
+          }}
+        >
+          Tes activités, ton XP, ta salle et tes récompenses sont gardés dans ton compte.
+        </Text>
+
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          <LoginPill label="Micro-actions" />
+          <LoginPill label="XP" />
+          <LoginPill label="Salle" />
+          <LoginPill label="Historique" />
+        </View>
+      </View>
+
+      <View style={{ gap: 14 }}>
+        <AuthField
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          placeholder="email@exemple.fr"
+        />
+
+        <AuthField
+          label="Mot de passe"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          placeholder="Mot de passe"
+          onSubmitEditing={handleLogin}
+        />
+      </View>
 
       {error && <ErrorBox message={error} />}
 
@@ -134,16 +193,17 @@ export default function LoginScreen() {
             : "Se connecter"
         }
         onPress={handleLogin}
-        disabled={submitting || socialLoading !== null}
+        disabled={isBusy}
       />
 
-      {(providers.google || providers.facebook) && (
+      {(providers.google ||
+        providers.facebook) && (
         <View style={{ gap: 10 }}>
           <Text
             style={{
               color: "#5D5A70",
               textAlign: "center",
-              fontWeight: "700",
+              fontWeight: "800",
             }}
           >
             ou
@@ -156,7 +216,7 @@ export default function LoginScreen() {
                   ? "Connexion Google..."
                   : "Continuer avec Google"
               }
-              disabled={socialLoading !== null}
+              disabled={isBusy}
               onPress={() =>
                 handleSocial("google_oauth2")
               }
@@ -170,7 +230,7 @@ export default function LoginScreen() {
                   ? "Connexion Facebook..."
                   : "Continuer avec Facebook"
               }
-              disabled={socialLoading !== null}
+              disabled={isBusy}
               onPress={() =>
                 handleSocial("facebook")
               }
@@ -179,17 +239,53 @@ export default function LoginScreen() {
         </View>
       )}
 
-      <AuthLink
-        label="Mot de passe oublié ?"
-        onPress={() =>
-          router.push("/forgot-password")
-        }
-      />
+      <View
+        style={{
+          paddingTop: 4,
+          gap: 12,
+        }}
+      >
+        <AuthLink
+          label="Mot de passe oublié ?"
+          onPress={() =>
+            router.push("/forgot-password")
+          }
+        />
 
-      <AuthLink
-        label="Créer un compte"
-        onPress={() => router.push("/register")}
-      />
+        <AuthLink
+          label="Créer un compte"
+          onPress={() =>
+            router.push("/register")
+          }
+        />
+      </View>
     </AuthScreen>
+  );
+}
+
+function LoginPill({
+  label,
+}: {
+  label: string;
+}) {
+  return (
+    <View
+      style={{
+        paddingVertical: 7,
+        paddingHorizontal: 10,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.12)",
+      }}
+    >
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontSize: 12,
+          fontWeight: "900",
+        }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }

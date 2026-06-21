@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import {
@@ -15,14 +16,24 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] =
+    useState("");
+
+  const [lastName, setLastName] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
   const [confirmation, setConfirmation] =
     useState("");
 
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] =
+    useState(false);
+
   const [error, setError] =
     useState<string | null>(null);
 
@@ -34,6 +45,13 @@ export default function RegisterScreen() {
       !password
     ) {
       setError("Remplis tous les champs.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(
+        "Choisis un mot de passe d’au moins 6 caractères."
+      );
       return;
     }
 
@@ -70,41 +88,101 @@ export default function RegisterScreen() {
   return (
     <AuthScreen
       title="Créer un compte"
-      subtitle="Quelques informations suffisent pour commencer."
+      subtitle="Quelques informations suffisent pour commencer ton parcours."
     >
-      <AuthField
-        label="Prénom"
-        value={firstName}
-        onChangeText={setFirstName}
-      />
+      <View
+        style={{
+          padding: 20,
+          borderRadius: 26,
+          backgroundColor: "#17152F",
+          gap: 12,
+        }}
+      >
+        <Text
+          style={{
+            color: "#FFFFFF",
+            fontSize: 27,
+            lineHeight: 33,
+            fontWeight: "900",
+          }}
+        >
+          Ton anti-scroll personnel.
+        </Text>
 
-      <AuthField
-        label="Nom"
-        value={lastName}
-        onChangeText={setLastName}
-      />
+        <Text
+          style={{
+            color: "#FFFFFF",
+            opacity: 0.75,
+            fontSize: 15,
+            lineHeight: 22,
+            fontWeight: "600",
+          }}
+        >
+          Choisis tes intérêts, gagne de l’XP, débloque des meubles et construis ta salle.
+        </Text>
 
-      <AuthField
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+        <View style={{ gap: 8 }}>
+          <StepLine
+            number="1"
+            text="Crée ton compte"
+          />
+          <StepLine
+            number="2"
+            text="Choisis tes centres d’intérêt"
+          />
+          <StepLine
+            number="3"
+            text="Lance ta première micro-action"
+          />
+        </View>
+      </View>
 
-      <AuthField
-        label="Mot de passe"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View style={{ gap: 14 }}>
+        <AuthField
+          label="Prénom"
+          value={firstName}
+          onChangeText={setFirstName}
+          autoCapitalize="words"
+          placeholder="Ton prénom"
+        />
 
-      <AuthField
-        label="Confirmation"
-        value={confirmation}
-        onChangeText={setConfirmation}
-        secureTextEntry
-      />
+        <AuthField
+          label="Nom"
+          value={lastName}
+          onChangeText={setLastName}
+          autoCapitalize="words"
+          placeholder="Ton nom"
+        />
+
+        <AuthField
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          placeholder="email@exemple.fr"
+        />
+
+        <AuthField
+          label="Mot de passe"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          placeholder="6 caractères minimum"
+        />
+
+        <AuthField
+          label="Confirmation"
+          value={confirmation}
+          onChangeText={setConfirmation}
+          secureTextEntry
+          autoCapitalize="none"
+          placeholder="Répète le mot de passe"
+          onSubmitEditing={handleRegister}
+        />
+      </View>
 
       {error && <ErrorBox message={error} />}
 
@@ -120,8 +198,60 @@ export default function RegisterScreen() {
 
       <AuthLink
         label="J’ai déjà un compte"
-        onPress={() => router.replace("/login")}
+        onPress={() =>
+          router.replace("/login")
+        }
       />
     </AuthScreen>
+  );
+}
+
+function StepLine({
+  number,
+  text,
+}: {
+  number: string;
+  text: string;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+      }}
+    >
+      <View
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: 999,
+          backgroundColor: "#FF4B2B",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: "#FFFFFF",
+            fontWeight: "900",
+            fontSize: 12,
+          }}
+        >
+          {number}
+        </Text>
+      </View>
+
+      <Text
+        style={{
+          color: "#FFFFFF",
+          opacity: 0.82,
+          fontSize: 14,
+          fontWeight: "800",
+        }}
+      >
+        {text}
+      </Text>
+    </View>
   );
 }
