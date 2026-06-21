@@ -1,6 +1,7 @@
 import {
   ActivityProgressData,
   ActivityProgressResponse,
+  ActivityReward,
   ActivitySessionDetailsResponse,
   ActivitySessionSummary,
   CreateActivitySessionPayload,
@@ -272,5 +273,13 @@ export async function finishActivitySession(
         elapsed_seconds: elapsedSeconds,
       }),
     }
+  );
+}
+
+export async function loadActivityReward(
+  activitySessionId: number
+): Promise<ActivityReward> {
+  return fetchJson<ActivityReward>(
+    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/reward`
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -17,6 +18,7 @@ import { ScreenHeader } from "../components/ScreenHeader";
 import { SecondaryButton } from "../components/SecondaryButton";
 import { SessionBadge } from "../components/SessionBadge";
 import { MobileNav } from "../components/MobileNav";
+import { ActivityRewardCard } from "../components/ActivityRewardCard";
 
 import {
   createActivitySession,
@@ -26,6 +28,7 @@ import {
   resumeActivitySession,
   selectActivity,
   startActivitySession,
+  loadActivityReward,
 } from "../services/api";
 
 import {
@@ -35,6 +38,7 @@ import {
   Location,
   Mood,
   Step,
+  ActivityReward,
 } from "../types/tinyAct";
 
 function computeElapsedSeconds(activitySession: ActivitySession | null) {
@@ -60,6 +64,7 @@ function computeElapsedSeconds(activitySession: ActivitySession | null) {
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("mood");
 
   const [moods, setMoods] = useState<Mood[]>([]);
@@ -82,6 +87,9 @@ export default function HomeScreen() {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null
   );
+
+  const [reward, setReward] =
+  useState<ActivityReward | null>(null);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [activityReadyToFinish, setActivityReadyToFinish] = useState(true);
@@ -204,6 +212,7 @@ export default function HomeScreen() {
     setElapsedSeconds(0);
     setActivityReadyToFinish(true);
     setError(null);
+    setReward(null);
   }
 
   async function handleCreateActivitySession() {
@@ -214,6 +223,7 @@ export default function HomeScreen() {
     setRecommendedActivities([]);
     setSelectedActivity(null);
     setActivityReadyToFinish(true);
+    setReward(null);
 
     try {
       const data = await createActivitySession({
@@ -343,6 +353,10 @@ export default function HomeScreen() {
 
       setActivitySession(data.activity_session);
       setSelectedActivity(data.activity);
+      const rewardData =
+      await loadActivityReward(data.activity_session.id);
+
+    setReward(rewardData);
       setElapsedSeconds(data.activity_session.elapsed_seconds);
       setActivityReadyToFinish(true);
       setStep("finished");
@@ -493,12 +507,12 @@ export default function HomeScreen() {
             />
           )}
 
-          {step === "finished" && selectedActivity && activitySession && (
-            <ActiveActivityCard
+          {step === "finished" && selectedActivity && reward && (
+            <ActivityRewardCard
               activity={selectedActivity}
-              activitySession={activitySession}
-              elapsedSeconds={elapsedSeconds}
-              onActivityReadyToFinishChange={setActivityReadyToFinish}
+              reward={reward}
+              onViewRoom={() => router.push("/explore")}
+              onRestart={resetFlow}
             />
           )}
 
@@ -566,9 +580,6 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {step === "finished" && (
-            <PrimaryButton label="Recommencer" onPress={resetFlow} />
-          )}
           <MobileNav active="new" />
         </View>
       </ScrollView>

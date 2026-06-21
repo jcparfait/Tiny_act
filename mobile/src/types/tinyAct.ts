@@ -188,6 +188,33 @@ export type ActivitySessionSummary = ActivitySession & {
   activity: Activity;
 };
 
+export type ActivityRewardFurniture = {
+  id: number;
+  name: string;
+  image_key: string;
+  required_xp: number;
+  current_xp: number;
+  remaining_xp: number;
+  interest: {
+    id: number;
+    name: string;
+  };
+};
+
+export type ActivityReward = {
+  xp_earned: number;
+  total_xp: number;
+  interest_xp: number;
+  interest: {
+    id: number;
+    name: string;
+  };
+  duration_minutes: number;
+  saved_scroll_minutes: number;
+  newly_unlocked_furnitures: ActivityRewardFurniture[];
+  next_furniture?: ActivityRewardFurniture | null;
+};
+
 export type ActivitySessionDetailsResponse = {
   activity_session: ActivitySession;
   activities: Activity[];

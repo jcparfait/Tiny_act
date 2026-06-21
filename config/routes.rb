@@ -44,6 +44,7 @@ Rails.application.routes.draw do
           patch :pause
           patch :resume
           patch :finish
+          get :reward, to: "activity_session_rewards#show"
         end
       end
     end
