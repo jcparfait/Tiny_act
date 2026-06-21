@@ -1035,26 +1035,27 @@ function HomeNotificationBand({
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{
         gap: 10,
-        paddingVertical: 6,
+        paddingVertical: 8,
         paddingRight: 18,
       }}
       style={{
         marginHorizontal: -18,
         paddingLeft: 18,
-        maxHeight: 92,
+        maxHeight: 94,
       }}
     >
-      <BandNotification
+      <BubbleNotification
         label="Room"
         icon="room"
         title="Ma room"
         subtitle="Voir ton espace"
-        tone="room"
+        color="#13A8C7"
+        rotation="-1deg"
         onPress={onOpenRoom}
       />
 
       {resumableSession && (
-        <BandNotification
+        <BubbleNotification
           label="Reprendre"
           icon="play"
           title={resumableSession.activity.name}
@@ -1065,12 +1066,13 @@ function HomeNotificationBand({
             resumableSession.activity.duration?.label ||
             ""
           }`}
-          tone="purple"
+          color="#7C63F2"
+          rotation="1deg"
           onPress={onResume}
         />
       )}
 
-      <BandNotification
+      <BubbleNotification
         label="Objet"
         icon="furniture"
         title={
@@ -1083,30 +1085,33 @@ function HomeNotificationBand({
             ? `Encore ${remainingXp} XP`
             : "Va organiser ta room"
         }
+        color="#77B84E"
+        rotation="-1.5deg"
         furniture={nextFurniture}
-        tone="green"
         onPress={onOpenRoom}
       />
 
-      <BandNotification
+      <BubbleNotification
         label="Bonus"
         icon="bonus"
         title={bonusChallenge.title}
         subtitle={`${bonusChallenge.rewardLabel} · ${bonusChallenge.subtitle}`}
-        tone="gold"
+        color="#F39A20"
+        rotation="1.5deg"
         onPress={onBonusPress}
       />
     </ScrollView>
   );
 }
 
-function BandNotification({
+function BubbleNotification({
   label,
   icon,
   title,
   subtitle,
+  color,
+  rotation,
   furniture,
-  tone,
   onPress,
 }: {
   label: string;
@@ -1117,169 +1122,157 @@ function BandNotification({
     | "bonus";
   title: string;
   subtitle: string;
+  color: string;
+  rotation: string;
   furniture?: RoomInventoryItem | null;
-  tone: "room" | "purple" | "green" | "gold";
   onPress: () => void;
 }) {
-  const colors =
-    tone === "green"
-      ? {
-          bg: "#F0FAEA",
-          border: "#92BD73",
-          accent: "#4F9F46",
-        }
-      : tone === "gold"
-        ? {
-            bg: "#FFF7E3",
-            border: "#E7C74F",
-            accent: "#D89A32",
-          }
-        : tone === "room"
-          ? {
-              bg: "#EEF7FF",
-              border: "#8FC7F2",
-              accent: "#5C8FD8",
-            }
-          : {
-              bg: "#F0EAFF",
-              border: "#7C63F2",
-              accent: "#7C63F2",
-            };
-
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 244,
-        height: 78,
-        borderRadius: 22,
-        backgroundColor: colors.bg,
-        borderWidth: 2,
-        borderColor: colors.border,
-        opacity: pressed ? 0.84 : 1,
-        overflow: "hidden",
-        ...TA.shadow.webCard,
+        width: 232,
+        height: 74,
+        opacity: pressed ? 0.82 : 1,
+        transform: [
+          {
+            rotate: rotation,
+          },
+          {
+            scale: pressed ? 0.985 : 1,
+          },
+        ],
       })}
     >
       <View
         style={{
           position: "absolute",
+          left: 5,
+          right: 2,
           top: 6,
-          left: 10,
-          paddingVertical: 2,
-          paddingHorizontal: 9,
-          borderRadius: 999,
-          backgroundColor: colors.accent,
-          zIndex: 3,
+          bottom: 2,
+          borderRadius: 26,
+          backgroundColor: "rgba(21, 27, 47, 0.13)",
+          transform: [
+            {
+              translateY: 4,
+            },
+          ],
         }}
-      >
-        <Text
-          style={{
-            color: TA.colors.white,
-            fontSize: 8,
-            lineHeight: 10,
-            fontFamily: TA.fonts.black,
-            textTransform: "uppercase",
-            letterSpacing: 0.7,
-          }}
-        >
-          {label}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          position: "absolute",
-          left: 10,
-          top: 27,
-          width: 42,
-          height: 42,
-          borderRadius: 14,
-          backgroundColor: TA.colors.surface,
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-          zIndex: 2,
-        }}
-      >
-        {icon === "room" && (
-          <ExpoImage
-            source={ROOM_BACKGROUND}
-            contentFit="cover"
-            style={{
-              width: "100%",
-              height: "100%",
-            }}
-          />
-        )}
-
-        {icon === "furniture" && furniture && (
-          <ExpoImage
-            source={getFurnitureSource(
-              furniture.image_key
-            )}
-            contentFit="contain"
-            style={{
-              width: "86%",
-              height: "86%",
-            }}
-          />
-        )}
-
-        {icon === "play" && (
-          <Text
-            style={{
-              color: colors.accent,
-              fontSize: 20,
-              fontFamily: TA.fonts.black,
-            }}
-          >
-            ▶
-          </Text>
-        )}
-
-        {icon === "bonus" && (
-          <Text
-            style={{
-              color: colors.accent,
-              fontSize: 23,
-              fontFamily: TA.fonts.black,
-            }}
-          >
-            ✦
-          </Text>
-        )}
-
-        {icon === "furniture" && !furniture && (
-          <Text
-            style={{
-              color: colors.accent,
-              fontSize: 22,
-              fontFamily: TA.fonts.black,
-            }}
-          >
-            ✓
-          </Text>
-        )}
-      </View>
+      />
 
       <View
         style={{
           flex: 1,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 24,
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 31,
+          backgroundColor: color,
+          paddingLeft: 68,
+          paddingRight: 15,
           justifyContent: "center",
-          paddingLeft: 62,
-          paddingRight: 24,
-          paddingTop: 17,
+          overflow: "hidden",
         }}
       >
+        <View
+          style={{
+            position: "absolute",
+            left: 16,
+            top: 15,
+            width: 42,
+            height: 42,
+            borderRadius: 17,
+            backgroundColor: "rgba(255,255,255,0.32)",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          {icon === "room" && (
+            <ExpoImage
+              source={ROOM_BACKGROUND}
+              contentFit="cover"
+              style={{
+                width: "100%",
+                height: "100%",
+              }}
+            />
+          )}
+
+          {icon === "furniture" && furniture && (
+            <ExpoImage
+              source={getFurnitureSource(
+                furniture.image_key
+              )}
+              contentFit="contain"
+              style={{
+                width: "86%",
+                height: "86%",
+              }}
+            />
+          )}
+
+          {icon === "play" && (
+            <Text
+              style={{
+                color: TA.colors.white,
+                fontSize: 20,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              ▶
+            </Text>
+          )}
+
+          {icon === "bonus" && (
+            <Text
+              style={{
+                color: TA.colors.white,
+                fontSize: 24,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              ✦
+            </Text>
+          )}
+
+          {icon === "furniture" && !furniture && (
+            <Text
+              style={{
+                color: TA.colors.white,
+                fontSize: 22,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              ✓
+            </Text>
+          )}
+        </View>
+
         <Text
           numberOfLines={1}
           style={{
-            color: TA.colors.ink,
-            fontSize: 15,
-            lineHeight: 18,
+            color: "rgba(255,255,255,0.82)",
+            fontSize: 9,
+            lineHeight: 11,
             fontFamily: TA.fonts.black,
-            letterSpacing: -0.4,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          {label}
+        </Text>
+
+        <Text
+          numberOfLines={1}
+          style={{
+            marginTop: 1,
+            color: TA.colors.white,
+            fontSize: 16,
+            lineHeight: 19,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -0.5,
           }}
         >
           {title}
@@ -1289,28 +1282,15 @@ function BandNotification({
           numberOfLines={1}
           style={{
             marginTop: 1,
-            color: TA.colors.inkMuted,
+            color: "rgba(255,255,255,0.82)",
             fontSize: 11,
-            lineHeight: 14,
+            lineHeight: 13,
             fontFamily: TA.fonts.bold,
           }}
         >
           {subtitle}
         </Text>
       </View>
-
-      <Text
-        style={{
-          position: "absolute",
-          right: 7,
-          top: 27,
-          color: colors.accent,
-          fontSize: 25,
-          fontFamily: TA.fonts.black,
-        }}
-      >
-        ›
-      </Text>
     </Pressable>
   );
 }
