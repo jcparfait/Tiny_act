@@ -9,6 +9,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { ActiveActivityCard } from "../../components/ActiveActivityCard";
+import { ActivityRewardCard } from "../../components/ActivityRewardCard";
 import { ErrorBox } from "../../components/ErrorBox";
 import { MobileNav } from "../../components/MobileNav";
 import { PrimaryButton } from "../../components/PrimaryButton";
@@ -17,6 +18,7 @@ import { SecondaryButton } from "../../components/SecondaryButton";
 
 import {
   finishActivitySession,
+  loadActivityReward,
   loadActivitySession,
   pauseActivitySession,
   resumeActivitySession,
@@ -25,13 +27,17 @@ import {
 
 import {
   Activity,
+  ActivityReward,
   ActivitySession,
 } from "../../types/tinyAct";
 
-function computeElapsedSeconds(activitySession: ActivitySession | null) {
+function computeElapsedSeconds(
+  activitySession: ActivitySession | null
+) {
   if (!activitySession) return 0;
 
-  const baseElapsedSeconds = activitySession.elapsed_seconds || 0;
+  const baseElapsedSeconds =
+    activitySession.elapsed_seconds || 0;
 
   if (
     activitySession.status !== "in_progress" ||
@@ -40,7 +46,10 @@ function computeElapsedSeconds(activitySession: ActivitySession | null) {
     return baseElapsedSeconds;
   }
 
-  const startedAt = new Date(activitySession.timer_started_at).getTime();
+  const startedAt = new Date(
+    activitySession.timer_started_at
+  ).getTime();
+
   const now = Date.now();
 
   const secondsSinceStart = Math.max(
@@ -51,49 +60,59 @@ function computeElapsedSeconds(activitySession: ActivitySession | null) {
   return baseElapsedSeconds + secondsSinceStart;
 }
 
-function formatElapsedTime(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${minutes.toString().padStart(2, "0")}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
-}
-
-function readableStatus(status: string, finished: boolean) {
-  if (finished) return "Terminée";
-  if (status === "in_progress") return "En cours";
-  if (status === "paused") return "En pause";
-  if (status === "preview") return "Prête à démarrer";
-  if (status === "selecting") return "Sélection en cours";
-
-  return status;
-}
-
 export default function SessionDetailScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string | string[] }>();
 
-  const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const params =
+    useLocalSearchParams<{ id: string | string[] }>();
+
+  const rawId = Array.isArray(params.id)
+    ? params.id[0]
+    : params.id;
+
   const activitySessionId = Number(rawId);
 
   const [activitySession, setActivitySession] =
     useState<ActivitySession | null>(null);
-  const [activity, setActivity] = useState<Activity | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [activityReadyToFinish, setActivityReadyToFinish] = useState(true);
 
-  const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
-  const [pausing, setPausing] = useState(false);
-  const [resuming, setResuming] = useState(false);
-  const [finishing, setFinishing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [activity, setActivity] =
+    useState<Activity | null>(null);
+
+  const [reward, setReward] =
+    useState<ActivityReward | null>(null);
+
+  const [elapsedSeconds, setElapsedSeconds] =
+    useState(0);
+
+  const [
+    activityReadyToFinish,
+    setActivityReadyToFinish,
+  ] = useState(true);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [starting, setStarting] =
+    useState(false);
+
+  const [pausing, setPausing] =
+    useState(false);
+
+  const [resuming, setResuming] =
+    useState(false);
+
+  const [finishing, setFinishing] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
 
   useEffect(() => {
     async function fetchSession() {
       if (!Number.isFinite(activitySessionId)) {
-        setError("Identifiant de session invalide.");
+        setError(
+          "Identifiant de session invalide."
+        );
         setLoading(false);
         return;
       }
@@ -101,25 +120,55 @@ export default function SessionDetailScreen() {
       try {
         setError(null);
 
-        const data = await loadActivitySession(activitySessionId);
+        const data =
+          await loadActivitySession(
+            activitySessionId
+          );
 
         const selectedActivity =
           data.activities.find(
-            (item) => item.id === data.activity_session.activity_id
+            (item) =>
+              item.id ===
+              data.activity_session.activity_id
           ) || data.activities[0];
 
-        setActivitySession(data.activity_session);
-        setActivity(selectedActivity || null);
+        setActivitySession(
+          data.activity_session
+        );
+
+        setActivity(
+          selectedActivity || null
+        );
+
         setElapsedSeconds(
-          computeElapsedSeconds(data.activity_session)
+          computeElapsedSeconds(
+            data.activity_session
+          )
         );
 
         setActivityReadyToFinish(
-          selectedActivity?.activity_type !== "melody"
+          selectedActivity?.activity_type !==
+            "melody"
         );
+
+        const sessionIsAlreadyFinished =
+          data.activity_session.finished ===
+            true ||
+          data.activity_session.status ===
+            "finished";
+
+        if (sessionIsAlreadyFinished) {
+          await loadRewardForSession(
+            data.activity_session.id
+          );
+        } else {
+          setReward(null);
+        }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Erreur inconnue"
+          err instanceof Error
+            ? err.message
+            : "Erreur inconnue"
         );
       } finally {
         setLoading(false);
@@ -130,16 +179,38 @@ export default function SessionDetailScreen() {
   }, [activitySessionId]);
 
   useEffect(() => {
-    if (activitySession?.status !== "in_progress") return;
+    if (
+      activitySession?.status !==
+      "in_progress"
+    ) {
+      return;
+    }
 
-    setElapsedSeconds(computeElapsedSeconds(activitySession));
+    setElapsedSeconds(
+      computeElapsedSeconds(activitySession)
+    );
 
     const intervalId = setInterval(() => {
-      setElapsedSeconds(computeElapsedSeconds(activitySession));
+      setElapsedSeconds(
+        computeElapsedSeconds(activitySession)
+      );
     }, 1000);
 
     return () => clearInterval(intervalId);
   }, [activitySession]);
+
+  async function loadRewardForSession(
+    sessionId: number
+  ) {
+    try {
+      const rewardData =
+        await loadActivityReward(sessionId);
+
+      setReward(rewardData);
+    } catch {
+      setReward(null);
+    }
+  }
 
   async function handleStart() {
     if (!activitySession) return;
@@ -148,19 +219,34 @@ export default function SessionDetailScreen() {
     setError(null);
 
     try {
-      const data = await startActivitySession(activitySession.id);
+      const data =
+        await startActivitySession(
+          activitySession.id
+        );
 
-      setActivitySession(data.activity_session);
+      setActivitySession(
+        data.activity_session
+      );
+
       setActivity(data.activity);
+
       setElapsedSeconds(
-        computeElapsedSeconds(data.activity_session)
+        computeElapsedSeconds(
+          data.activity_session
+        )
       );
+
       setActivityReadyToFinish(
-        data.activity.activity_type !== "melody"
+        data.activity.activity_type !==
+          "melody"
       );
+
+      setReward(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erreur inconnue"
+        err instanceof Error
+          ? err.message
+          : "Erreur inconnue"
       );
     } finally {
       setStarting(false);
@@ -174,19 +260,26 @@ export default function SessionDetailScreen() {
     setError(null);
 
     try {
-      const data = await pauseActivitySession(
-        activitySession.id,
-        elapsedSeconds
+      const data =
+        await pauseActivitySession(
+          activitySession.id,
+          elapsedSeconds
+        );
+
+      setActivitySession(
+        data.activity_session
       );
 
-      setActivitySession(data.activity_session);
       setActivity(data.activity);
+
       setElapsedSeconds(
         data.activity_session.elapsed_seconds
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erreur inconnue"
+        err instanceof Error
+          ? err.message
+          : "Erreur inconnue"
       );
     } finally {
       setPausing(false);
@@ -200,16 +293,27 @@ export default function SessionDetailScreen() {
     setError(null);
 
     try {
-      const data = await resumeActivitySession(activitySession.id);
+      const data =
+        await resumeActivitySession(
+          activitySession.id
+        );
 
-      setActivitySession(data.activity_session);
+      setActivitySession(
+        data.activity_session
+      );
+
       setActivity(data.activity);
+
       setElapsedSeconds(
-        computeElapsedSeconds(data.activity_session)
+        computeElapsedSeconds(
+          data.activity_session
+        )
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erreur inconnue"
+        err instanceof Error
+          ? err.message
+          : "Erreur inconnue"
       );
     } finally {
       setResuming(false);
@@ -228,20 +332,32 @@ export default function SessionDetailScreen() {
     setError(null);
 
     try {
-      const data = await finishActivitySession(
-        activitySession.id,
-        elapsedSeconds
+      const data =
+        await finishActivitySession(
+          activitySession.id,
+          elapsedSeconds
+        );
+
+      setActivitySession(
+        data.activity_session
       );
 
-      setActivitySession(data.activity_session);
       setActivity(data.activity);
+
       setElapsedSeconds(
         data.activity_session.elapsed_seconds
       );
+
       setActivityReadyToFinish(true);
+
+      await loadRewardForSession(
+        data.activity_session.id
+      );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erreur inconnue"
+        err instanceof Error
+          ? err.message
+          : "Erreur inconnue"
       );
     } finally {
       setFinishing(false);
@@ -253,7 +369,8 @@ export default function SessionDetailScreen() {
     activitySession?.status === "finished";
 
   const sessionIsRunning =
-    activitySession?.status === "in_progress";
+    activitySession?.status ===
+    "in_progress";
 
   const sessionIsPaused =
     activitySession?.status === "paused";
@@ -267,7 +384,12 @@ export default function SessionDetailScreen() {
     (sessionIsRunning || sessionIsPaused);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF4EA" }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: "#FFF4EA",
+      }}
+    >
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -291,7 +413,9 @@ export default function SessionDetailScreen() {
 
           {loading && <ActivityIndicator />}
 
-          {error && <ErrorBox message={error} />}
+          {error && (
+            <ErrorBox message={error} />
+          )}
 
           {!loading &&
             activitySession &&
@@ -299,8 +423,12 @@ export default function SessionDetailScreen() {
             !sessionIsFinished && (
               <ActiveActivityCard
                 activity={activity}
-                activitySession={activitySession}
-                elapsedSeconds={elapsedSeconds}
+                activitySession={
+                  activitySession
+                }
+                elapsedSeconds={
+                  elapsedSeconds
+                }
                 onActivityReadyToFinishChange={
                   setActivityReadyToFinish
                 }
@@ -310,23 +438,42 @@ export default function SessionDetailScreen() {
           {!loading &&
             activitySession &&
             activity &&
-            sessionIsFinished && (
+            sessionIsFinished &&
+            reward && (
+              <ActivityRewardCard
+                activity={activity}
+                reward={reward}
+                onViewRoom={() =>
+                  router.push("/explore")
+                }
+                onRestart={() =>
+                  router.replace("/")
+                }
+              />
+            )}
+
+          {!loading &&
+            activitySession &&
+            activity &&
+            sessionIsFinished &&
+            !reward && (
               <View
                 style={{
                   padding: 22,
                   borderRadius: 28,
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor:
+                    "#FFFFFF",
                   borderWidth: 2,
                   borderColor: "#F2D7C8",
-                  gap: 16,
+                  gap: 12,
                 }}
               >
                 <Text
                   style={{
-                    fontSize: 13,
                     color: "#176C3A",
                     fontWeight: "900",
-                    textTransform: "uppercase",
+                    textTransform:
+                      "uppercase",
                   }}
                 >
                   Activité terminée
@@ -334,8 +481,8 @@ export default function SessionDetailScreen() {
 
                 <Text
                   style={{
-                    fontSize: 30,
                     color: "#17152F",
+                    fontSize: 28,
                     fontWeight: "900",
                   }}
                 >
@@ -344,77 +491,15 @@ export default function SessionDetailScreen() {
 
                 <Text
                   style={{
-                    fontSize: 16,
                     color: "#5D5A70",
-                    lineHeight: 24,
+                    lineHeight: 22,
                   }}
                 >
-                  {activity.description ||
-                    activity.content ||
-                    "Aucune description."}
+                  Les informations de
+                  récompense ne sont pas
+                  disponibles pour cette
+                  session.
                 </Text>
-
-                <View
-                  style={{
-                    padding: 16,
-                    borderRadius: 20,
-                    backgroundColor: "#FFF4EA",
-                    gap: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      color: "#17152F",
-                      fontWeight: "800",
-                    }}
-                  >
-                    Résumé
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      color: "#5D5A70",
-                    }}
-                  >
-                    Statut :{" "}
-                    {readableStatus(
-                      activitySession.status,
-                      activitySession.finished
-                    )}
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      color: "#5D5A70",
-                    }}
-                  >
-                    Temps réalisé :{" "}
-                    {formatElapsedTime(elapsedSeconds)}
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      color: "#5D5A70",
-                    }}
-                  >
-                    Durée prévue :{" "}
-                    {activity.duration?.label ||
-                      "Non renseignée"}
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      color: "#5D5A70",
-                    }}
-                  >
-                    Type : {activity.activity_type}
-                  </Text>
-                </View>
               </View>
             )}
 
@@ -437,7 +522,11 @@ export default function SessionDetailScreen() {
 
                 {sessionIsRunning && (
                   <PrimaryButton
-                    label={pausing ? "Pause..." : "Pause"}
+                    label={
+                      pausing
+                        ? "Pause..."
+                        : "Pause"
+                    }
                     onPress={handlePause}
                     disabled={
                       pausing ||
@@ -450,7 +539,9 @@ export default function SessionDetailScreen() {
                 {sessionIsPaused && (
                   <PrimaryButton
                     label={
-                      resuming ? "Reprise..." : "Reprendre"
+                      resuming
+                        ? "Reprise..."
+                        : "Reprendre"
                     }
                     onPress={handleResume}
                     disabled={
@@ -480,14 +571,17 @@ export default function SessionDetailScreen() {
                   />
                 )}
 
-                {activitySession.status === "selecting" && (
+                {activitySession.status ===
+                  "selecting" && (
                   <View
                     style={{
                       padding: 16,
                       borderRadius: 20,
-                      backgroundColor: "#FFF4EA",
+                      backgroundColor:
+                        "#FFF4EA",
                       borderWidth: 1,
-                      borderColor: "#F2D7C8",
+                      borderColor:
+                        "#F2D7C8",
                     }}
                   >
                     <Text
@@ -497,8 +591,10 @@ export default function SessionDetailScreen() {
                         lineHeight: 22,
                       }}
                     >
-                      Cette session a été créée, mais aucune activité
-                      n’a encore été sélectionnée.
+                      Cette session a été
+                      créée, mais aucune
+                      activité n’a encore été
+                      sélectionnée.
                     </Text>
                   </View>
                 )}
