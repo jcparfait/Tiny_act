@@ -6,8 +6,9 @@ export const TA = {
     inkLight: "rgba(21, 27, 47, 0.34)",
 
     bg: "#F4EFE8",
-    bgStart: "#F8F2E9",
-    bgEnd: "#F3EDF8",
+    bgStart: "#F8EEDB",
+    bgMiddle: "#FFF8F1",
+    bgEnd: "#F1E9F8",
 
     surface: "#FFFDF9",
     surfaceSoft: "rgba(255, 253, 249, 0.92)",
@@ -15,6 +16,7 @@ export const TA = {
     borderSoft: "rgba(90, 74, 54, 0.10)",
     borderMedium: "rgba(90, 74, 54, 0.16)",
     borderDark: "rgba(7, 16, 39, 0.395)",
+    handDrawnDark: "rgba(21, 27, 47, 0.58)",
 
     purple: "#7C63F2",
     purpleSoft: "rgba(124, 99, 242, 0.18)",
@@ -56,33 +58,44 @@ export const TA = {
       shadowColor: "#071027",
       shadowOffset: {
         width: 0,
-        height: 5,
+        height: 9,
       },
-      shadowOpacity: 0.16,
-      shadowRadius: 12,
-      elevation: 5,
+      shadowOpacity: 0.18,
+      shadowRadius: 10,
+      elevation: 8,
     },
 
     webCard: {
       shadowColor: "#071027",
       shadowOffset: {
         width: 0,
-        height: 5,
+        height: 9,
       },
-      shadowOpacity: 0.16,
-      shadowRadius: 12,
-      elevation: 5,
+      shadowOpacity: 0.18,
+      shadowRadius: 10,
+      elevation: 8,
     },
 
     soft: {
-      shadowColor: "#151B2F",
+      shadowColor: "#071027",
       shadowOffset: {
         width: 0,
-        height: 10,
+        height: 8,
       },
-      shadowOpacity: 0.08,
-      shadowRadius: 22,
-      elevation: 3,
+      shadowOpacity: 0.14,
+      shadowRadius: 9,
+      elevation: 6,
+    },
+
+    hardDrop: {
+      shadowColor: "#071027",
+      shadowOffset: {
+        width: 0,
+        height: 7,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 7,
     },
   },
 };

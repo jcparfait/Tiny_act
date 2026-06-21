@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { Image as ExpoImage } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { ActiveActivityCard } from "../components/ActiveActivityCard";
 import { ActivityCard } from "../components/ActivityCard";
@@ -651,309 +652,321 @@ export default function HomeScreen() {
     step === "preview";
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: TA.colors.bg,
-      }}
+    <LinearGradient
+      colors={[
+        TA.colors.bgStart,
+        TA.colors.bgMiddle,
+        TA.colors.bgEnd,
+      ]}
+      locations={[0, 0.45, 1]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
     >
-      <MobileNav active="new" />
-
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingTop: 128,
-          paddingHorizontal: 18,
-          paddingBottom: 150,
-          alignItems: "center",
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: "transparent",
         }}
       >
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 520,
-            minHeight: "100%",
-            gap: 20,
+        <MobileNav active="new" />
+
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingTop: 128,
+            paddingHorizontal: 18,
+            paddingBottom: 150,
+            alignItems: "center",
           }}
         >
-          {step === "mood" && (
-            <HomeNotificationBand
-              resumableSession={resumableSession}
-              nextFurniture={nextFurniture}
-              bonusChallenge={bonusChallenge}
-              onResume={openResumableSession}
-              onOpenRoom={() =>
-                router.push("/explore")
-              }
-              onBonusPress={() => {
-                setStep("mood");
-              }}
-            />
-          )}
-
-          <SelectionTitle
-            kicker={kicker}
-            title={title}
-            subtitle={subtitle}
-          />
-
-          {loading && <ActivityIndicator />}
-
-          {error && (
-            <ErrorBox message={error} />
-          )}
-
-          {!loading &&
-            !error &&
-            step === "mood" && (
-              <View style={{ gap: 22 }}>
-                {moods.map((mood) => (
-                  <ChoiceCard
-                    key={mood.id}
-                    label={
-                      mood.name === "Mitigé"
-                        ? "Bof"
-                        : mood.name
-                    }
-                    selected={
-                      selectedMoodId === mood.id
-                    }
-                    onPress={() => {
-                      setSelectedMoodId(mood.id);
-                      setStep("location");
-                    }}
-                  />
-                ))}
-              </View>
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              minHeight: "100%",
+              gap: 20,
+            }}
+          >
+            {step === "mood" && (
+              <HomeNotificationBand
+                resumableSession={resumableSession}
+                nextFurniture={nextFurniture}
+                bonusChallenge={bonusChallenge}
+                onResume={openResumableSession}
+                onOpenRoom={() =>
+                  router.push("/explore")
+                }
+                onBonusPress={() => {
+                  setStep("mood");
+                }}
+              />
             )}
 
-          {!loading &&
-            !error &&
-            step === "location" && (
-              <View style={{ gap: 22 }}>
-                {locations.map((location) => {
-                  const label =
-                    location.name
-                      .toLowerCase()
-                      .includes("bureau")
-                      ? "Transport"
-                      : location.name;
+            <SelectionTitle
+              kicker={kicker}
+              title={title}
+              subtitle={subtitle}
+            />
 
-                  return (
+            {loading && <ActivityIndicator />}
+
+            {error && (
+              <ErrorBox message={error} />
+            )}
+
+            {!loading &&
+              !error &&
+              step === "mood" && (
+                <View style={{ gap: 22 }}>
+                  {moods.map((mood) => (
                     <ChoiceCard
-                      key={location.id}
-                      label={label}
+                      key={mood.id}
+                      label={
+                        mood.name === "Mitigé"
+                          ? "Bof"
+                          : mood.name
+                      }
                       selected={
-                        selectedLocationId ===
-                        location.id
+                        selectedMoodId === mood.id
                       }
                       onPress={() => {
-                        setSelectedLocationId(
-                          location.id
-                        );
-                        setStep("duration");
+                        setSelectedMoodId(mood.id);
+                        setStep("location");
                       }}
                     />
-                  );
-                })}
-              </View>
-            )}
+                  ))}
+                </View>
+              )}
 
-          {!loading &&
-            !error &&
-            step === "duration" && (
-              <View style={{ gap: 22 }}>
-                {durations.map((duration) => (
-                  <ChoiceCard
-                    key={duration.id}
-                    label={`${duration.value} minutes`}
-                    selected={
-                      selectedDurationId ===
-                      duration.id
-                    }
-                    onPress={() =>
-                      handleDurationChoice(
+            {!loading &&
+              !error &&
+              step === "location" && (
+                <View style={{ gap: 22 }}>
+                  {locations.map((location) => {
+                    const label =
+                      location.name
+                        .toLowerCase()
+                        .includes("bureau")
+                        ? "Transport"
+                        : location.name;
+
+                    return (
+                      <ChoiceCard
+                        key={location.id}
+                        label={label}
+                        selected={
+                          selectedLocationId ===
+                          location.id
+                        }
+                        onPress={() => {
+                          setSelectedLocationId(
+                            location.id
+                          );
+                          setStep("duration");
+                        }}
+                      />
+                    );
+                  })}
+                </View>
+              )}
+
+            {!loading &&
+              !error &&
+              step === "duration" && (
+                <View style={{ gap: 22 }}>
+                  {durations.map((duration) => (
+                    <ChoiceCard
+                      key={duration.id}
+                      label={`${duration.value} minutes`}
+                      selected={
+                        selectedDurationId ===
                         duration.id
-                      )
-                    }
-                  />
-                ))}
+                      }
+                      onPress={() =>
+                        handleDurationChoice(
+                          duration.id
+                        )
+                      }
+                    />
+                  ))}
 
-                {submitting && (
+                  {submitting && (
+                    <View
+                      style={{
+                        padding: 18,
+                        borderRadius: TA.radius.card,
+                        backgroundColor:
+                          TA.colors.surface,
+                        borderWidth: 1,
+                        borderColor:
+                          TA.colors.borderMedium,
+                        alignItems: "center",
+                      }}
+                    >
+                      <ActivityIndicator />
+
+                      <Text
+                        style={{
+                          marginTop: 10,
+                          color: TA.colors.inkMuted,
+                          fontFamily: TA.fonts.bold,
+                        }}
+                      >
+                        Recherche d’une activité...
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+            {step === "recommendations" && (
+              <View style={{ gap: 22 }}>
+                {recommendedActivities.length ===
+                0 ? (
                   <View
                     style={{
-                      padding: 18,
-                      borderRadius: TA.radius.card,
+                      padding: 20,
+                      borderRadius: 24,
                       backgroundColor:
                         TA.colors.surface,
-                      borderWidth: 1,
+                      borderWidth: 2,
                       borderColor:
                         TA.colors.borderMedium,
-                      alignItems: "center",
                     }}
                   >
-                    <ActivityIndicator />
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        fontFamily: TA.fonts.black,
+                        color: TA.colors.ink,
+                      }}
+                    >
+                      Aucune activité affichée
+                    </Text>
 
                     <Text
                       style={{
-                        marginTop: 10,
+                        marginTop: 8,
+                        fontSize: 15,
                         color: TA.colors.inkMuted,
+                        lineHeight: 22,
                         fontFamily: TA.fonts.bold,
                       }}
                     >
-                      Recherche d’une activité...
+                      Rails n’a pas renvoyé de
+                      tableau d’activités exploitable
+                      côté mobile.
                     </Text>
                   </View>
+                ) : (
+                  recommendedActivities.map(
+                    (activity) => (
+                      <ActivityCard
+                        key={activity.id}
+                        activity={activity}
+                        selectingActivity={
+                          selectingActivity
+                        }
+                        onSelect={
+                          handleSelectActivity
+                        }
+                      />
+                    )
+                  )
                 )}
               </View>
             )}
 
-          {step === "recommendations" && (
-            <View style={{ gap: 22 }}>
-              {recommendedActivities.length ===
-              0 ? (
-                <View
-                  style={{
-                    padding: 20,
-                    borderRadius: 24,
-                    backgroundColor:
-                      TA.colors.surface,
-                    borderWidth: 2,
-                    borderColor:
-                      TA.colors.borderMedium,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontFamily: TA.fonts.black,
-                      color: TA.colors.ink,
-                    }}
-                  >
-                    Aucune activité affichée
-                  </Text>
-
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      fontSize: 15,
-                      color: TA.colors.inkMuted,
-                      lineHeight: 22,
-                      fontFamily: TA.fonts.bold,
-                    }}
-                  >
-                    Rails n’a pas renvoyé de
-                    tableau d’activités exploitable
-                    côté mobile.
-                  </Text>
-                </View>
-              ) : (
-                recommendedActivities.map(
-                  (activity) => (
-                    <ActivityCard
-                      key={activity.id}
-                      activity={activity}
-                      selectingActivity={
-                        selectingActivity
-                      }
-                      onSelect={
-                        handleSelectActivity
-                      }
-                    />
-                  )
-                )
+            {step === "preview" &&
+              selectedActivity && (
+                <PreviewActivityCard
+                  activity={selectedActivity}
+                />
               )}
-            </View>
+
+            {step === "activity" &&
+              selectedActivity &&
+              activitySession && (
+                <ActiveActivityCard
+                  activity={selectedActivity}
+                  activitySession={
+                    activitySession
+                  }
+                  elapsedSeconds={elapsedSeconds}
+                  onActivityReadyToFinishChange={
+                    setActivityReadyToFinish
+                  }
+                />
+              )}
+
+            {step === "finished" &&
+              selectedActivity &&
+              reward && (
+                <ActivityRewardCard
+                  activity={selectedActivity}
+                  reward={reward}
+                  onViewRoom={() =>
+                    router.push("/explore")
+                  }
+                  onRestart={resetFlow}
+                />
+              )}
+          </View>
+        </ScrollView>
+
+        {showSelectionFooter && (
+          <SelectionFooter step={step} />
+        )}
+
+        {showBackFooter && (
+          <BottomBackButton onPress={handleBack} />
+        )}
+
+        {step === "preview" &&
+          selectedActivity && (
+            <BottomPrimaryAction
+              label={
+                startingActivity
+                  ? "Démarrage..."
+                  : "Commencer l’activité"
+              }
+              onPress={handleStartActivity}
+              disabled={startingActivity}
+            />
           )}
 
-          {step === "preview" &&
-            selectedActivity && (
-              <PreviewActivityCard
-                activity={selectedActivity}
-              />
-            )}
-
-          {step === "activity" &&
-            selectedActivity &&
-            activitySession && (
-              <ActiveActivityCard
-                activity={selectedActivity}
-                activitySession={
-                  activitySession
-                }
-                elapsedSeconds={elapsedSeconds}
-                onActivityReadyToFinishChange={
-                  setActivityReadyToFinish
-                }
-              />
-            )}
-
-          {step === "finished" &&
-            selectedActivity &&
-            reward && (
-              <ActivityRewardCard
-                activity={selectedActivity}
-                reward={reward}
-                onViewRoom={() =>
-                  router.push("/explore")
-                }
-                onRestart={resetFlow}
-              />
-            )}
-        </View>
-      </ScrollView>
-
-      {showSelectionFooter && (
-        <SelectionFooter step={step} />
-      )}
-
-      {showBackFooter && (
-        <BottomBackButton onPress={handleBack} />
-      )}
-
-      {step === "preview" &&
-        selectedActivity && (
+        {step === "recommendations" && (
           <BottomPrimaryAction
-            label={
-              startingActivity
-                ? "Démarrage..."
-                : "Commencer l’activité"
-            }
-            onPress={handleStartActivity}
-            disabled={startingActivity}
+            label="Recommencer"
+            onPress={resetFlow}
           />
         )}
 
-      {step === "recommendations" && (
-        <BottomPrimaryAction
-          label="Recommencer"
-          onPress={resetFlow}
-        />
-      )}
-
-      {step === "activity" &&
-        selectedActivity &&
-        activitySession && (
-          <ActivityBottomActions
-            activityIsInProgress={
-              activityIsInProgress
-            }
-            activityIsPaused={activityIsPaused}
-            pausingActivity={pausingActivity}
-            resumingActivity={resumingActivity}
-            finishingActivity={finishingActivity}
-            finishButtonDisabled={
-              finishButtonDisabled
-            }
-            activityReadyToFinish={
-              activityReadyToFinish
-            }
-            onPause={handlePauseActivity}
-            onResume={handleResumeActivity}
-            onFinish={handleFinishActivity}
-          />
-        )}
-    </SafeAreaView>
+        {step === "activity" &&
+          selectedActivity &&
+          activitySession && (
+            <ActivityBottomActions
+              activityIsInProgress={
+                activityIsInProgress
+              }
+              activityIsPaused={activityIsPaused}
+              pausingActivity={pausingActivity}
+              resumingActivity={resumingActivity}
+              finishingActivity={finishingActivity}
+              finishButtonDisabled={
+                finishButtonDisabled
+              }
+              activityReadyToFinish={
+                activityReadyToFinish
+              }
+              onPause={handlePauseActivity}
+              onResume={handleResumeActivity}
+              onFinish={handleFinishActivity}
+            />
+          )}
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -1152,10 +1165,10 @@ function BubbleNotification({
           top: 6,
           bottom: 2,
           borderRadius: 26,
-          backgroundColor: "rgba(21, 27, 47, 0.13)",
+          backgroundColor: "rgba(21, 27, 47, 0.17)",
           transform: [
             {
-              translateY: 4,
+              translateY: 5,
             },
           ],
         }}
@@ -1169,6 +1182,8 @@ function BubbleNotification({
           borderBottomLeftRadius: 20,
           borderBottomRightRadius: 31,
           backgroundColor: color,
+          borderWidth: 1.5,
+          borderColor: TA.colors.handDrawnDark,
           paddingLeft: 68,
           paddingRight: 15,
           justifyContent: "center",
