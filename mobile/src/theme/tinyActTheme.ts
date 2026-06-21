@@ -52,6 +52,17 @@ export const TA = {
   },
 
   shadow: {
+    card: {
+      shadowColor: "#071027",
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+      shadowOpacity: 0.16,
+      shadowRadius: 12,
+      elevation: 5,
+    },
+
     webCard: {
       shadowColor: "#071027",
       shadowOffset: {
@@ -60,6 +71,7 @@ export const TA = {
       },
       shadowOpacity: 0.16,
       shadowRadius: 12,
+      elevation: 5,
     },
 
     soft: {
@@ -70,6 +82,7 @@ export const TA = {
       },
       shadowOpacity: 0.08,
       shadowRadius: 22,
+      elevation: 3,
     },
   },
 };

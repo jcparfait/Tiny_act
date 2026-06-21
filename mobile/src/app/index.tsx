@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 
 import {
   ActivityIndicator,
+  Pressable,
   SafeAreaView,
   ScrollView,
   Text,
@@ -17,9 +18,7 @@ import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PreviewActivityCard } from "../components/PreviewActivityCard";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { ScreenHeader } from "../components/ScreenHeader";
 import { SecondaryButton } from "../components/SecondaryButton";
-import { SessionBadge } from "../components/SessionBadge";
 
 import {
   createActivitySession,
@@ -255,18 +254,29 @@ export default function HomeScreen() {
 
   const subtitle =
     step === "mood"
-      ? "Choisis ton état actuel, puis on te proposera une micro-action."
+      ? ""
       : step === "location"
         ? "On adapte les activités à l’endroit où tu peux vraiment agir maintenant."
         : step === "duration"
           ? "Choisis une durée réaliste. L’objectif est de commencer, pas de te charger."
           : step === "recommendations"
-            ? "Choisis une activité pour transformer ton envie de scroll en action."
+            ? "Choisis une action."
             : step === "preview"
-              ? "Voici le résumé de ton activité avant de la lancer."
+              ? "Voici le résumé avant de lancer l’activité."
               : step === "activity"
                 ? "Concentre-toi seulement sur cette petite action."
                 : "Ta session est terminée.";
+
+  const kicker =
+    step === "recommendations"
+      ? "Choisis une action"
+      : step === "preview"
+        ? "Résumé"
+        : step === "activity"
+          ? "Activité"
+          : step === "finished"
+            ? "Récompense"
+            : undefined;
 
   function handleBack() {
     setError(null);
@@ -579,6 +589,17 @@ export default function HomeScreen() {
     resumingActivity ||
     !activityReadyToFinish;
 
+  const showSelectionFooter =
+    step === "mood" ||
+    step === "location" ||
+    step === "duration";
+
+  const showBackFooter =
+    step === "location" ||
+    step === "duration" ||
+    step === "recommendations" ||
+    step === "preview";
+
   return (
     <SafeAreaView
       style={{
@@ -586,11 +607,14 @@ export default function HomeScreen() {
         backgroundColor: TA.colors.bg,
       }}
     >
+      <MobileNav active="new" />
+
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          padding: 18,
-          paddingBottom: 40,
+          paddingTop: 132,
+          paddingHorizontal: 18,
+          paddingBottom: 150,
           alignItems: "center",
         }}
       >
@@ -599,12 +623,9 @@ export default function HomeScreen() {
             width: "100%",
             maxWidth: 520,
             minHeight: "100%",
-            justifyContent: "center",
             gap: 24,
           }}
         >
-          <MobileNav active="new" />
-
           {step === "mood" &&
             resumableSession && (
               <HomeNotification
@@ -622,7 +643,8 @@ export default function HomeScreen() {
               />
             )}
 
-          <ScreenHeader
+          <SelectionTitle
+            kicker={kicker}
             title={title}
             subtitle={subtitle}
           />
@@ -739,18 +761,7 @@ export default function HomeScreen() {
             )}
 
           {step === "recommendations" && (
-            <View style={{ gap: 14 }}>
-              {activitySession && (
-                <SessionBadge
-                  activitySession={
-                    activitySession
-                  }
-                  activitiesCount={
-                    recommendedActivities.length
-                  }
-                />
-              )}
-
+            <View style={{ gap: 22 }}>
               {recommendedActivities.length ===
               0 ? (
                 <View
@@ -841,88 +852,113 @@ export default function HomeScreen() {
                 onRestart={resetFlow}
               />
             )}
-
-          {step !== "mood" &&
-            step !== "activity" &&
-            step !== "finished" && (
-              <SecondaryButton
-                label="← Retour"
-                onPress={handleBack}
-              />
-            )}
-
-          {step === "recommendations" && (
-            <PrimaryButton
-              label="Recommencer"
-              onPress={resetFlow}
-            />
-          )}
-
-          {step === "preview" &&
-            selectedActivity && (
-              <PrimaryButton
-                label={
-                  startingActivity
-                    ? "Démarrage..."
-                    : "Commencer l’activité"
-                }
-                onPress={handleStartActivity}
-                disabled={startingActivity}
-              />
-            )}
-
-          {step === "activity" &&
-            selectedActivity &&
-            activitySession && (
-              <View style={{ gap: 12 }}>
-                {activityIsInProgress && (
-                  <PrimaryButton
-                    label={
-                      pausingActivity
-                        ? "Pause..."
-                        : "Pause"
-                    }
-                    onPress={handlePauseActivity}
-                    disabled={
-                      pausingActivity ||
-                      finishingActivity
-                    }
-                  />
-                )}
-
-                {activityIsPaused && (
-                  <PrimaryButton
-                    label={
-                      resumingActivity
-                        ? "Reprise..."
-                        : "Reprendre"
-                    }
-                    onPress={handleResumeActivity}
-                    disabled={
-                      resumingActivity ||
-                      finishingActivity
-                    }
-                  />
-                )}
-
-                <PrimaryButton
-                  label={
-                    !activityReadyToFinish
-                      ? "Joue toutes les notes pour terminer"
-                      : finishingActivity
-                        ? "Finalisation..."
-                        : "Terminer"
-                  }
-                  onPress={handleFinishActivity}
-                  disabled={finishButtonDisabled}
-                />
-              </View>
-            )}
-
-          <StepFooter step={step} />
         </View>
       </ScrollView>
+
+      {showSelectionFooter && (
+        <SelectionFooter step={step} />
+      )}
+
+      {showBackFooter && (
+        <BottomBackButton onPress={handleBack} />
+      )}
+
+      {step === "preview" &&
+        selectedActivity && (
+          <BottomPrimaryAction
+            label={
+              startingActivity
+                ? "Démarrage..."
+                : "Commencer l’activité"
+            }
+            onPress={handleStartActivity}
+            disabled={startingActivity}
+          />
+        )}
+
+      {step === "recommendations" && (
+        <BottomPrimaryAction
+          label="Recommencer"
+          onPress={resetFlow}
+        />
+      )}
+
+      {step === "activity" &&
+        selectedActivity &&
+        activitySession && (
+          <ActivityBottomActions
+            activityIsInProgress={
+              activityIsInProgress
+            }
+            activityIsPaused={activityIsPaused}
+            pausingActivity={pausingActivity}
+            resumingActivity={resumingActivity}
+            finishingActivity={finishingActivity}
+            finishButtonDisabled={
+              finishButtonDisabled
+            }
+            activityReadyToFinish={
+              activityReadyToFinish
+            }
+            onPause={handlePauseActivity}
+            onResume={handleResumeActivity}
+            onFinish={handleFinishActivity}
+          />
+        )}
     </SafeAreaView>
+  );
+}
+
+function SelectionTitle({
+  kicker,
+  title,
+  subtitle,
+}: {
+  kicker?: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <View style={{ gap: 10 }}>
+      {kicker && (
+        <Text
+          style={{
+            color: TA.colors.inkLight,
+            fontSize: 13,
+            fontFamily: TA.fonts.black,
+            textTransform: "uppercase",
+            letterSpacing: 2,
+          }}
+        >
+          {kicker}
+        </Text>
+      )}
+
+      <Text
+        style={{
+          color: TA.colors.ink,
+          fontSize: 42,
+          lineHeight: 43,
+          fontFamily: TA.fonts.black,
+          letterSpacing: -2,
+        }}
+      >
+        {title}
+      </Text>
+
+      {subtitle.length > 0 && (
+        <Text
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 17,
+            lineHeight: 24,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          {subtitle}
+        </Text>
+      )}
+    </View>
   );
 }
 
@@ -936,44 +972,118 @@ function HomeNotification({
   onPress: () => void;
 }) {
   return (
-    <View
-      style={{
-        marginTop: 112,
-      }}
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        padding: 14,
+        borderRadius: 28,
+        backgroundColor: "#F0EAFF",
+        borderWidth: 2,
+        borderColor: TA.colors.borderDark,
+        opacity: pressed ? 0.84 : 1,
+        ...TA.shadow.webCard,
+      })}
     >
-      <SecondaryButton
-        label={`▶ Reprendre · ${title}`}
-        onPress={onPress}
-      />
-
-      <Text
-        numberOfLines={1}
+      <View
         style={{
-          marginTop: 8,
-          color: TA.colors.inkMuted,
-          textAlign: "center",
-          fontSize: 13,
-          fontFamily: TA.fonts.bold,
+          position: "absolute",
+          top: -11,
+          alignSelf: "center",
+          paddingVertical: 3,
+          paddingHorizontal: 18,
+          borderRadius: 999,
+          backgroundColor: TA.colors.purple,
         }}
       >
-        {subtitle}
-      </Text>
-    </View>
+        <Text
+          style={{
+            color: TA.colors.white,
+            fontSize: 10,
+            fontFamily: TA.fonts.black,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+          }}
+        >
+          Reprendre
+        </Text>
+      </View>
+
+      <View
+        style={{
+          minHeight: 76,
+          paddingLeft: 86,
+          paddingRight: 28,
+          justifyContent: "center",
+        }}
+      >
+        <View
+          style={{
+            position: "absolute",
+            left: 14,
+            width: 60,
+            height: 60,
+            borderRadius: 18,
+            backgroundColor: TA.colors.surface,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: TA.colors.purple,
+              fontSize: 30,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            ▶
+          </Text>
+        </View>
+
+        <Text
+          numberOfLines={1}
+          style={{
+            color: TA.colors.ink,
+            fontSize: 19,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -0.4,
+          }}
+        >
+          {title}
+        </Text>
+
+        <Text
+          numberOfLines={1}
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 14,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          {subtitle}
+        </Text>
+
+        <Text
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 20,
+            color: TA.colors.purple,
+            fontSize: 34,
+            fontFamily: TA.fonts.black,
+          }}
+        >
+          ›
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
-function StepFooter({
+function SelectionFooter({
   step,
 }: {
   step: Step;
 }) {
-  const visible =
-    step === "mood" ||
-    step === "location" ||
-    step === "duration";
-
-  if (!visible) return null;
-
   const currentStep =
     step === "mood"
       ? 1
@@ -983,11 +1093,13 @@ function StepFooter({
 
   return (
     <View
+      pointerEvents="none"
       style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: step === "mood" ? 34 : 118,
         alignItems: "center",
-        gap: 10,
-        paddingTop: 18,
-        paddingBottom: 8,
       }}
     >
       <Text
@@ -996,7 +1108,7 @@ function StepFooter({
           fontSize: 13,
           fontFamily: TA.fonts.black,
           textTransform: "uppercase",
-          letterSpacing: 1.4,
+          letterSpacing: 1.5,
         }}
       >
         Étape {currentStep} sur 3
@@ -1004,6 +1116,7 @@ function StepFooter({
 
       <View
         style={{
+          marginTop: 12,
           flexDirection: "row",
           gap: 8,
           alignItems: "center",
@@ -1014,7 +1127,7 @@ function StepFooter({
             key={index}
             style={{
               width:
-                index === currentStep ? 28 : 10,
+                index === currentStep ? 32 : 10,
               height: 10,
               borderRadius: 999,
               backgroundColor:
@@ -1024,6 +1137,140 @@ function StepFooter({
             }}
           />
         ))}
+      </View>
+    </View>
+  );
+}
+
+function BottomBackButton({
+  onPress,
+}: {
+  onPress: () => void;
+}) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 18,
+        right: 18,
+        bottom: 26,
+      }}
+    >
+      <SecondaryButton
+        label="← Retour"
+        onPress={onPress}
+      />
+    </View>
+  );
+}
+
+function BottomPrimaryAction({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 18,
+        right: 18,
+        bottom: 26,
+      }}
+    >
+      <PrimaryButton
+        label={label}
+        onPress={onPress}
+        disabled={disabled}
+      />
+    </View>
+  );
+}
+
+function ActivityBottomActions({
+  activityIsInProgress,
+  activityIsPaused,
+  pausingActivity,
+  resumingActivity,
+  finishingActivity,
+  finishButtonDisabled,
+  activityReadyToFinish,
+  onPause,
+  onResume,
+  onFinish,
+}: {
+  activityIsInProgress: boolean;
+  activityIsPaused: boolean;
+  pausingActivity: boolean;
+  resumingActivity: boolean;
+  finishingActivity: boolean;
+  finishButtonDisabled: boolean;
+  activityReadyToFinish: boolean;
+  onPause: () => void;
+  onResume: () => void;
+  onFinish: () => void;
+}) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 18,
+        right: 18,
+        bottom: 26,
+        flexDirection: "row",
+        gap: 12,
+      }}
+    >
+      {activityIsInProgress && (
+        <View style={{ flex: 0.9 }}>
+          <SecondaryButton
+            label={
+              pausingActivity
+                ? "Pause..."
+                : "Pause"
+            }
+            onPress={onPause}
+            disabled={
+              pausingActivity ||
+              finishingActivity
+            }
+          />
+        </View>
+      )}
+
+      {activityIsPaused && (
+        <View style={{ flex: 0.9 }}>
+          <SecondaryButton
+            label={
+              resumingActivity
+                ? "Reprise..."
+                : "Reprendre"
+            }
+            onPress={onResume}
+            disabled={
+              resumingActivity ||
+              finishingActivity
+            }
+          />
+        </View>
+      )}
+
+      <View style={{ flex: 1.6 }}>
+        <PrimaryButton
+          label={
+            !activityReadyToFinish
+              ? "Termine l’activité"
+              : finishingActivity
+                ? "Finalisation..."
+                : "Terminer"
+          }
+          onPress={onFinish}
+          disabled={finishButtonDisabled}
+        />
       </View>
     </View>
   );

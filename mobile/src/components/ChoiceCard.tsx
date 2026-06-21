@@ -2,7 +2,11 @@ import { Pressable, Text, View } from "react-native";
 
 import { Image as ExpoImage } from "expo-image";
 
-import { getMoodMascotSource } from "../constants/brandAssets";
+import {
+  getChoiceColor,
+  getChoiceImageSource,
+} from "../constants/brandAssets";
+
 import { TA } from "../theme/tinyActTheme";
 
 type ChoiceCardProps = {
@@ -11,77 +15,52 @@ type ChoiceCardProps = {
   onPress: () => void;
 };
 
-function fallbackIconForLabel(label: string) {
-  const normalized = label.toLowerCase();
-
-  if (normalized.includes("maison")) return "⌂";
-  if (normalized.includes("extérieur")) return "↗";
-  if (normalized.includes("transport")) return "→";
-  if (normalized.includes("n'importe")) return "◎";
-
-  if (normalized.includes("5")) return "5";
-  if (normalized.includes("15")) return "15";
-  if (normalized.includes("30")) return "30";
-
-  return "•";
-}
-
 export function ChoiceCard({
   label,
   selected,
   onPress,
 }: ChoiceCardProps) {
-  const mascotSource =
-    getMoodMascotSource(label);
+  const imageSource = getChoiceImageSource(label);
+  const color = getChoiceColor(label);
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: mascotSource ? 116 : 92,
-        padding: mascotSource ? 14 : 18,
+        minHeight: 116,
+        padding: 14,
         borderRadius: 30,
-        backgroundColor: selected
-          ? TA.colors.surface
-          : TA.colors.surface,
-        borderWidth: 1,
+        backgroundColor: color.bg,
+        borderWidth: 2,
         borderColor: selected
-          ? TA.colors.borderDark
-          : TA.colors.borderMedium,
+          ? TA.colors.purple
+          : color.border,
         flexDirection: "row",
         alignItems: "center",
-        gap: 14,
+        gap: 16,
         opacity: pressed ? 0.86 : 1,
         transform: [
           {
             translateY: pressed ? 1 : 0,
           },
         ],
-        shadowColor: "#071027",
-        shadowOffset: {
-          width: 0,
-          height: 5,
-        },
-        shadowOpacity: 0.16,
-        shadowRadius: 10,
+        ...TA.shadow.webCard,
       })}
     >
       <View
         style={{
-          width: mascotSource ? 88 : 58,
-          height: mascotSource ? 88 : 58,
-          borderRadius: mascotSource ? 26 : 20,
+          width: 92,
+          height: 92,
+          borderRadius: 26,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: selected
-            ? TA.colors.purpleSoft
-            : TA.colors.goldSoft,
+          backgroundColor: TA.colors.surface,
           overflow: "hidden",
         }}
       >
-        {mascotSource ? (
+        {imageSource ? (
           <ExpoImage
-            source={mascotSource}
+            source={imageSource}
             contentFit="contain"
             style={{
               width: "100%",
@@ -91,50 +70,35 @@ export function ChoiceCard({
         ) : (
           <Text
             style={{
-              color: selected
-                ? TA.colors.purple
-                : TA.colors.gold,
-              fontSize: 23,
+              color: TA.colors.purple,
+              fontSize: 28,
               fontFamily: TA.fonts.black,
             }}
           >
-            {fallbackIconForLabel(label)}
+            ✦
           </Text>
         )}
       </View>
 
-      <View style={{ flex: 1, gap: 4 }}>
+      <View style={{ flex: 1 }}>
         <Text
           style={{
-            fontSize: 24,
-            lineHeight: 27,
+            fontSize: 31,
+            lineHeight: 35,
             fontFamily: TA.fonts.black,
             color: TA.colors.ink,
-            letterSpacing: -0.8,
+            letterSpacing: -1.2,
           }}
         >
           {label}
-        </Text>
-
-        <Text
-          style={{
-            color: selected
-              ? TA.colors.purple
-              : TA.colors.inkMuted,
-            fontSize: 13,
-            fontFamily: TA.fonts.bold,
-          }}
-        >
-          {selected ? "Sélectionné" : "Toucher pour choisir"}
         </Text>
       </View>
 
       <Text
         style={{
-          color: selected
-            ? TA.colors.purple
-            : TA.colors.inkLight,
-          fontSize: 34,
+          color: TA.colors.purple,
+          fontSize: 42,
+          lineHeight: 42,
           fontFamily: TA.fonts.black,
         }}
       >
