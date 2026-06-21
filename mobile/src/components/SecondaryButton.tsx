@@ -1,5 +1,7 @@
 import { Pressable, Text } from "react-native";
 
+import { TA } from "../theme/tinyActTheme";
+
 type SecondaryButtonProps = {
   label: string;
   onPress: () => void;
@@ -21,12 +23,12 @@ export function SecondaryButton({
         minHeight: 50,
         paddingVertical: 14,
         paddingHorizontal: 18,
-        borderRadius: 999,
+        borderRadius: TA.radius.pill,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: TA.colors.surface,
         borderWidth: 2,
-        borderColor: "#F2D7C8",
+        borderColor: TA.colors.borderMedium,
         opacity:
           disabled || pressed ? 0.62 : 1,
         transform: [
@@ -41,8 +43,8 @@ export function SecondaryButton({
         numberOfLines={1}
         style={{
           color: disabled
-            ? "#8E8A9D"
-            : "#17152F",
+            ? TA.colors.inkLight
+            : TA.colors.ink,
           fontSize: 15,
           fontWeight: "900",
           textAlign: "center",

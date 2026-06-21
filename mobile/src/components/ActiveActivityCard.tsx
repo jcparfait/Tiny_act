@@ -1,6 +1,13 @@
 import { Text, View } from "react-native";
+
 import { ActivityRenderer } from "./ActivityRenderer";
-import { Activity, ActivitySession } from "../types/tinyAct";
+
+import {
+  Activity,
+  ActivitySession,
+} from "../types/tinyAct";
+
+import { TA } from "../theme/tinyActTheme";
 
 type ActiveActivityCardProps = {
   activity: Activity;
@@ -27,6 +34,19 @@ function readableStatus(status: string) {
   return status;
 }
 
+function readableActivityType(type: string) {
+  const labels: Record<string, string> = {
+    standard: "Action simple",
+    culture_quiz: "Quiz culture",
+    code_quiz: "Quiz code",
+    word_learning: "Langues · mots",
+    sentence_completion: "Langues · phrases",
+    melody: "Musique",
+  };
+
+  return labels[type] || "Activité";
+}
+
 export function ActiveActivityCard({
   activity,
   activitySession,
@@ -36,31 +56,39 @@ export function ActiveActivityCard({
   return (
     <View
       style={{
-        padding: 22,
-        borderRadius: 28,
-        backgroundColor: "#FFFFFF",
+        padding: 24,
+        borderRadius: TA.radius.large,
+        backgroundColor: TA.colors.surface,
         borderWidth: 2,
-        borderColor: "#F2D7C8",
+        borderColor: TA.colors.borderMedium,
         gap: 18,
+        ...TA.shadow.card,
       }}
     >
-      <View style={{ gap: 6 }}>
+      <View style={{ gap: 7 }}>
         <Text
           style={{
-            fontSize: 13,
-            fontWeight: "800",
-            color: "#FF4B2B",
+            fontSize: 12,
+            fontWeight: "900",
+            color: activitySession.finished
+              ? TA.colors.green
+              : TA.colors.purple,
             textTransform: "uppercase",
+            letterSpacing: 0.8,
           }}
         >
-          {activitySession.finished ? "Activité terminée" : "Activité en cours"}
+          {activitySession.finished
+            ? "Activité terminée"
+            : "Activité en cours"}
         </Text>
 
         <Text
           style={{
-            fontSize: 30,
+            fontSize: 31,
+            lineHeight: 35,
             fontWeight: "900",
-            color: "#17152F",
+            color: TA.colors.ink,
+            letterSpacing: -0.9,
           }}
         >
           {activity.name}
@@ -69,35 +97,40 @@ export function ActiveActivityCard({
 
       <ActivityRenderer
         activity={activity}
-        onActivityReadyToFinishChange={onActivityReadyToFinishChange}
+        onActivityReadyToFinishChange={
+          onActivityReadyToFinishChange
+        }
       />
 
       <View
         style={{
-          padding: 18,
-          borderRadius: 22,
-          backgroundColor: "#17152F",
+          padding: 20,
+          borderRadius: TA.radius.card,
+          backgroundColor: TA.colors.ink,
           alignItems: "center",
+          gap: 4,
         }}
       >
         <Text
           style={{
-            fontSize: 13,
-            color: "#FFFFFF",
-            opacity: 0.7,
-            fontWeight: "800",
+            fontSize: 12,
+            color: TA.colors.white,
+            opacity: 0.64,
+            fontWeight: "900",
             textTransform: "uppercase",
+            letterSpacing: 0.8,
           }}
         >
-          Temps écoulé
+          Temps actif
         </Text>
 
         <Text
           style={{
-            marginTop: 6,
-            fontSize: 42,
-            color: "#FFFFFF",
+            fontSize: 44,
+            lineHeight: 49,
+            color: TA.colors.white,
             fontWeight: "900",
+            letterSpacing: -1,
           }}
         >
           {formatElapsedTime(elapsedSeconds)}
@@ -107,27 +140,75 @@ export function ActiveActivityCard({
       <View
         style={{
           padding: 16,
-          borderRadius: 20,
-          backgroundColor: "#FFF4EA",
-          gap: 8,
+          borderRadius: TA.radius.medium,
+          backgroundColor: TA.colors.surfaceSoft,
+          borderWidth: 1,
+          borderColor: TA.colors.borderSoft,
+          gap: 10,
         }}
       >
-        <Text style={{ fontSize: 15, color: "#17152F", fontWeight: "800" }}>
-          Session
-        </Text>
+        <SessionLine
+          label="Statut"
+          value={readableStatus(
+            activitySession.status
+          )}
+        />
 
-        <Text style={{ fontSize: 15, color: "#5D5A70" }}>
-          Statut : {readableStatus(activitySession.status)}
-        </Text>
+        <SessionLine
+          label="Durée prévue"
+          value={
+            activity.duration?.label ||
+            "Non renseignée"
+          }
+        />
 
-        <Text style={{ fontSize: 15, color: "#5D5A70" }}>
-          Durée prévue : {activity.duration?.label || "Non renseignée"}
-        </Text>
-
-        <Text style={{ fontSize: 15, color: "#5D5A70" }}>
-          Type : {activity.activity_type}
-        </Text>
+        <SessionLine
+          label="Format"
+          value={readableActivityType(
+            activity.activity_type
+          )}
+        />
       </View>
+    </View>
+  );
+}
+
+function SessionLine({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
+      <Text
+        style={{
+          color: TA.colors.inkMuted,
+          fontSize: 14,
+          fontWeight: "800",
+        }}
+      >
+        {label}
+      </Text>
+
+      <Text
+        style={{
+          color: TA.colors.ink,
+          fontSize: 14,
+          fontWeight: "900",
+          textAlign: "right",
+          flex: 1,
+        }}
+      >
+        {value}
+      </Text>
     </View>
   );
 }

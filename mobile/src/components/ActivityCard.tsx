@@ -1,11 +1,26 @@
 import { Pressable, Text, View } from "react-native";
+
 import { Activity } from "../types/tinyAct";
+import { TA } from "../theme/tinyActTheme";
 
 type ActivityCardProps = {
   activity: Activity;
   selectingActivity: boolean;
   onSelect: (activity: Activity) => void;
 };
+
+function readableActivityType(type: string) {
+  const labels: Record<string, string> = {
+    standard: "Action simple",
+    culture_quiz: "Quiz culture",
+    code_quiz: "Quiz code",
+    word_learning: "Langues · mots",
+    sentence_completion: "Langues · phrases",
+    melody: "Musique",
+  };
+
+  return labels[type] || "Activité";
+}
 
 export function ActivityCard({
   activity,
@@ -15,21 +30,23 @@ export function ActivityCard({
   return (
     <View
       style={{
-        padding: 20,
-        borderRadius: 26,
-        backgroundColor: "#FFFFFF",
+        padding: 22,
+        borderRadius: TA.radius.large,
+        backgroundColor: TA.colors.surface,
         borderWidth: 2,
-        borderColor: "#F2D7C8",
-        gap: 12,
+        borderColor: TA.colors.borderMedium,
+        gap: 14,
+        ...TA.shadow.card,
       }}
     >
-      <View style={{ gap: 4 }}>
+      <View style={{ gap: 6 }}>
         <Text
           style={{
-            fontSize: 13,
-            fontWeight: "800",
-            color: "#FF4B2B",
+            fontSize: 12,
+            fontWeight: "900",
+            color: TA.colors.purple,
             textTransform: "uppercase",
+            letterSpacing: 0.8,
           }}
         >
           {activity.interest?.name || "Activité"} ·{" "}
@@ -38,9 +55,11 @@ export function ActivityCard({
 
         <Text
           style={{
-            fontSize: 24,
+            fontSize: 27,
+            lineHeight: 31,
             fontWeight: "900",
-            color: "#17152F",
+            color: TA.colors.ink,
+            letterSpacing: -0.7,
           }}
         >
           {activity.name}
@@ -50,63 +69,87 @@ export function ActivityCard({
       <Text
         style={{
           fontSize: 15,
-          color: "#5D5A70",
+          color: TA.colors.inkMuted,
           lineHeight: 22,
+          fontWeight: "700",
         }}
       >
-        {activity.description || activity.content || "Aucune description."}
+        {activity.description ||
+          activity.content ||
+          "Aucune description."}
       </Text>
 
       <View
         style={{
-          padding: 12,
-          borderRadius: 16,
-          backgroundColor: "#FFF4EA",
-          gap: 4,
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 8,
         }}
       >
-        <Text
-          style={{
-            fontSize: 13,
-            color: "#5D5A70",
-            fontWeight: "700",
-          }}
-        >
-          Type : {activity.activity_type}
-        </Text>
+        <InfoPill
+          label={readableActivityType(
+            activity.activity_type
+          )}
+        />
 
-        <Text
-          style={{
-            fontSize: 13,
-            color: "#5D5A70",
-            fontWeight: "700",
-          }}
-        >
-          Lieu : {activity.location?.name || "Non renseigné"}
-        </Text>
+        <InfoPill
+          label={activity.location?.name || "Lieu libre"}
+        />
       </View>
 
       <Pressable
         onPress={() => onSelect(activity)}
         disabled={selectingActivity}
-        style={{
-          marginTop: 8,
-          padding: 15,
-          borderRadius: 999,
-          backgroundColor: selectingActivity ? "#C8C4BE" : "#17152F",
+        style={({ pressed }) => ({
+          marginTop: 4,
+          padding: 16,
+          borderRadius: TA.radius.pill,
+          backgroundColor: selectingActivity
+            ? "rgba(21, 27, 47, 0.24)"
+            : TA.colors.ink,
           alignItems: "center",
-        }}
+          opacity: pressed ? 0.82 : 1,
+        })}
       >
         <Text
           style={{
-            color: "#FFFFFF",
+            color: TA.colors.white,
             fontSize: 16,
-            fontWeight: "800",
+            fontWeight: "900",
           }}
         >
-          {selectingActivity ? "Sélection..." : "Choisir cette activité"}
+          {selectingActivity
+            ? "Sélection..."
+            : "Choisir cette activité"}
         </Text>
       </Pressable>
+    </View>
+  );
+}
+
+function InfoPill({
+  label,
+}: {
+  label: string;
+}) {
+  return (
+    <View
+      style={{
+        paddingVertical: 8,
+        paddingHorizontal: 11,
+        borderRadius: TA.radius.pill,
+        backgroundColor: TA.colors.goldSoft,
+      }}
+    >
+      <Text
+        style={{
+          color: TA.colors.inkSoft,
+          fontSize: 12,
+          fontWeight: "900",
+        }}
+      >
+        {label}
+      </Text>
     </View>
   );
 }

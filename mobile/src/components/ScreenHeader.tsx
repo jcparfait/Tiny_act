@@ -1,5 +1,7 @@
 import { Text, View } from "react-native";
 
+import { TA } from "../theme/tinyActTheme";
+
 type ScreenHeaderProps = {
   title: string;
   subtitle: string;
@@ -12,20 +14,16 @@ export function ScreenHeader({
   kicker = "Tiny Act",
 }: ScreenHeaderProps) {
   return (
-    <View
-      style={{
-        gap: 10,
-      }}
-    >
+    <View style={{ gap: 11 }}>
       <View
         style={{
           alignSelf: "flex-start",
           paddingVertical: 7,
           paddingHorizontal: 12,
-          borderRadius: 999,
-          backgroundColor: "#FFE5DD",
+          borderRadius: TA.radius.pill,
+          backgroundColor: TA.colors.purpleSoft,
           borderWidth: 1,
-          borderColor: "#FFC2B3",
+          borderColor: "rgba(124, 99, 242, 0.22)",
         }}
       >
         <Text
@@ -33,7 +31,7 @@ export function ScreenHeader({
             fontSize: 12,
             lineHeight: 14,
             fontWeight: "900",
-            color: "#FF4B2B",
+            color: TA.colors.purple,
             textTransform: "uppercase",
             letterSpacing: 1,
           }}
@@ -44,11 +42,11 @@ export function ScreenHeader({
 
       <Text
         style={{
-          fontSize: 38,
+          fontSize: 40,
           lineHeight: 43,
           fontWeight: "900",
-          color: "#17152F",
-          letterSpacing: -0.8,
+          color: TA.colors.ink,
+          letterSpacing: -1.4,
         }}
       >
         {title}
@@ -57,9 +55,9 @@ export function ScreenHeader({
       <Text
         style={{
           fontSize: 16,
-          color: "#5D5A70",
-          lineHeight: 24,
-          fontWeight: "600",
+          color: TA.colors.inkMuted,
+          lineHeight: 23,
+          fontWeight: "700",
         }}
       >
         {subtitle}

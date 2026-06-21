@@ -1,5 +1,7 @@
 import { Text, View } from "react-native";
 
+import { TA } from "../theme/tinyActTheme";
+
 type ErrorBoxProps = {
   message: string;
 };
@@ -36,16 +38,16 @@ export function ErrorBox({
     <View
       style={{
         padding: 16,
-        borderRadius: 20,
-        backgroundColor: "#FFE1DD",
+        borderRadius: TA.radius.medium,
+        backgroundColor: TA.colors.dangerBg,
         borderWidth: 2,
-        borderColor: "#FF9B8F",
+        borderColor: TA.colors.dangerBorder,
         gap: 6,
       }}
     >
       <Text
         style={{
-          color: "#B42318",
+          color: TA.colors.dangerText,
           fontSize: 12,
           fontWeight: "900",
           textTransform: "uppercase",
@@ -57,7 +59,7 @@ export function ErrorBox({
 
       <Text
         style={{
-          color: "#7A1B13",
+          color: TA.colors.dangerText,
           fontSize: 15,
           lineHeight: 22,
           fontWeight: "800",
