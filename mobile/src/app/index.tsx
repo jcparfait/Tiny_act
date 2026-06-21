@@ -673,7 +673,7 @@ export default function HomeScreen() {
             width: "100%",
             maxWidth: 520,
             minHeight: "100%",
-            gap: 22,
+            gap: 20,
           }}
         >
           {step === "mood" && (
@@ -1034,14 +1034,14 @@ function HomeNotificationBand({
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{
-        gap: 12,
-        paddingVertical: 8,
+        gap: 10,
+        paddingVertical: 6,
         paddingRight: 18,
       }}
       style={{
         marginHorizontal: -18,
         paddingLeft: 18,
-        maxHeight: 122,
+        maxHeight: 92,
       }}
     >
       <BandNotification
@@ -1049,7 +1049,6 @@ function HomeNotificationBand({
         icon="room"
         title="Ma room"
         subtitle="Voir ton espace"
-        counter="⌂"
         tone="room"
         onPress={onOpenRoom}
       />
@@ -1066,7 +1065,6 @@ function HomeNotificationBand({
             resumableSession.activity.duration?.label ||
             ""
           }`}
-          counter="1/1"
           tone="purple"
           onPress={onResume}
         />
@@ -1085,11 +1083,6 @@ function HomeNotificationBand({
             ? `Encore ${remainingXp} XP`
             : "Va organiser ta room"
         }
-        counter={
-          nextFurniture
-            ? `${remainingXp}`
-            : "OK"
-        }
         furniture={nextFurniture}
         tone="green"
         onPress={onOpenRoom}
@@ -1099,8 +1092,7 @@ function HomeNotificationBand({
         label="Bonus"
         icon="bonus"
         title={bonusChallenge.title}
-        subtitle={bonusChallenge.subtitle}
-        counter={bonusChallenge.rewardLabel}
+        subtitle={`${bonusChallenge.rewardLabel} · ${bonusChallenge.subtitle}`}
         tone="gold"
         onPress={onBonusPress}
       />
@@ -1113,7 +1105,6 @@ function BandNotification({
   icon,
   title,
   subtitle,
-  counter,
   furniture,
   tone,
   onPress,
@@ -1126,7 +1117,6 @@ function BandNotification({
     | "bonus";
   title: string;
   subtitle: string;
-  counter: string;
   furniture?: RoomInventoryItem | null;
   tone: "room" | "purple" | "green" | "gold";
   onPress: () => void;
@@ -1160,9 +1150,9 @@ function BandNotification({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 272,
-        height: 106,
-        borderRadius: 24,
+        width: 244,
+        height: 78,
+        borderRadius: 22,
         backgroundColor: colors.bg,
         borderWidth: 2,
         borderColor: colors.border,
@@ -1174,10 +1164,10 @@ function BandNotification({
       <View
         style={{
           position: "absolute",
-          top: 8,
-          left: 12,
-          paddingVertical: 3,
-          paddingHorizontal: 10,
+          top: 6,
+          left: 10,
+          paddingVertical: 2,
+          paddingHorizontal: 9,
           borderRadius: 999,
           backgroundColor: colors.accent,
           zIndex: 3,
@@ -1186,11 +1176,11 @@ function BandNotification({
         <Text
           style={{
             color: TA.colors.white,
-            fontSize: 9,
-            lineHeight: 11,
+            fontSize: 8,
+            lineHeight: 10,
             fontFamily: TA.fonts.black,
             textTransform: "uppercase",
-            letterSpacing: 0.8,
+            letterSpacing: 0.7,
           }}
         >
           {label}
@@ -1200,34 +1190,11 @@ function BandNotification({
       <View
         style={{
           position: "absolute",
-          top: 8,
-          right: 12,
-          zIndex: 3,
-        }}
-      >
-        <Text
-          numberOfLines={1}
-          style={{
-            color: TA.colors.inkLight,
-            fontSize: 11,
-            lineHeight: 13,
-            fontFamily: TA.fonts.black,
-            maxWidth: 72,
-            textAlign: "right",
-          }}
-        >
-          {counter}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          position: "absolute",
-          left: 12,
-          top: 34,
-          width: 58,
-          height: 58,
-          borderRadius: 18,
+          left: 10,
+          top: 27,
+          width: 42,
+          height: 42,
+          borderRadius: 14,
           backgroundColor: TA.colors.surface,
           alignItems: "center",
           justifyContent: "center",
@@ -1253,8 +1220,8 @@ function BandNotification({
             )}
             contentFit="contain"
             style={{
-              width: "88%",
-              height: "88%",
+              width: "86%",
+              height: "86%",
             }}
           />
         )}
@@ -1263,7 +1230,7 @@ function BandNotification({
           <Text
             style={{
               color: colors.accent,
-              fontSize: 28,
+              fontSize: 20,
               fontFamily: TA.fonts.black,
             }}
           >
@@ -1275,7 +1242,7 @@ function BandNotification({
           <Text
             style={{
               color: colors.accent,
-              fontSize: 30,
+              fontSize: 23,
               fontFamily: TA.fonts.black,
             }}
           >
@@ -1287,7 +1254,7 @@ function BandNotification({
           <Text
             style={{
               color: colors.accent,
-              fontSize: 28,
+              fontSize: 22,
               fontFamily: TA.fonts.black,
             }}
           >
@@ -1300,31 +1267,31 @@ function BandNotification({
         style={{
           flex: 1,
           justifyContent: "center",
-          paddingLeft: 84,
-          paddingRight: 28,
-          paddingTop: 24,
+          paddingLeft: 62,
+          paddingRight: 24,
+          paddingTop: 17,
         }}
       >
         <Text
           numberOfLines={1}
           style={{
             color: TA.colors.ink,
-            fontSize: 18,
-            lineHeight: 21,
+            fontSize: 15,
+            lineHeight: 18,
             fontFamily: TA.fonts.black,
-            letterSpacing: -0.5,
+            letterSpacing: -0.4,
           }}
         >
           {title}
         </Text>
 
         <Text
-          numberOfLines={2}
+          numberOfLines={1}
           style={{
-            marginTop: 2,
+            marginTop: 1,
             color: TA.colors.inkMuted,
-            fontSize: 12,
-            lineHeight: 16,
+            fontSize: 11,
+            lineHeight: 14,
             fontFamily: TA.fonts.bold,
           }}
         >
@@ -1335,10 +1302,10 @@ function BandNotification({
       <Text
         style={{
           position: "absolute",
-          right: 9,
-          top: 39,
+          right: 7,
+          top: 27,
           color: colors.accent,
-          fontSize: 30,
+          fontSize: 25,
           fontFamily: TA.fonts.black,
         }}
       >
