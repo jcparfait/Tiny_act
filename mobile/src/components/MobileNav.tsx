@@ -22,10 +22,12 @@ type MobileNavProps = {
     | "history"
     | "room"
     | "profile";
+  onLogoPress?: () => void;
 };
 
 export function MobileNav({
   active: _active,
+  onLogoPress,
 }: MobileNavProps) {
   const { user } = useAuth();
 
@@ -52,6 +54,30 @@ export function MobileNav({
     };
   }, []);
 
+  const logoButton = (
+    <Pressable
+      hitSlop={12}
+      onPress={onLogoPress}
+      style={({ pressed }) => ({
+        width: 148,
+        height: 82,
+        alignItems: "flex-start",
+        justifyContent: "center",
+        opacity: pressed ? 0.74 : 1,
+        ...TA.shadow.logo,
+      })}
+    >
+      <Image
+        source={BRAND_LOGO}
+        resizeMode="contain"
+        style={{
+          width: 148,
+          height: 82,
+        }}
+      />
+    </Pressable>
+  );
+
   return (
     <View
       pointerEvents="box-none"
@@ -74,27 +100,13 @@ export function MobileNav({
           gap: 10,
         }}
       >
-        <Link href="/" asChild>
-          <Pressable
-            hitSlop={12}
-            style={({ pressed }) => ({
-              width: 148,
-              height: 82,
-              alignItems: "flex-start",
-              justifyContent: "center",
-              opacity: pressed ? 0.74 : 1,
-            })}
-          >
-            <Image
-              source={BRAND_LOGO}
-              resizeMode="contain"
-              style={{
-                width: 148,
-                height: 82,
-              }}
-            />
-          </Pressable>
-        </Link>
+        {onLogoPress ? (
+          logoButton
+        ) : (
+          <Link href="/" asChild>
+            {logoButton}
+          </Link>
+        )}
 
         <View
           style={{

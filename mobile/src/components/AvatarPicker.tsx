@@ -1,9 +1,10 @@
 import {
-  Image,
   Pressable,
   Text,
   View,
 } from "react-native";
+
+import { Image as ExpoImage } from "expo-image";
 
 import {
   AVATAR_IMAGES,
@@ -11,6 +12,8 @@ import {
   AvatarName,
   getAvatarSource,
 } from "../constants/avatarAssets";
+
+import { TA } from "../theme/tinyActTheme";
 
 type AvatarPickerProps = {
   selectedAvatar: AvatarName | null;
@@ -44,29 +47,29 @@ export function AvatarPicker({
               selected,
             }}
             style={({ pressed }) => ({
-              width: 82,
-              height: 82,
-              padding: 4,
-              borderRadius: 41,
+              width: 96,
+              height: 96,
+              padding: 5,
+              borderRadius: 34,
               borderWidth: selected ? 4 : 2,
               borderColor: selected
-                ? "#7C63F2"
-                : "rgba(90, 74, 54, 0.16)",
-              backgroundColor: selected
-                ? "#FFF0EB"
-                : "#FFFFFF",
+                ? TA.colors.purple
+                : TA.colors.borderMedium,
+              backgroundColor: TA.colors.surface,
               alignItems: "center",
               justifyContent: "center",
               opacity: pressed ? 0.75 : 1,
+              ...TA.shadow.soft,
             })}
           >
-            <Image
+            <ExpoImage
               source={AVATAR_IMAGES[avatarName]}
-              resizeMode="cover"
+              contentFit="cover"
               style={{
-                width: 68,
-                height: 68,
-                borderRadius: 34,
+                width: 82,
+                height: 82,
+                borderRadius: 28,
+                backgroundColor: TA.colors.surface,
               }}
             />
 
@@ -74,23 +77,23 @@ export function AvatarPicker({
               <View
                 style={{
                   position: "absolute",
-                  right: -2,
-                  bottom: -2,
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
+                  right: -3,
+                  bottom: -3,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: "#7C63F2",
+                  backgroundColor: TA.colors.purple,
                   borderWidth: 2,
-                  borderColor: "#FFFFFF",
+                  borderColor: TA.colors.white,
                 }}
               >
                 <Text
                   style={{
-                    color: "#FFFFFF",
+                    color: TA.colors.white,
                     fontSize: 14,
-                    fontWeight: "900",
+                    fontFamily: TA.fonts.black,
                   }}
                 >
                   ✓
@@ -112,14 +115,14 @@ export function AvatarImage({
   size?: number;
 }) {
   return (
-    <Image
+    <ExpoImage
       source={getAvatarSource(avatar)}
-      resizeMode="cover"
+      contentFit="cover"
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: "#FFF0EB",
+        backgroundColor: TA.colors.surface,
       }}
     />
   );

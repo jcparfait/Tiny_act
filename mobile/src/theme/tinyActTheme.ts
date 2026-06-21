@@ -16,7 +16,7 @@ export const TA = {
     borderSoft: "rgba(90, 74, 54, 0.10)",
     borderMedium: "rgba(90, 74, 54, 0.16)",
     borderDark: "rgba(7, 16, 39, 0.395)",
-    handDrawnDark: "rgba(21, 27, 47, 0.58)",
+    handDrawnDark: "rgba(21, 27, 47, 0.62)",
 
     purple: "#7C63F2",
     purpleSoft: "rgba(124, 99, 242, 0.18)",
@@ -58,10 +58,10 @@ export const TA = {
       shadowColor: "#071027",
       shadowOffset: {
         width: 0,
-        height: 9,
+        height: 6,
       },
-      shadowOpacity: 0.18,
-      shadowRadius: 10,
+      shadowOpacity: 0.22,
+      shadowRadius: 4,
       elevation: 8,
     },
 
@@ -69,10 +69,10 @@ export const TA = {
       shadowColor: "#071027",
       shadowOffset: {
         width: 0,
-        height: 9,
+        height: 6,
       },
-      shadowOpacity: 0.18,
-      shadowRadius: 10,
+      shadowOpacity: 0.22,
+      shadowRadius: 4,
       elevation: 8,
     },
 
@@ -80,11 +80,22 @@ export const TA = {
       shadowColor: "#071027",
       shadowOffset: {
         width: 0,
-        height: 8,
+        height: 5,
       },
-      shadowOpacity: 0.14,
-      shadowRadius: 9,
+      shadowOpacity: 0.18,
+      shadowRadius: 4,
       elevation: 6,
+    },
+
+    logo: {
+      shadowColor: "#071027",
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+      shadowOpacity: 0.22,
+      shadowRadius: 4,
+      elevation: 7,
     },
 
     hardDrop: {
@@ -93,9 +104,9 @@ export const TA = {
         width: 0,
         height: 7,
       },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 7,
+      shadowOpacity: 0.24,
+      shadowRadius: 3,
+      elevation: 8,
     },
   },
 };

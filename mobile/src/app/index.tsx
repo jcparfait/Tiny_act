@@ -44,7 +44,9 @@ import {
   ActivitySessionSummary,
   Duration,
   Location,
+  MobileRoom,
   Mood,
+  RoomFurnitureItem,
   RoomInventoryItem,
   RoomResponse,
   Step,
@@ -106,6 +108,15 @@ function getRemainingXp(
   return Math.max(
     furniture.required_xp - furniture.current_xp,
     0
+  );
+}
+
+function sortFurnituresByZ(
+  furnitures: RoomFurnitureItem[]
+) {
+  return [...furnitures].sort(
+    (firstItem, secondItem) =>
+      firstItem.z - secondItem.z
   );
 }
 
@@ -658,7 +669,7 @@ export default function HomeScreen() {
         TA.colors.bgMiddle,
         TA.colors.bgEnd,
       ]}
-      locations={[0, 0.45, 1]}
+      locations={[0, 0.46, 1]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
@@ -669,7 +680,10 @@ export default function HomeScreen() {
           backgroundColor: "transparent",
         }}
       >
-        <MobileNav active="new" />
+        <MobileNav
+          active="new"
+          onLogoPress={resetFlow}
+        />
 
         <ScrollView
           contentContainerStyle={{
@@ -690,6 +704,7 @@ export default function HomeScreen() {
           >
             {step === "mood" && (
               <HomeNotificationBand
+                room={roomData?.room || null}
                 resumableSession={resumableSession}
                 nextFurniture={nextFurniture}
                 bonusChallenge={bonusChallenge}
@@ -802,6 +817,7 @@ export default function HomeScreen() {
                         borderColor:
                           TA.colors.borderMedium,
                         alignItems: "center",
+                        ...TA.shadow.card,
                       }}
                     >
                       <ActivityIndicator />
@@ -833,6 +849,7 @@ export default function HomeScreen() {
                       borderWidth: 2,
                       borderColor:
                         TA.colors.borderMedium,
+                      ...TA.shadow.card,
                     }}
                   >
                     <Text
@@ -1024,6 +1041,7 @@ function SelectionTitle({
 }
 
 function HomeNotificationBand({
+  room,
   resumableSession,
   nextFurniture,
   bonusChallenge,
@@ -1031,6 +1049,7 @@ function HomeNotificationBand({
   onOpenRoom,
   onBonusPress,
 }: {
+  room: MobileRoom | null;
   resumableSession: ActivitySessionSummary | null;
   nextFurniture: RoomInventoryItem | null;
   bonusChallenge: BonusChallenge;
@@ -1058,12 +1077,13 @@ function HomeNotificationBand({
       }}
     >
       <BubbleNotification
-        label="Room"
+        label="Décoration"
         icon="room"
-        title="Ma room"
-        subtitle="Voir ton espace"
+        title="Décore ta room"
+        subtitle="Place tes objets"
         color="#13A8C7"
         rotation="-1deg"
+        room={room}
         onPress={onOpenRoom}
       />
 
@@ -1086,17 +1106,13 @@ function HomeNotificationBand({
       )}
 
       <BubbleNotification
-        label="Objet"
+        label="Prochain objet"
         icon="furniture"
-        title={
-          nextFurniture
-            ? nextFurniture.name
-            : "Tout est débloqué"
-        }
+        title="Prochain objet débloqué"
         subtitle={
           nextFurniture
-            ? `Encore ${remainingXp} XP`
-            : "Va organiser ta room"
+            ? `${nextFurniture.name} · ${remainingXp} XP manquants`
+            : "Tout est débloqué"
         }
         color="#77B84E"
         rotation="-1.5deg"
@@ -1105,7 +1121,7 @@ function HomeNotificationBand({
       />
 
       <BubbleNotification
-        label="Bonus"
+        label="Défi du jour"
         icon="bonus"
         title={bonusChallenge.title}
         subtitle={`${bonusChallenge.rewardLabel} · ${bonusChallenge.subtitle}`}
@@ -1124,6 +1140,7 @@ function BubbleNotification({
   subtitle,
   color,
   rotation,
+  room,
   furniture,
   onPress,
 }: {
@@ -1137,6 +1154,7 @@ function BubbleNotification({
   subtitle: string;
   color: string;
   rotation: string;
+  room?: MobileRoom | null;
   furniture?: RoomInventoryItem | null;
   onPress: () => void;
 }) {
@@ -1205,14 +1223,7 @@ function BubbleNotification({
           }}
         >
           {icon === "room" && (
-            <ExpoImage
-              source={ROOM_BACKGROUND}
-              contentFit="cover"
-              style={{
-                width: "100%",
-                height: "100%",
-              }}
-            />
+            <RoomMiniature room={room || null} />
           )}
 
           {icon === "furniture" && furniture && (
@@ -1307,6 +1318,71 @@ function BubbleNotification({
         </Text>
       </View>
     </Pressable>
+  );
+}
+
+function RoomMiniature({
+  room,
+}: {
+  room: MobileRoom | null;
+}) {
+  const width = 42;
+  const height = 42;
+
+  const scaleX = room?.width
+    ? width / room.width
+    : 1;
+
+  const scaleY = room?.height
+    ? height / room.height
+    : 1;
+
+  return (
+    <View
+      style={{
+        width,
+        height,
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <ExpoImage
+        source={ROOM_BACKGROUND}
+        contentFit="cover"
+        style={{
+          width,
+          height,
+          position: "absolute",
+          left: 0,
+          top: 0,
+        }}
+      />
+
+      {room &&
+        sortFurnituresByZ(room.furnitures).map(
+          (furniture) => (
+            <ExpoImage
+              key={furniture.id}
+              source={getFurnitureSource(
+                furniture.image_key
+              )}
+              contentFit="contain"
+              style={{
+                position: "absolute",
+                left: furniture.x * scaleX,
+                top: furniture.y * scaleY,
+                width: furniture.width * scaleX,
+                height: furniture.height * scaleY,
+                transform: [
+                  {
+                    rotate: `${furniture.rotation}deg`,
+                  },
+                ],
+              }}
+            />
+          )
+        )}
+    </View>
   );
 }
 
