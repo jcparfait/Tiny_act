@@ -10,7 +10,7 @@ export function StandardActivity({ activity }: { activity: Activity }) {
       <Text
         style={{
           fontSize: 14,
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           lineHeight: 21,
         }}
       >

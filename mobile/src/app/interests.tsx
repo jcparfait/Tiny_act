@@ -170,7 +170,7 @@ export default function InterestsScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <ScrollView
@@ -199,7 +199,7 @@ export default function InterestsScreen() {
             style={{
               padding: 22,
               borderRadius: 28,
-              backgroundColor: "#17152F",
+              backgroundColor: "#151B2F",
               gap: 14,
             }}
           >
@@ -279,8 +279,8 @@ export default function InterestsScreen() {
                       borderRadius: 26,
                       borderWidth: 2,
                       borderColor: selected
-                        ? "#FF4B2B"
-                        : "#F2D7C8",
+                        ? "#7C63F2"
+                        : "rgba(90, 74, 54, 0.16)",
                       backgroundColor: selected
                         ? "#FFF0EB"
                         : "#FFFFFF",
@@ -317,12 +317,12 @@ export default function InterestsScreen() {
                           alignItems: "center",
                           justifyContent: "center",
                           backgroundColor: selected
-                            ? "#FF4B2B"
-                            : "#FFF4EA",
+                            ? "#7C63F2"
+                            : "#F4EFE8",
                           borderWidth: 2,
                           borderColor: selected
-                            ? "#FF4B2B"
-                            : "#F2D7C8",
+                            ? "#7C63F2"
+                            : "rgba(90, 74, 54, 0.16)",
                         }}
                       >
                         <Text
@@ -339,7 +339,7 @@ export default function InterestsScreen() {
                     <Text
                       style={{
                         fontSize: 21,
-                        color: "#17152F",
+                        color: "#151B2F",
                         fontWeight: "900",
                       }}
                     >
@@ -348,7 +348,7 @@ export default function InterestsScreen() {
 
                     <Text
                       style={{
-                        color: "#5D5A70",
+                        color: "rgba(21, 27, 47, 0.58)",
                         lineHeight: 20,
                         fontWeight: "600",
                       }}
@@ -358,7 +358,7 @@ export default function InterestsScreen() {
 
                     <Text
                       style={{
-                        color: selected ? "#FF4B2B" : "#8E8A9D",
+                        color: selected ? "#7C63F2" : "#8E8A9D",
                         fontWeight: "900",
                       }}
                     >

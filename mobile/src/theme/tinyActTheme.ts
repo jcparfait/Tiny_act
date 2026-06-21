@@ -10,13 +10,14 @@ export const TA = {
     bgEnd: "#F3EDF8",
 
     surface: "#FFFDF9",
-    surfaceSoft: "#FFFAF2",
+    surfaceSoft: "rgba(255, 253, 249, 0.92)",
 
     borderSoft: "rgba(90, 74, 54, 0.10)",
     borderMedium: "rgba(90, 74, 54, 0.16)",
+    borderDark: "rgba(7, 16, 39, 0.395)",
 
     purple: "#7C63F2",
-    purpleSoft: "rgba(124, 99, 242, 0.16)",
+    purpleSoft: "rgba(124, 99, 242, 0.18)",
 
     gold: "#D89A32",
     goldSoft: "#F8EFD6",
@@ -26,11 +27,20 @@ export const TA = {
     blue: "#8FA8D2",
     red: "#FF745C",
 
+    white: "#FFFFFF",
+
     dangerBg: "#FFE1DD",
     dangerBorder: "#FF9B8F",
     dangerText: "#7A1B13",
+  },
 
-    white: "#FFFFFF",
+  fonts: {
+    regular: "Poppins_400Regular",
+    medium: "Poppins_500Medium",
+    semiBold: "Poppins_600SemiBold",
+    bold: "Poppins_700Bold",
+    extraBold: "Poppins_800ExtraBold",
+    black: "Poppins_900Black",
   },
 
   radius: {
@@ -41,13 +51,18 @@ export const TA = {
     small: 16,
   },
 
-  spacing: {
-    screen: 18,
-    card: 22,
-  },
-
   shadow: {
-    card: {
+    webCard: {
+      shadowColor: "#071027",
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+      shadowOpacity: 0.16,
+      shadowRadius: 12,
+    },
+
+    soft: {
       shadowColor: "#151B2F",
       shadowOffset: {
         width: 0,

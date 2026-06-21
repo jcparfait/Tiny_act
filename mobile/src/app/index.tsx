@@ -378,7 +378,7 @@ export default function HomeScreen() {
     !activityReadyToFinish;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF4EA" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F4EFE8" }}>
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -456,14 +456,14 @@ export default function HomeScreen() {
                     borderRadius: 24,
                     backgroundColor: "#FFFFFF",
                     borderWidth: 2,
-                    borderColor: "#F2D7C8",
+                    borderColor: "rgba(90, 74, 54, 0.16)",
                   }}
                 >
                   <Text
                     style={{
                       fontSize: 20,
                       fontWeight: "800",
-                      color: "#17152F",
+                      color: "#151B2F",
                     }}
                   >
                     Aucune activité affichée
@@ -473,7 +473,7 @@ export default function HomeScreen() {
                     style={{
                       marginTop: 8,
                       fontSize: 15,
-                      color: "#5D5A70",
+                      color: "rgba(21, 27, 47, 0.58)",
                       lineHeight: 22,
                     }}
                   >

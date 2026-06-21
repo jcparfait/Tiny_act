@@ -22,7 +22,7 @@ export function AuthScreen({
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <ScrollView
@@ -45,7 +45,7 @@ export function AuthScreen({
               style={{
                 fontSize: 38,
                 fontWeight: "900",
-                color: "#17152F",
+                color: "#151B2F",
               }}
             >
               {title}
@@ -55,7 +55,7 @@ export function AuthScreen({
               style={{
                 fontSize: 17,
                 lineHeight: 24,
-                color: "#5D5A70",
+                color: "rgba(21, 27, 47, 0.58)",
               }}
             >
               {subtitle}
@@ -68,7 +68,7 @@ export function AuthScreen({
               borderRadius: 28,
               backgroundColor: "#FFFFFF",
               borderWidth: 2,
-              borderColor: "#F2D7C8",
+              borderColor: "rgba(90, 74, 54, 0.16)",
               gap: 16,
             }}
           >
@@ -90,7 +90,7 @@ export function AuthField({
     <View style={{ gap: 7 }}>
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontWeight: "800",
         }}
       >
@@ -104,8 +104,8 @@ export function AuthField({
           padding: 14,
           borderRadius: 16,
           borderWidth: 2,
-          borderColor: "#F2D7C8",
-          color: "#17152F",
+          borderColor: "rgba(90, 74, 54, 0.16)",
+          color: "#151B2F",
           fontSize: 16,
           outlineStyle: "none" as never,
         }}
@@ -125,7 +125,7 @@ export function AuthLink({
     <Pressable onPress={onPress}>
       <Text
         style={{
-          color: "#FF4B2B",
+          color: "#7C63F2",
           fontWeight: "900",
           textAlign: "center",
         }}
@@ -153,13 +153,13 @@ export function SocialButton({
         padding: 14,
         borderRadius: 16,
         borderWidth: 2,
-        borderColor: "#17152F",
+        borderColor: "#151B2F",
         opacity: disabled ? 0.5 : 1,
       }}
     >
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontWeight: "900",
           textAlign: "center",
         }}

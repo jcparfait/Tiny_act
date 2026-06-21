@@ -94,7 +94,7 @@ export default function RegisterScreen() {
         style={{
           padding: 20,
           borderRadius: 26,
-          backgroundColor: "#17152F",
+          backgroundColor: "#151B2F",
           gap: 12,
         }}
       >
@@ -226,7 +226,7 @@ function StepLine({
           width: 26,
           height: 26,
           borderRadius: 999,
-          backgroundColor: "#FF4B2B",
+          backgroundColor: "#7C63F2",
           alignItems: "center",
           justifyContent: "center",
         }}

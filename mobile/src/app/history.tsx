@@ -63,12 +63,12 @@ function statusColor(
   finished: boolean
 ) {
   if (finished) return "#176C3A";
-  if (status === "in_progress") return "#FF4B2B";
+  if (status === "in_progress") return "#7C63F2";
   if (status === "paused") return "#8B5E00";
   if (status === "preview") return "#5B3FD8";
-  if (status === "selecting") return "#5D5A70";
+  if (status === "selecting") return "rgba(21, 27, 47, 0.58)";
 
-  return "#5D5A70";
+  return "rgba(21, 27, 47, 0.58)";
 }
 
 function readableActivityType(type: string) {
@@ -212,7 +212,7 @@ export default function HistoryScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <ScrollView
@@ -284,7 +284,7 @@ export default function HistoryScreen() {
                 style={{
                   padding: 6,
                   borderRadius: 22,
-                  backgroundColor: "#17152F",
+                  backgroundColor: "#151B2F",
                   flexDirection: "row",
                   gap: 6,
                 }}
@@ -368,13 +368,13 @@ function SummaryStat({
         borderRadius: 20,
         backgroundColor: "#FFFFFF",
         borderWidth: 2,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
         gap: 4,
       }}
     >
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           fontSize: 11,
           fontWeight: "900",
           textTransform: "uppercase",
@@ -386,7 +386,7 @@ function SummaryStat({
 
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontSize: 22,
           fontWeight: "900",
         }}
@@ -418,7 +418,7 @@ function FilterButton({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: selected
-          ? "#FF4B2B"
+          ? "#7C63F2"
           : "transparent",
         opacity: pressed ? 0.75 : 1,
       })}
@@ -473,7 +473,7 @@ function SessionCard({
         borderWidth: 2,
         borderColor: finished
           ? "#CDEEDB"
-          : "#F2D7C8",
+          : "rgba(90, 74, 54, 0.16)",
         gap: 14,
         opacity: pressed ? 0.85 : 1,
       })}
@@ -494,7 +494,7 @@ function SessionCard({
             justifyContent: "center",
             backgroundColor: finished
               ? "#E6F6EC"
-              : "#FFF4EA",
+              : "#F4EFE8",
           }}
         >
           <Text
@@ -524,7 +524,7 @@ function SessionCard({
 
           <Text
             style={{
-              color: "#17152F",
+              color: "#151B2F",
               fontSize: 22,
               lineHeight: 27,
               fontWeight: "900",
@@ -536,7 +536,7 @@ function SessionCard({
           <Text
             numberOfLines={2}
             style={{
-              color: "#5D5A70",
+              color: "rgba(21, 27, 47, 0.58)",
               fontSize: 14,
               lineHeight: 21,
               fontWeight: "600",
@@ -581,7 +581,7 @@ function SessionCard({
 
       <Text
         style={{
-          color: "#FF4B2B",
+          color: "#7C63F2",
           fontSize: 15,
           fontWeight: "900",
           textAlign: "right",
@@ -604,12 +604,12 @@ function DetailPill({
         paddingVertical: 7,
         paddingHorizontal: 10,
         borderRadius: 999,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           fontSize: 12,
           fontWeight: "800",
         }}
@@ -638,14 +638,14 @@ function EmptyState({
         borderRadius: 28,
         backgroundColor: "#FFFFFF",
         borderWidth: 2,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
         gap: 16,
       }}
     >
       <View style={{ gap: 8 }}>
         <Text
           style={{
-            color: "#17152F",
+            color: "#151B2F",
             fontSize: 24,
             fontWeight: "900",
           }}
@@ -655,7 +655,7 @@ function EmptyState({
 
         <Text
           style={{
-            color: "#5D5A70",
+            color: "rgba(21, 27, 47, 0.58)",
             fontSize: 15,
             lineHeight: 22,
             fontWeight: "600",

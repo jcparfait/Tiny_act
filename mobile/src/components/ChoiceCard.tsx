@@ -1,5 +1,8 @@
 import { Pressable, Text, View } from "react-native";
 
+import { Image as ExpoImage } from "expo-image";
+
+import { getMoodMascotSource } from "../constants/brandAssets";
 import { TA } from "../theme/tinyActTheme";
 
 type ChoiceCardProps = {
@@ -8,12 +11,8 @@ type ChoiceCardProps = {
   onPress: () => void;
 };
 
-function iconForLabel(label: string) {
+function fallbackIconForLabel(label: string) {
   const normalized = label.toLowerCase();
-
-  if (normalized.includes("forme")) return "✦";
-  if (normalized.includes("bof")) return "≈";
-  if (normalized.includes("plat")) return "↓";
 
   if (normalized.includes("maison")) return "⌂";
   if (normalized.includes("extérieur")) return "↗";
@@ -32,18 +31,22 @@ export function ChoiceCard({
   selected,
   onPress,
 }: ChoiceCardProps) {
+  const mascotSource =
+    getMoodMascotSource(label);
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        padding: 18,
-        borderRadius: TA.radius.card,
+        minHeight: mascotSource ? 116 : 92,
+        padding: mascotSource ? 14 : 18,
+        borderRadius: 30,
         backgroundColor: selected
-          ? TA.colors.ink
+          ? TA.colors.surface
           : TA.colors.surface,
-        borderWidth: 2,
+        borderWidth: 1,
         borderColor: selected
-          ? TA.colors.ink
+          ? TA.colors.borderDark
           : TA.colors.borderMedium,
         flexDirection: "row",
         alignItems: "center",
@@ -54,44 +57,60 @@ export function ChoiceCard({
             translateY: pressed ? 1 : 0,
           },
         ],
-        ...TA.shadow.card,
+        shadowColor: "#071027",
+        shadowOffset: {
+          width: 0,
+          height: 5,
+        },
+        shadowOpacity: 0.16,
+        shadowRadius: 10,
       })}
     >
       <View
         style={{
-          width: 58,
-          height: 58,
-          borderRadius: 21,
+          width: mascotSource ? 88 : 58,
+          height: mascotSource ? 88 : 58,
+          borderRadius: mascotSource ? 26 : 20,
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: selected
-            ? TA.colors.purple
+            ? TA.colors.purpleSoft
             : TA.colors.goldSoft,
+          overflow: "hidden",
         }}
       >
-        <Text
-          style={{
-            color: selected
-              ? TA.colors.white
-              : TA.colors.gold,
-            fontSize: 22,
-            fontWeight: "900",
-          }}
-        >
-          {iconForLabel(label)}
-        </Text>
+        {mascotSource ? (
+          <ExpoImage
+            source={mascotSource}
+            contentFit="contain"
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+          />
+        ) : (
+          <Text
+            style={{
+              color: selected
+                ? TA.colors.purple
+                : TA.colors.gold,
+              fontSize: 23,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            {fallbackIconForLabel(label)}
+          </Text>
+        )}
       </View>
 
-      <View style={{ flex: 1, gap: 3 }}>
+      <View style={{ flex: 1, gap: 4 }}>
         <Text
           style={{
-            fontSize: 23,
+            fontSize: 24,
             lineHeight: 27,
-            fontWeight: "900",
-            color: selected
-              ? TA.colors.white
-              : TA.colors.ink,
-            letterSpacing: -0.4,
+            fontFamily: TA.fonts.black,
+            color: TA.colors.ink,
+            letterSpacing: -0.8,
           }}
         >
           {label}
@@ -100,10 +119,10 @@ export function ChoiceCard({
         <Text
           style={{
             color: selected
-              ? "rgba(255,255,255,0.68)"
+              ? TA.colors.purple
               : TA.colors.inkMuted,
             fontSize: 13,
-            fontWeight: "700",
+            fontFamily: TA.fonts.bold,
           }}
         >
           {selected ? "Sélectionné" : "Toucher pour choisir"}
@@ -113,10 +132,10 @@ export function ChoiceCard({
       <Text
         style={{
           color: selected
-            ? TA.colors.white
+            ? TA.colors.purple
             : TA.colors.inkLight,
-          fontSize: 30,
-          fontWeight: "900",
+          fontSize: 34,
+          fontFamily: TA.fonts.black,
         }}
       >
         ›

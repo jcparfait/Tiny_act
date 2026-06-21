@@ -19,16 +19,16 @@ export function IntroCard({ label, text }: { label: string; text: string }) {
       style={{
         padding: 16,
         borderRadius: 20,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
         borderWidth: 1,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
       }}
     >
       <Text
         style={{
           fontSize: 13,
           fontWeight: "800",
-          color: "#FF4B2B",
+          color: "#7C63F2",
           textTransform: "uppercase",
         }}
       >
@@ -39,7 +39,7 @@ export function IntroCard({ label, text }: { label: string; text: string }) {
         style={{
           marginTop: 8,
           fontSize: 16,
-          color: "#17152F",
+          color: "#151B2F",
           lineHeight: 24,
           fontWeight: "700",
         }}
@@ -56,7 +56,7 @@ export function QuestionCard({ question }: { question: QuizQuestion }) {
       style={{
         padding: 18,
         borderRadius: 22,
-        backgroundColor: "#17152F",
+        backgroundColor: "#151B2F",
       }}
     >
       <Text
@@ -92,7 +92,7 @@ export function DarkInfoBox({ title, text }: { title: string; text: string }) {
       style={{
         padding: 14,
         borderRadius: 18,
-        backgroundColor: "#17152F",
+        backgroundColor: "#151B2F",
       }}
     >
       <Text
@@ -134,7 +134,7 @@ export function DarkButton({
       style={{
         padding: 15,
         borderRadius: 999,
-        backgroundColor: "#17152F",
+        backgroundColor: "#151B2F",
         alignItems: "center",
       }}
     >
@@ -165,7 +165,7 @@ export function FeedbackBox({
         borderRadius: 18,
         backgroundColor: success ? "#D9F8E5" : "#FFE1DD",
         borderWidth: 1,
-        borderColor: success ? "#2EAD63" : "#FF4B2B",
+        borderColor: success ? "#2EAD63" : "#7C63F2",
       }}
     >
       <Text
@@ -195,7 +195,7 @@ export function ScoreCard({
       style={{
         padding: 18,
         borderRadius: 22,
-        backgroundColor: "#17152F",
+        backgroundColor: "#151B2F",
         alignItems: "center",
       }}
     >
@@ -249,7 +249,7 @@ export function FallbackActivity({ activity }: { activity: Activity }) {
       <Text
         style={{
           fontSize: 14,
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           lineHeight: 21,
         }}
       >

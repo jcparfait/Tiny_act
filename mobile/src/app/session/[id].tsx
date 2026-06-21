@@ -387,7 +387,7 @@ export default function SessionDetailScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <ScrollView
@@ -464,7 +464,7 @@ export default function SessionDetailScreen() {
                   backgroundColor:
                     "#FFFFFF",
                   borderWidth: 2,
-                  borderColor: "#F2D7C8",
+                  borderColor: "rgba(90, 74, 54, 0.16)",
                   gap: 12,
                 }}
               >
@@ -481,7 +481,7 @@ export default function SessionDetailScreen() {
 
                 <Text
                   style={{
-                    color: "#17152F",
+                    color: "#151B2F",
                     fontSize: 28,
                     fontWeight: "900",
                   }}
@@ -491,7 +491,7 @@ export default function SessionDetailScreen() {
 
                 <Text
                   style={{
-                    color: "#5D5A70",
+                    color: "rgba(21, 27, 47, 0.58)",
                     lineHeight: 22,
                   }}
                 >
@@ -578,16 +578,16 @@ export default function SessionDetailScreen() {
                       padding: 16,
                       borderRadius: 20,
                       backgroundColor:
-                        "#FFF4EA",
+                        "#F4EFE8",
                       borderWidth: 1,
                       borderColor:
-                        "#F2D7C8",
+                        "rgba(90, 74, 54, 0.16)",
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 15,
-                        color: "#5D5A70",
+                        color: "rgba(21, 27, 47, 0.58)",
                         lineHeight: 22,
                       }}
                     >

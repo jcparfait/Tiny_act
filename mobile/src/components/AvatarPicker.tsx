@@ -50,8 +50,8 @@ export function AvatarPicker({
               borderRadius: 41,
               borderWidth: selected ? 4 : 2,
               borderColor: selected
-                ? "#FF4B2B"
-                : "#F2D7C8",
+                ? "#7C63F2"
+                : "rgba(90, 74, 54, 0.16)",
               backgroundColor: selected
                 ? "#FFF0EB"
                 : "#FFFFFF",
@@ -81,7 +81,7 @@ export function AvatarPicker({
                   borderRadius: 13,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: "#FF4B2B",
+                  backgroundColor: "#7C63F2",
                   borderWidth: 2,
                   borderColor: "#FFFFFF",
                 }}

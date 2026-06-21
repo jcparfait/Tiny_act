@@ -45,7 +45,7 @@ export function ActivityRewardCard({
         style={{
           padding: 24,
           borderRadius: 28,
-          backgroundColor: "#17152F",
+          backgroundColor: "#151B2F",
           gap: 10,
         }}
       >
@@ -136,7 +136,7 @@ export function ActivityRewardCard({
 
             <Text
               style={{
-                color: "#17152F",
+                color: "#151B2F",
                 fontSize: 25,
                 fontWeight: "900",
               }}
@@ -162,7 +162,7 @@ export function ActivityRewardCard({
                   width: 92,
                   height: 92,
                   borderRadius: 18,
-                  backgroundColor: "#FFF4EA",
+                  backgroundColor: "#F4EFE8",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -180,7 +180,7 @@ export function ActivityRewardCard({
               <View style={{ flex: 1, gap: 4 }}>
                 <Text
                   style={{
-                    color: "#FF4B2B",
+                    color: "#7C63F2",
                     fontSize: 12,
                     fontWeight: "900",
                     textTransform: "uppercase",
@@ -191,7 +191,7 @@ export function ActivityRewardCard({
 
                 <Text
                   style={{
-                    color: "#17152F",
+                    color: "#151B2F",
                     fontSize: 20,
                     fontWeight: "900",
                   }}
@@ -201,7 +201,7 @@ export function ActivityRewardCard({
 
                 <Text
                   style={{
-                    color: "#5D5A70",
+                    color: "rgba(21, 27, 47, 0.58)",
                     fontSize: 13,
                     fontWeight: "700",
                   }}
@@ -219,14 +219,14 @@ export function ActivityRewardCard({
             borderRadius: 26,
             backgroundColor: "#FFFFFF",
             borderWidth: 2,
-            borderColor: "#F2D7C8",
+            borderColor: "rgba(90, 74, 54, 0.16)",
             gap: 14,
           }}
         >
           <View style={{ gap: 4 }}>
             <Text
               style={{
-                color: "#FF4B2B",
+                color: "#7C63F2",
                 fontSize: 13,
                 fontWeight: "900",
                 textTransform: "uppercase",
@@ -237,7 +237,7 @@ export function ActivityRewardCard({
 
             <Text
               style={{
-                color: "#17152F",
+                color: "#151B2F",
                 fontSize: 23,
                 fontWeight: "900",
               }}
@@ -268,7 +268,7 @@ export function ActivityRewardCard({
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text
                     style={{
-                      color: "#17152F",
+                      color: "#151B2F",
                       fontSize: 18,
                       fontWeight: "900",
                     }}
@@ -278,7 +278,7 @@ export function ActivityRewardCard({
 
                   <Text
                     style={{
-                      color: "#5D5A70",
+                      color: "rgba(21, 27, 47, 0.58)",
                       fontSize: 13,
                       fontWeight: "700",
                     }}
@@ -300,7 +300,7 @@ export function ActivityRewardCard({
                   style={{
                     width: `${nextFurnitureProgress * 100}%`,
                     height: "100%",
-                    backgroundColor: "#FF4B2B",
+                    backgroundColor: "#7C63F2",
                   }}
                 />
               </View>
@@ -350,13 +350,13 @@ function RewardStat({
         borderRadius: 20,
         backgroundColor: "#FFFFFF",
         borderWidth: 2,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
         gap: 4,
       }}
     >
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           fontSize: 12,
           fontWeight: "900",
           textTransform: "uppercase",
@@ -367,7 +367,7 @@ function RewardStat({
 
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontSize: 23,
           fontWeight: "900",
         }}
@@ -377,7 +377,7 @@ function RewardStat({
 
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           fontSize: 12,
           fontWeight: "700",
         }}

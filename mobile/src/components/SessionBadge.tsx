@@ -17,25 +17,25 @@ export function SessionBadge({
         borderRadius: 18,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
       }}
     >
       <Text
         style={{
           fontSize: 13,
           fontWeight: "800",
-          color: "#FF4B2B",
+          color: "#7C63F2",
           textTransform: "uppercase",
         }}
       >
         Session créée
       </Text>
 
-      <Text style={{ marginTop: 4, color: "#5D5A70" }}>
+      <Text style={{ marginTop: 4, color: "rgba(21, 27, 47, 0.58)" }}>
         Session #{activitySession.id} · {activitySession.status}
       </Text>
 
-      <Text style={{ marginTop: 4, color: "#5D5A70" }}>
+      <Text style={{ marginTop: 4, color: "rgba(21, 27, 47, 0.58)" }}>
         {activitiesCount} activité(s) proposée(s)
       </Text>
     </View>

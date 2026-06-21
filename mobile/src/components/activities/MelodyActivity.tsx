@@ -231,7 +231,7 @@ export function MelodyActivity({
 
         <Text
           style={{
-            color: "#5D5A70",
+            color: "rgba(21, 27, 47, 0.58)",
             fontWeight: "700",
           }}
         >
@@ -272,7 +272,7 @@ export function MelodyActivity({
         style={{
           padding: 22,
           borderRadius: 24,
-          backgroundColor: "#17152F",
+          backgroundColor: "#151B2F",
           alignItems: "center",
           gap: 8,
         }}
@@ -338,14 +338,14 @@ export function MelodyActivity({
                 backgroundColor: isPlayed
                   ? "#D9F8E5"
                   : isCurrent
-                    ? "#17152F"
+                    ? "#151B2F"
                     : "#FFFFFF",
                 borderWidth: 1,
                 borderColor: isPlayed
                   ? "#2EAD63"
                   : isCurrent
-                    ? "#17152F"
-                    : "#F2D7C8",
+                    ? "#151B2F"
+                    : "rgba(90, 74, 54, 0.16)",
               }}
             >
               <Text
@@ -356,7 +356,7 @@ export function MelodyActivity({
                     ? "#176C3A"
                     : isCurrent
                       ? "#FFFFFF"
-                      : "#17152F",
+                      : "#151B2F",
                 }}
               >
                 {note}
@@ -436,7 +436,7 @@ function PianoKeyboard({
                 ? "#E7E0D8"
                 : "#FFFFFF",
               borderWidth: 2,
-              borderColor: "#F2D7C8",
+              borderColor: "rgba(90, 74, 54, 0.16)",
               alignItems: "center",
               justifyContent: "flex-end",
               paddingBottom: 10,
@@ -445,7 +445,7 @@ function PianoKeyboard({
             <Text
               style={{
                 fontSize: 12,
-                color: "#17152F",
+                color: "#151B2F",
                 fontWeight: "900",
               }}
             >
@@ -472,8 +472,8 @@ function PianoKeyboard({
               minHeight: 52,
               borderRadius: 12,
               backgroundColor: disabled
-                ? "#5D5A70"
-                : "#17152F",
+                ? "rgba(21, 27, 47, 0.58)"
+                : "#151B2F",
               alignItems: "center",
               justifyContent: "center",
             }}

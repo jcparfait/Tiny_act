@@ -208,7 +208,7 @@ export function QuizActivity({ activity }: { activity: Activity }) {
           borderRadius: 22,
           backgroundColor: "#FFFFFF",
           borderWidth: 1,
-          borderColor: "#F2D7C8",
+          borderColor: "rgba(90, 74, 54, 0.16)",
           alignItems: "center",
           gap: 12,
         }}
@@ -218,7 +218,7 @@ export function QuizActivity({ activity }: { activity: Activity }) {
         <Text
           style={{
             fontSize: 15,
-            color: "#5D5A70",
+            color: "rgba(21, 27, 47, 0.58)",
             fontWeight: "700",
           }}
         >
@@ -300,17 +300,17 @@ export function QuizActivity({ activity }: { activity: Activity }) {
                     : isAnswered && selected && !correct
                       ? "#FFE1DD"
                       : selected
-                        ? "#17152F"
+                        ? "#151B2F"
                         : "#FFFFFF",
                 borderWidth: 2,
                 borderColor:
                   isAnswered && correct
                     ? "#2EAD63"
                     : isAnswered && selected && !correct
-                      ? "#FF4B2B"
+                      ? "#7C63F2"
                       : selected
-                        ? "#17152F"
-                        : "#F2D7C8",
+                        ? "#151B2F"
+                        : "rgba(90, 74, 54, 0.16)",
               }}
             >
               <Text
@@ -325,7 +325,7 @@ export function QuizActivity({ activity }: { activity: Activity }) {
                         ? "#B42318"
                         : selected
                           ? "#FFFFFF"
-                          : "#17152F",
+                          : "#151B2F",
                 }}
               >
                 {answer}

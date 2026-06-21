@@ -251,7 +251,7 @@ export function SentenceCompletionActivity({
 
         <Text
           style={{
-            color: "#5D5A70",
+            color: "rgba(21, 27, 47, 0.58)",
             fontWeight: "700",
           }}
         >
@@ -298,9 +298,9 @@ export function SentenceCompletionActivity({
         style={{
           padding: 16,
           borderRadius: 20,
-          backgroundColor: "#FFF4EA",
+          backgroundColor: "#F4EFE8",
           borderWidth: 1,
-          borderColor: "#F2D7C8",
+          borderColor: "rgba(90, 74, 54, 0.16)",
           gap: 8,
         }}
       >
@@ -308,7 +308,7 @@ export function SentenceCompletionActivity({
           style={{
             fontSize: 13,
             fontWeight: "800",
-            color: "#FF4B2B",
+            color: "#7C63F2",
             textTransform: "uppercase",
           }}
         >
@@ -318,7 +318,7 @@ export function SentenceCompletionActivity({
         <Text
           style={{
             fontSize: 16,
-            color: "#17152F",
+            color: "#151B2F",
             lineHeight: 24,
             fontWeight: "700",
           }}
@@ -332,7 +332,7 @@ export function SentenceCompletionActivity({
         style={{
           padding: 18,
           borderRadius: 22,
-          backgroundColor: "#17152F",
+          backgroundColor: "#151B2F",
           gap: 14,
         }}
       >
@@ -398,7 +398,7 @@ export function SentenceCompletionActivity({
                 padding: 14,
                 borderRadius: 16,
                 backgroundColor: "#FFFFFF",
-                color: "#17152F",
+                color: "#151B2F",
                 fontSize: 18,
                 fontWeight: "800",
                 outlineStyle: "none" as never,

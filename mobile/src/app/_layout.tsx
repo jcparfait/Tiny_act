@@ -2,6 +2,8 @@ import { useEffect } from "react";
 
 import {
   ActivityIndicator,
+  Text,
+  TextInput,
   View,
 } from "react-native";
 
@@ -12,11 +14,89 @@ import {
 } from "expo-router";
 
 import {
+  useFonts,
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+  Poppins_900Black,
+} from "@expo-google-fonts/poppins";
+
+import {
   AuthProvider,
   useAuth,
 } from "../context/AuthContext";
 
+import { TA } from "../theme/tinyActTheme";
+
+function applyDefaultFonts() {
+  const textDefaultProps =
+    (Text as unknown as {
+      defaultProps?: Record<string, unknown>;
+    }).defaultProps || {};
+
+  const inputDefaultProps =
+    (TextInput as unknown as {
+      defaultProps?: Record<string, unknown>;
+    }).defaultProps || {};
+
+  (Text as unknown as {
+    defaultProps: Record<string, unknown>;
+  }).defaultProps = {
+    ...textDefaultProps,
+    style: [
+      textDefaultProps.style,
+      {
+        fontFamily: TA.fonts.regular,
+      },
+    ],
+  };
+
+  (TextInput as unknown as {
+    defaultProps: Record<string, unknown>;
+  }).defaultProps = {
+    ...inputDefaultProps,
+    style: [
+      inputDefaultProps.style,
+      {
+        fontFamily: TA.fonts.regular,
+      },
+    ],
+  };
+}
+
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Poppins_800ExtraBold,
+    Poppins_900Black,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      applyDefaultFonts();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: TA.colors.bg,
+        }}
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
   return (
     <AuthProvider>
       <RootNavigator />
@@ -82,7 +162,7 @@ function RootNavigator() {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#FFF4EA",
+          backgroundColor: TA.colors.bg,
         }}
       >
         <ActivityIndicator />
@@ -94,6 +174,9 @@ function RootNavigator() {
     <Stack
       screenOptions={{
         headerShown: false,
+        contentStyle: {
+          backgroundColor: TA.colors.bg,
+        },
       }}
     >
       <Stack.Protected guard={!user}>

@@ -14,7 +14,12 @@ export function ScreenHeader({
   kicker = "Tiny Act",
 }: ScreenHeaderProps) {
   return (
-    <View style={{ gap: 11 }}>
+    <View
+      style={{
+        marginTop: 112,
+        gap: 11,
+      }}
+    >
       <View
         style={{
           alignSelf: "flex-start",
@@ -30,7 +35,7 @@ export function ScreenHeader({
           style={{
             fontSize: 12,
             lineHeight: 14,
-            fontWeight: "900",
+            fontFamily: TA.fonts.black,
             color: TA.colors.purple,
             textTransform: "uppercase",
             letterSpacing: 1,
@@ -42,11 +47,11 @@ export function ScreenHeader({
 
       <Text
         style={{
-          fontSize: 40,
+          fontSize: 42,
           lineHeight: 43,
-          fontWeight: "900",
+          fontFamily: TA.fonts.black,
           color: TA.colors.ink,
-          letterSpacing: -1.4,
+          letterSpacing: -2.1,
         }}
       >
         {title}
@@ -57,7 +62,7 @@ export function ScreenHeader({
           fontSize: 16,
           color: TA.colors.inkMuted,
           lineHeight: 23,
-          fontWeight: "700",
+          fontFamily: TA.fonts.bold,
         }}
       >
         {subtitle}

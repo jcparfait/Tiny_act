@@ -182,7 +182,7 @@ export function WordLearningActivity({
 
         <Text
           style={{
-            color: "#5D5A70",
+            color: "rgba(21, 27, 47, 0.58)",
             fontWeight: "700",
           }}
         >
@@ -235,7 +235,7 @@ export function WordLearningActivity({
         style={{
           padding: 22,
           borderRadius: 24,
-          backgroundColor: "#17152F",
+          backgroundColor: "#151B2F",
           gap: 12,
         }}
       >
@@ -268,14 +268,14 @@ export function WordLearningActivity({
               marginTop: 10,
               padding: 14,
               borderRadius: 18,
-              backgroundColor: "#FFF4EA",
+              backgroundColor: "#F4EFE8",
             }}
           >
             <Text
               style={{
                 fontSize: 13,
                 fontWeight: "800",
-                color: "#FF4B2B",
+                color: "#7C63F2",
                 textTransform: "uppercase",
               }}
             >
@@ -287,7 +287,7 @@ export function WordLearningActivity({
                 marginTop: 6,
                 fontSize: 20,
                 fontWeight: "800",
-                color: "#17152F",
+                color: "#151B2F",
               }}
             >
               {currentItem.translation ||

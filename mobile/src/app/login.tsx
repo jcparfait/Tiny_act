@@ -121,7 +121,7 @@ export default function LoginScreen() {
         style={{
           padding: 20,
           borderRadius: 26,
-          backgroundColor: "#17152F",
+          backgroundColor: "#151B2F",
           gap: 12,
         }}
       >
@@ -201,7 +201,7 @@ export default function LoginScreen() {
         <View style={{ gap: 10 }}>
           <Text
             style={{
-              color: "#5D5A70",
+              color: "rgba(21, 27, 47, 0.58)",
               textAlign: "center",
               fontWeight: "800",
             }}

@@ -89,7 +89,7 @@ export default function AvatarScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <ScrollView
@@ -118,7 +118,7 @@ export default function AvatarScreen() {
             style={{
               padding: 24,
               borderRadius: 32,
-              backgroundColor: "#17152F",
+              backgroundColor: "#151B2F",
               gap: 18,
               alignItems: "center",
             }}
@@ -177,14 +177,14 @@ export default function AvatarScreen() {
               borderRadius: 28,
               backgroundColor: "#FFFFFF",
               borderWidth: 2,
-              borderColor: "#F2D7C8",
+              borderColor: "rgba(90, 74, 54, 0.16)",
               gap: 16,
             }}
           >
             <View style={{ gap: 4 }}>
               <Text
                 style={{
-                  color: "#FF4B2B",
+                  color: "#7C63F2",
                   fontSize: 12,
                   fontWeight: "900",
                   textTransform: "uppercase",
@@ -196,7 +196,7 @@ export default function AvatarScreen() {
 
               <Text
                 style={{
-                  color: "#17152F",
+                  color: "#151B2F",
                   fontSize: 24,
                   fontWeight: "900",
                 }}

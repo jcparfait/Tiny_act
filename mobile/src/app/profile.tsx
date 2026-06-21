@@ -210,7 +210,7 @@ export default function ProfileScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <ScrollView
@@ -239,7 +239,7 @@ export default function ProfileScreen() {
             style={{
               padding: 24,
               borderRadius: 32,
-              backgroundColor: "#17152F",
+              backgroundColor: "#151B2F",
               gap: 18,
             }}
           >
@@ -371,14 +371,14 @@ export default function ProfileScreen() {
                   borderRadius: 28,
                   backgroundColor: "#FFFFFF",
                   borderWidth: 2,
-                  borderColor: "#F2D7C8",
+                  borderColor: "rgba(90, 74, 54, 0.16)",
                   gap: 18,
                 }}
               >
                 <View style={{ gap: 5 }}>
                   <Text
                     style={{
-                      color: "#FF4B2B",
+                      color: "#7C63F2",
                       fontSize: 12,
                       fontWeight: "900",
                       textTransform: "uppercase",
@@ -390,7 +390,7 @@ export default function ProfileScreen() {
 
                   <Text
                     style={{
-                      color: "#17152F",
+                      color: "#151B2F",
                       fontSize: 25,
                       fontWeight: "900",
                     }}
@@ -438,13 +438,13 @@ export default function ProfileScreen() {
                       borderRadius: 28,
                       backgroundColor: "#FFFFFF",
                       borderWidth: 2,
-                      borderColor: "#F2D7C8",
+                      borderColor: "rgba(90, 74, 54, 0.16)",
                       gap: 16,
                     }}
                   >
                     <Text
                       style={{
-                        color: "#17152F",
+                        color: "#151B2F",
                         fontSize: 24,
                         fontWeight: "900",
                       }}
@@ -472,7 +472,7 @@ export default function ProfileScreen() {
                             <Text
                               style={{
                                 color:
-                                  "#17152F",
+                                  "#151B2F",
                                 fontWeight:
                                   "900",
                               }}
@@ -487,7 +487,7 @@ export default function ProfileScreen() {
                             <Text
                               style={{
                                 color:
-                                  "#FF4B2B",
+                                  "#7C63F2",
                                 fontWeight:
                                   "900",
                               }}
@@ -498,7 +498,7 @@ export default function ProfileScreen() {
 
                           <Text
                             style={{
-                              color: "#5D5A70",
+                              color: "rgba(21, 27, 47, 0.58)",
                               fontSize: 12,
                               fontWeight: "700",
                             }}
@@ -521,14 +521,14 @@ export default function ProfileScreen() {
               borderRadius: 28,
               backgroundColor: "#FFFFFF",
               borderWidth: 2,
-              borderColor: "#F2D7C8",
+              borderColor: "rgba(90, 74, 54, 0.16)",
               gap: 16,
             }}
           >
             <View style={{ gap: 5 }}>
               <Text
                 style={{
-                  color: "#FF4B2B",
+                  color: "#7C63F2",
                   fontSize: 12,
                   fontWeight: "900",
                   textTransform: "uppercase",
@@ -540,7 +540,7 @@ export default function ProfileScreen() {
 
               <Text
                 style={{
-                  color: "#17152F",
+                  color: "#151B2F",
                   fontSize: 25,
                   fontWeight: "900",
                 }}
@@ -563,7 +563,7 @@ export default function ProfileScreen() {
 
             <Text
               style={{
-                color: "#5D5A70",
+                color: "rgba(21, 27, 47, 0.58)",
                 fontWeight: "700",
               }}
             >
@@ -630,13 +630,13 @@ function DashboardStat({
         borderRadius: 20,
         backgroundColor: "#FFFFFF",
         borderWidth: 2,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
         gap: 4,
       }}
     >
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           fontSize: 11,
           fontWeight: "900",
           textTransform: "uppercase",
@@ -648,7 +648,7 @@ function DashboardStat({
 
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontSize: 22,
           fontWeight: "900",
         }}
@@ -673,13 +673,13 @@ function RoomStat({
         minWidth: 130,
         padding: 14,
         borderRadius: 18,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
         gap: 4,
       }}
     >
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           fontSize: 12,
           fontWeight: "800",
         }}
@@ -689,7 +689,7 @@ function RoomStat({
 
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontSize: 24,
           fontWeight: "900",
         }}
@@ -720,7 +720,7 @@ function MiniAction({
     >
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontWeight: "900",
           textAlign: "center",
         }}

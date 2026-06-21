@@ -365,7 +365,7 @@ export default function RoomScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#FFF4EA",
+        backgroundColor: "#F4EFE8",
       }}
     >
       <ScrollView
@@ -398,7 +398,7 @@ export default function RoomScreen() {
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  color: "#FF4B2B",
+                  color: "#7C63F2",
                   fontSize: 13,
                   fontWeight: "900",
                   textTransform: "uppercase",
@@ -410,7 +410,7 @@ export default function RoomScreen() {
 
               <Text
                 style={{
-                  color: "#17152F",
+                  color: "#151B2F",
                   fontSize: 32,
                   lineHeight: 38,
                   fontWeight: "900",
@@ -477,7 +477,7 @@ export default function RoomScreen() {
 
               <Text
                 style={{
-                  color: "#5D5A70",
+                  color: "rgba(21, 27, 47, 0.58)",
                   fontSize: 14,
                   lineHeight: 21,
                   textAlign: "center",
@@ -523,12 +523,12 @@ export default function RoomScreen() {
                         borderRadius: 18,
                         backgroundColor: "#FFFFFF",
                         borderWidth: 1,
-                        borderColor: "#F2D7C8",
+                        borderColor: "rgba(90, 74, 54, 0.16)",
                       }}
                     >
                       <Text
                         style={{
-                          color: "#17152F",
+                          color: "#151B2F",
                           fontWeight: "900",
                         }}
                       >
@@ -538,7 +538,7 @@ export default function RoomScreen() {
                       <Text
                         style={{
                           marginTop: 5,
-                          color: "#FF4B2B",
+                          color: "#7C63F2",
                           fontSize: 20,
                           fontWeight: "900",
                         }}
@@ -549,7 +549,7 @@ export default function RoomScreen() {
                       <Text
                         style={{
                           marginTop: 4,
-                          color: "#5D5A70",
+                          color: "rgba(21, 27, 47, 0.58)",
                           fontSize: 12,
                           fontWeight: "700",
                         }}
@@ -575,7 +575,7 @@ export default function RoomScreen() {
                   justifyContent: "space-between",
                   padding: 18,
                   borderRadius: 24,
-                  backgroundColor: "#17152F",
+                  backgroundColor: "#151B2F",
                   opacity: pressed ? 0.8 : 1,
                 })}
               >
@@ -698,7 +698,7 @@ export default function RoomScreen() {
           >
             <Text
               style={{
-                color: "#FF4B2B",
+                color: "#7C63F2",
                 textAlign: "center",
                 fontWeight: "900",
               }}
@@ -764,7 +764,7 @@ function RoomCanvas({
         overflow: "hidden",
         backgroundColor: "#E5D8CC",
         borderWidth: 2,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
       }}
     >
       <ExpoImage
@@ -806,7 +806,7 @@ function RoomCanvas({
           borderRadius: 999,
           backgroundColor: "#FFFFFF",
           borderWidth: 3,
-          borderColor: "#FF4B2B",
+          borderColor: "#7C63F2",
         }}
       >
         <AvatarImage
@@ -965,7 +965,7 @@ function DraggableFurniture({
           height: "100%",
           borderRadius: 14,
           borderWidth: selected ? 3 : 0,
-          borderColor: "#FF4B2B",
+          borderColor: "#7C63F2",
           backgroundColor: selected
             ? "rgba(255, 75, 43, 0.12)"
             : "transparent",
@@ -1008,7 +1008,7 @@ function FurnitureControls({
       style={{
         padding: 18,
         borderRadius: 24,
-        backgroundColor: "#17152F",
+        backgroundColor: "#151B2F",
         gap: 14,
       }}
     >
@@ -1221,7 +1221,7 @@ function StatCard({
         minWidth: 130,
         padding: 14,
         borderRadius: 18,
-        backgroundColor: "#17152F",
+        backgroundColor: "#151B2F",
       }}
     >
       <Text
@@ -1261,7 +1261,7 @@ function SectionTitle({
     <View style={{ gap: 3 }}>
       <Text
         style={{
-          color: "#FF4B2B",
+          color: "#7C63F2",
           fontSize: 12,
           fontWeight: "900",
           textTransform: "uppercase",
@@ -1273,7 +1273,7 @@ function SectionTitle({
 
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontSize: 25,
           fontWeight: "900",
         }}
@@ -1312,7 +1312,7 @@ function MoveButton({
     >
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontSize: 22,
           fontWeight: "900",
         }}
@@ -1344,7 +1344,7 @@ function InventoryCard({
         borderRadius: 22,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
         gap: 10,
       }}
     >
@@ -1362,7 +1362,7 @@ function InventoryCard({
       <View style={{ flex: 1 }}>
         <Text
           style={{
-            color: "#17152F",
+            color: "#151B2F",
             fontSize: 17,
             fontWeight: "900",
           }}
@@ -1373,7 +1373,7 @@ function InventoryCard({
         <Text
           style={{
             marginTop: 3,
-            color: "#5D5A70",
+            color: "rgba(21, 27, 47, 0.58)",
             fontSize: 12,
             fontWeight: "700",
           }}
@@ -1390,7 +1390,7 @@ function InventoryCard({
         style={({ pressed }) => ({
           padding: 12,
           borderRadius: 14,
-          backgroundColor: "#FF4B2B",
+          backgroundColor: "#7C63F2",
           opacity:
             disabled || pressed
               ? 0.6
@@ -1460,7 +1460,7 @@ function LockedFurnitureCard({
 
       <Text
         style={{
-          color: "#17152F",
+          color: "#151B2F",
           fontWeight: "900",
         }}
       >
@@ -1469,7 +1469,7 @@ function LockedFurnitureCard({
 
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           fontSize: 12,
           fontWeight: "700",
         }}
@@ -1490,7 +1490,7 @@ function LockedFurnitureCard({
           style={{
             width: `${progress * 100}%`,
             height: "100%",
-            backgroundColor: "#FF4B2B",
+            backgroundColor: "#7C63F2",
           }}
         />
       </View>
@@ -1510,12 +1510,12 @@ function EmptyCard({
         borderRadius: 20,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
-        borderColor: "#F2D7C8",
+        borderColor: "rgba(90, 74, 54, 0.16)",
       }}
     >
       <Text
         style={{
-          color: "#5D5A70",
+          color: "rgba(21, 27, 47, 0.58)",
           lineHeight: 22,
           fontWeight: "700",
           textAlign: "center",

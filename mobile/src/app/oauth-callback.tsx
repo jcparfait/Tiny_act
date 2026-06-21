@@ -64,7 +64,7 @@ export default function OauthCallbackScreen() {
         <Text
           style={{
             textAlign: "center",
-            color: "#5D5A70",
+            color: "rgba(21, 27, 47, 0.58)",
             fontWeight: "700",
           }}
         >
