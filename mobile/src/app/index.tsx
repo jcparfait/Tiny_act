@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 
 import {
@@ -9,6 +9,8 @@ import {
   Text,
   View,
 } from "react-native";
+
+import { Image as ExpoImage } from "expo-image";
 
 import { ActiveActivityCard } from "../components/ActiveActivityCard";
 import { ActivityCard } from "../components/ActivityCard";
@@ -32,6 +34,8 @@ import {
   startActivitySession,
 } from "../services/api";
 
+import { loadRoom } from "../services/roomApi";
+
 import {
   Activity,
   ActivityReward,
@@ -40,8 +44,20 @@ import {
   Duration,
   Location,
   Mood,
+  RoomInventoryItem,
+  RoomResponse,
   Step,
 } from "../types/tinyAct";
+
+import {
+  getFurnitureSource,
+  ROOM_BACKGROUND,
+} from "../constants/furnitureAssets";
+
+import {
+  BonusChallenge,
+  getDailyBonusChallenge,
+} from "../constants/bonusChallenges";
 
 import { TA } from "../theme/tinyActTheme";
 
@@ -80,6 +96,15 @@ function isActiveSession(
   return (
     !session.finished &&
     session.status !== "finished"
+  );
+}
+
+function getRemainingXp(
+  furniture: RoomInventoryItem
+) {
+  return Math.max(
+    furniture.required_xp - furniture.current_xp,
+    0
   );
 }
 
@@ -132,6 +157,9 @@ export default function HomeScreen() {
     null
   );
 
+  const [roomData, setRoomData] =
+    useState<RoomResponse | null>(null);
+
   const [elapsedSeconds, setElapsedSeconds] =
     useState(0);
 
@@ -174,6 +202,25 @@ export default function HomeScreen() {
   const [error, setError] =
     useState<string | null>(null);
 
+  const bonusChallenge = useMemo(
+    () => getDailyBonusChallenge(),
+    []
+  );
+
+  const nextFurniture = useMemo(() => {
+    if (!roomData) return null;
+
+    const lockedItems = roomData.inventory
+      .filter((item) => !item.unlocked)
+      .sort(
+        (firstItem, secondItem) =>
+          getRemainingXp(firstItem) -
+          getRemainingXp(secondItem)
+      );
+
+    return lockedItems[0] || null;
+  }, [roomData]);
+
   useEffect(() => {
     async function fetchInitialData() {
       try {
@@ -182,14 +229,17 @@ export default function HomeScreen() {
         const [
           initialData,
           sessionsData,
+          loadedRoom,
         ] = await Promise.all([
           loadInitialData(),
           loadActivitySessions(),
+          loadRoom(),
         ]);
 
         setMoods(initialData.moods);
         setLocations(initialData.locations);
         setDurations(initialData.durations);
+        setRoomData(loadedRoom);
 
         const activeSession =
           sessionsData.find(isActiveSession) ||
@@ -612,7 +662,7 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: 132,
+          paddingTop: 128,
           paddingHorizontal: 18,
           paddingBottom: 150,
           alignItems: "center",
@@ -623,25 +673,23 @@ export default function HomeScreen() {
             width: "100%",
             maxWidth: 520,
             minHeight: "100%",
-            gap: 24,
+            gap: 22,
           }}
         >
-          {step === "mood" &&
-            resumableSession && (
-              <HomeNotification
-                title={
-                  resumableSession.activity.name
-                }
-                subtitle={`${
-                  resumableSession.activity.interest
-                    ?.name || "Activité"
-                } · ${
-                  resumableSession.activity.duration
-                    ?.label || ""
-                }`}
-                onPress={openResumableSession}
-              />
-            )}
+          {step === "mood" && (
+            <HomeNotificationBand
+              resumableSession={resumableSession}
+              nextFurniture={nextFurniture}
+              bonusChallenge={bonusChallenge}
+              onResume={openResumableSession}
+              onOpenRoom={() =>
+                router.push("/explore")
+              }
+              onBonusPress={() => {
+                setStep("mood");
+              }}
+            />
+          )}
 
           <SelectionTitle
             kicker={kicker}
@@ -962,119 +1010,340 @@ function SelectionTitle({
   );
 }
 
-function HomeNotification({
+function HomeNotificationBand({
+  resumableSession,
+  nextFurniture,
+  bonusChallenge,
+  onResume,
+  onOpenRoom,
+  onBonusPress,
+}: {
+  resumableSession: ActivitySessionSummary | null;
+  nextFurniture: RoomInventoryItem | null;
+  bonusChallenge: BonusChallenge;
+  onResume: () => void;
+  onOpenRoom: () => void;
+  onBonusPress: () => void;
+}) {
+  const remainingXp = nextFurniture
+    ? getRemainingXp(nextFurniture)
+    : 0;
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{
+        gap: 12,
+        paddingVertical: 8,
+        paddingRight: 18,
+      }}
+      style={{
+        marginHorizontal: -18,
+        paddingLeft: 18,
+        maxHeight: 122,
+      }}
+    >
+      <BandNotification
+        label="Room"
+        icon="room"
+        title="Ma room"
+        subtitle="Voir ton espace"
+        counter="⌂"
+        tone="room"
+        onPress={onOpenRoom}
+      />
+
+      {resumableSession && (
+        <BandNotification
+          label="Reprendre"
+          icon="play"
+          title={resumableSession.activity.name}
+          subtitle={`${
+            resumableSession.activity.interest?.name ||
+            "Activité"
+          } · ${
+            resumableSession.activity.duration?.label ||
+            ""
+          }`}
+          counter="1/1"
+          tone="purple"
+          onPress={onResume}
+        />
+      )}
+
+      <BandNotification
+        label="Objet"
+        icon="furniture"
+        title={
+          nextFurniture
+            ? nextFurniture.name
+            : "Tout est débloqué"
+        }
+        subtitle={
+          nextFurniture
+            ? `Encore ${remainingXp} XP`
+            : "Va organiser ta room"
+        }
+        counter={
+          nextFurniture
+            ? `${remainingXp}`
+            : "OK"
+        }
+        furniture={nextFurniture}
+        tone="green"
+        onPress={onOpenRoom}
+      />
+
+      <BandNotification
+        label="Bonus"
+        icon="bonus"
+        title={bonusChallenge.title}
+        subtitle={bonusChallenge.subtitle}
+        counter={bonusChallenge.rewardLabel}
+        tone="gold"
+        onPress={onBonusPress}
+      />
+    </ScrollView>
+  );
+}
+
+function BandNotification({
+  label,
+  icon,
   title,
   subtitle,
+  counter,
+  furniture,
+  tone,
   onPress,
 }: {
+  label: string;
+  icon:
+    | "room"
+    | "play"
+    | "furniture"
+    | "bonus";
   title: string;
   subtitle: string;
+  counter: string;
+  furniture?: RoomInventoryItem | null;
+  tone: "room" | "purple" | "green" | "gold";
   onPress: () => void;
 }) {
+  const colors =
+    tone === "green"
+      ? {
+          bg: "#F0FAEA",
+          border: "#92BD73",
+          accent: "#4F9F46",
+        }
+      : tone === "gold"
+        ? {
+            bg: "#FFF7E3",
+            border: "#E7C74F",
+            accent: "#D89A32",
+          }
+        : tone === "room"
+          ? {
+              bg: "#EEF7FF",
+              border: "#8FC7F2",
+              accent: "#5C8FD8",
+            }
+          : {
+              bg: "#F0EAFF",
+              border: "#7C63F2",
+              accent: "#7C63F2",
+            };
+
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        padding: 14,
-        borderRadius: 28,
-        backgroundColor: "#F0EAFF",
+        width: 272,
+        height: 106,
+        borderRadius: 24,
+        backgroundColor: colors.bg,
         borderWidth: 2,
-        borderColor: TA.colors.borderDark,
+        borderColor: colors.border,
         opacity: pressed ? 0.84 : 1,
+        overflow: "hidden",
         ...TA.shadow.webCard,
       })}
     >
       <View
         style={{
           position: "absolute",
-          top: -11,
-          alignSelf: "center",
+          top: 8,
+          left: 12,
           paddingVertical: 3,
-          paddingHorizontal: 18,
+          paddingHorizontal: 10,
           borderRadius: 999,
-          backgroundColor: TA.colors.purple,
+          backgroundColor: colors.accent,
+          zIndex: 3,
         }}
       >
         <Text
           style={{
             color: TA.colors.white,
-            fontSize: 10,
+            fontSize: 9,
+            lineHeight: 11,
             fontFamily: TA.fonts.black,
-            letterSpacing: 1,
             textTransform: "uppercase",
+            letterSpacing: 0.8,
           }}
         >
-          Reprendre
+          {label}
         </Text>
       </View>
 
       <View
         style={{
-          minHeight: 76,
-          paddingLeft: 86,
-          paddingRight: 28,
-          justifyContent: "center",
+          position: "absolute",
+          top: 8,
+          right: 12,
+          zIndex: 3,
         }}
       >
-        <View
+        <Text
+          numberOfLines={1}
           style={{
-            position: "absolute",
-            left: 14,
-            width: 60,
-            height: 60,
-            borderRadius: 18,
-            backgroundColor: TA.colors.surface,
-            alignItems: "center",
-            justifyContent: "center",
+            color: TA.colors.inkLight,
+            fontSize: 11,
+            lineHeight: 13,
+            fontFamily: TA.fonts.black,
+            maxWidth: 72,
+            textAlign: "right",
           }}
         >
+          {counter}
+        </Text>
+      </View>
+
+      <View
+        style={{
+          position: "absolute",
+          left: 12,
+          top: 34,
+          width: 58,
+          height: 58,
+          borderRadius: 18,
+          backgroundColor: TA.colors.surface,
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          zIndex: 2,
+        }}
+      >
+        {icon === "room" && (
+          <ExpoImage
+            source={ROOM_BACKGROUND}
+            contentFit="cover"
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+          />
+        )}
+
+        {icon === "furniture" && furniture && (
+          <ExpoImage
+            source={getFurnitureSource(
+              furniture.image_key
+            )}
+            contentFit="contain"
+            style={{
+              width: "88%",
+              height: "88%",
+            }}
+          />
+        )}
+
+        {icon === "play" && (
           <Text
             style={{
-              color: TA.colors.purple,
-              fontSize: 30,
+              color: colors.accent,
+              fontSize: 28,
               fontFamily: TA.fonts.black,
             }}
           >
             ▶
           </Text>
-        </View>
+        )}
 
+        {icon === "bonus" && (
+          <Text
+            style={{
+              color: colors.accent,
+              fontSize: 30,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            ✦
+          </Text>
+        )}
+
+        {icon === "furniture" && !furniture && (
+          <Text
+            style={{
+              color: colors.accent,
+              fontSize: 28,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            ✓
+          </Text>
+        )}
+      </View>
+
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          paddingLeft: 84,
+          paddingRight: 28,
+          paddingTop: 24,
+        }}
+      >
         <Text
           numberOfLines={1}
           style={{
             color: TA.colors.ink,
-            fontSize: 19,
+            fontSize: 18,
+            lineHeight: 21,
             fontFamily: TA.fonts.black,
-            letterSpacing: -0.4,
+            letterSpacing: -0.5,
           }}
         >
           {title}
         </Text>
 
         <Text
-          numberOfLines={1}
+          numberOfLines={2}
           style={{
+            marginTop: 2,
             color: TA.colors.inkMuted,
-            fontSize: 14,
+            fontSize: 12,
+            lineHeight: 16,
             fontFamily: TA.fonts.bold,
           }}
         >
           {subtitle}
         </Text>
-
-        <Text
-          style={{
-            position: "absolute",
-            right: 8,
-            top: 20,
-            color: TA.colors.purple,
-            fontSize: 34,
-            fontFamily: TA.fonts.black,
-          }}
-        >
-          ›
-        </Text>
       </View>
+
+      <Text
+        style={{
+          position: "absolute",
+          right: 9,
+          top: 39,
+          color: colors.accent,
+          fontSize: 30,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        ›
+      </Text>
     </Pressable>
   );
 }

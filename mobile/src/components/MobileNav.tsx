@@ -77,8 +77,8 @@ export function MobileNav({
         <Link href="/" asChild>
           <Pressable
             style={({ pressed }) => ({
-              width: 118,
-              height: 61,
+              width: 126,
+              height: 66,
               opacity: pressed ? 0.74 : 1,
             })}
           >
@@ -103,8 +103,8 @@ export function MobileNav({
           <Link href="/history" asChild>
             <Pressable
               style={({ pressed }) => ({
-                height: 48,
-                minWidth: 94,
+                height: 50,
+                minWidth: 96,
                 paddingHorizontal: 17,
                 borderRadius: 20,
                 borderWidth: 1,
