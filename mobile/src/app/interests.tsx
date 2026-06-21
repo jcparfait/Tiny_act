@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -14,8 +14,12 @@ import { useRouter } from "expo-router";
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PrimaryButton } from "../components/PrimaryButton";
+import { ScreenHeader } from "../components/ScreenHeader";
+import { SecondaryButton } from "../components/SecondaryButton";
+
 import { useAuth } from "../context/AuthContext";
 import { loadMobileInterests } from "../services/interestsApi";
+
 import { Interest } from "../types/tinyAct";
 
 const INTEREST_DETAILS: Record<
@@ -27,64 +31,69 @@ const INTEREST_DETAILS: Record<
 > = {
   Sport: {
     icon: "🏃",
-    description: "Bouger et relancer ton énergie.",
+    description: "Bouger, respirer, relancer ton énergie.",
   },
   "Bien-être": {
     icon: "🌿",
-    description: "Respirer, ralentir et te recentrer.",
+    description: "Ralentir, te recentrer, reprendre le contrôle.",
   },
   Photo: {
     icon: "📷",
-    description: "Regarder autrement ce qui t’entoure.",
+    description: "Observer, cadrer, regarder autrement.",
   },
   Dessin: {
     icon: "✏️",
-    description: "Dessiner sans pression.",
+    description: "Créer sans pression, même quelques minutes.",
   },
   Langues: {
     icon: "🌍",
-    description: "Apprendre quelques mots utiles.",
+    description: "Apprendre des mots ou des phrases utiles.",
   },
   Culture: {
     icon: "🧠",
-    description: "Nourrir ta curiosité.",
+    description: "Nourrir ta curiosité au lieu de scroller.",
   },
   Productivité: {
     icon: "✓",
-    description: "Clarifier et avancer.",
+    description: "Clarifier, ranger, avancer un petit peu.",
   },
   Code: {
     icon: "⌨️",
-    description: "Résoudre un petit problème.",
+    description: "Résoudre un mini-problème technique.",
   },
   Musique: {
     icon: "♪",
-    description: "Écouter, créer ou jouer avec le son.",
+    description: "Écouter, jouer, reconnaître ou créer du son.",
   },
 };
 
 export default function InterestsScreen() {
   const router = useRouter();
 
-  const {
-    user,
-    updateInterests,
-  } = useAuth();
+  const { user, updateInterests } = useAuth();
 
   const editingExistingSelection =
     user?.onboarding_complete === true;
 
-  const [interests, setInterests] =
-    useState<Interest[]>([]);
-
-  const [selectedIds, setSelectedIds] =
-    useState<number[]>([]);
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectedInterests = useMemo(
+    () =>
+      interests.filter((interest) =>
+        selectedIds.includes(interest.id)
+      ),
+    [interests, selectedIds]
+  );
+
+  const saveLabel = editingExistingSelection
+    ? "Enregistrer mes choix"
+    : "Continuer vers l’avatar";
 
   useEffect(() => {
     let cancelled = false;
@@ -93,15 +102,12 @@ export default function InterestsScreen() {
       try {
         setError(null);
 
-        const response =
-          await loadMobileInterests();
+        const response = await loadMobileInterests();
 
         if (cancelled) return;
 
         setInterests(response.interests);
-        setSelectedIds(
-          response.selected_interest_ids
-        );
+        setSelectedIds(response.selected_interest_ids);
       } catch (loadError) {
         if (cancelled) return;
 
@@ -127,9 +133,7 @@ export default function InterestsScreen() {
   function toggleInterest(interestId: number) {
     setSelectedIds((currentIds) => {
       if (currentIds.includes(interestId)) {
-        return currentIds.filter(
-          (id) => id !== interestId
-        );
+        return currentIds.filter((id) => id !== interestId);
       }
 
       return [...currentIds, interestId];
@@ -138,10 +142,7 @@ export default function InterestsScreen() {
 
   async function handleSave() {
     if (selectedIds.length === 0) {
-      setError(
-        "Choisis au moins un centre d’intérêt."
-      );
-
+      setError("Choisis au moins un centre d’intérêt.");
       return;
     }
 
@@ -152,9 +153,7 @@ export default function InterestsScreen() {
       await updateInterests(selectedIds);
 
       router.replace(
-        editingExistingSelection
-          ? "/profile"
-          : "/avatar"
+        editingExistingSelection ? "/profile" : "/avatar"
       );
     } catch (saveError) {
       setError(
@@ -185,42 +184,66 @@ export default function InterestsScreen() {
           style={{
             width: "100%",
             maxWidth: 620,
-            gap: 22,
+            minHeight: "100%",
+            justifyContent: "center",
+            gap: 24,
           }}
         >
-          <View style={{ gap: 8 }}>
+          <ScreenHeader
+            kicker="Personnalisation"
+            title="Choisis tes centres d’intérêt"
+            subtitle="Tiny Act utilisera ces choix pour te proposer des micro-actions adaptées à ce que tu veux vraiment nourrir."
+          />
+
+          <View
+            style={{
+              padding: 22,
+              borderRadius: 28,
+              backgroundColor: "#17152F",
+              gap: 14,
+            }}
+          >
             <Text
               style={{
-                color: "#FF4B2B",
+                color: "#FFFFFF",
+                fontSize: 25,
+                lineHeight: 31,
                 fontWeight: "900",
-                textTransform: "uppercase",
-                letterSpacing: 1,
               }}
             >
-              Personnalisation
+              Plus tes choix sont précis, plus les activités seront utiles.
             </Text>
 
             <Text
               style={{
-                fontSize: 36,
-                lineHeight: 42,
-                color: "#17152F",
-                fontWeight: "900",
+                color: "#FFFFFF",
+                opacity: 0.76,
+                fontSize: 15,
+                lineHeight: 22,
+                fontWeight: "600",
               }}
             >
-              Tes centres d’intérêt
+              Tu peux en sélectionner plusieurs. Chaque activité terminée fera progresser la salle liée à son thème.
             </Text>
 
-            <Text
+            <View
               style={{
-                fontSize: 16,
-                lineHeight: 24,
-                color: "#5D5A70",
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
               }}
             >
-              Choisis ce que tu souhaites retrouver
-              dans tes recommandations.
-            </Text>
+              <SelectionPill
+                label={`${selectedIds.length} sélectionné(s)`}
+              />
+
+              {selectedInterests.slice(0, 3).map((interest) => (
+                <SelectionPill
+                  key={interest.id}
+                  label={interest.name}
+                />
+              ))}
+            </View>
           </View>
 
           {loading && <ActivityIndicator />}
@@ -236,28 +259,24 @@ export default function InterestsScreen() {
               }}
             >
               {interests.map((interest) => {
-                const selected =
-                  selectedIds.includes(interest.id);
+                const selected = selectedIds.includes(interest.id);
 
                 const details =
                   INTEREST_DETAILS[interest.name] || {
                     icon: "✦",
-                    description:
-                      "Ajouter cette catégorie.",
+                    description: "Ajouter cette catégorie.",
                   };
 
                 return (
                   <Pressable
                     key={interest.id}
-                    onPress={() =>
-                      toggleInterest(interest.id)
-                    }
+                    onPress={() => toggleInterest(interest.id)}
                     style={({ pressed }) => ({
                       width: "48%",
-                      minWidth: 150,
+                      minWidth: 155,
                       flexGrow: 1,
                       padding: 18,
-                      borderRadius: 24,
+                      borderRadius: 26,
                       borderWidth: 2,
                       borderColor: selected
                         ? "#FF4B2B"
@@ -266,20 +285,60 @@ export default function InterestsScreen() {
                         ? "#FFF0EB"
                         : "#FFFFFF",
                       gap: 10,
-                      opacity: pressed ? 0.8 : 1,
+                      opacity: pressed ? 0.82 : 1,
+                      transform: [
+                        {
+                          translateY: pressed ? 1 : 0,
+                        },
+                      ],
                     })}
                   >
-                    <Text
+                    <View
                       style={{
-                        fontSize: 32,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
                       }}
                     >
-                      {details.icon}
-                    </Text>
+                      <Text
+                        style={{
+                          fontSize: 34,
+                        }}
+                      >
+                        {details.icon}
+                      </Text>
+
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 999,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: selected
+                            ? "#FF4B2B"
+                            : "#FFF4EA",
+                          borderWidth: 2,
+                          borderColor: selected
+                            ? "#FF4B2B"
+                            : "#F2D7C8",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: selected ? "#FFFFFF" : "#8E8A9D",
+                            fontWeight: "900",
+                          }}
+                        >
+                          {selected ? "✓" : "+"}
+                        </Text>
+                      </View>
+                    </View>
 
                     <Text
                       style={{
-                        fontSize: 20,
+                        fontSize: 21,
                         color: "#17152F",
                         fontWeight: "900",
                       }}
@@ -291,6 +350,7 @@ export default function InterestsScreen() {
                       style={{
                         color: "#5D5A70",
                         lineHeight: 20,
+                        fontWeight: "600",
                       }}
                     >
                       {details.description}
@@ -298,15 +358,11 @@ export default function InterestsScreen() {
 
                     <Text
                       style={{
-                        color: selected
-                          ? "#FF4B2B"
-                          : "#8E8A9D",
+                        color: selected ? "#FF4B2B" : "#8E8A9D",
                         fontWeight: "900",
                       }}
                     >
-                      {selected
-                        ? "✓ Sélectionné"
-                        : "Sélectionner"}
+                      {selected ? "Sélectionné" : "Sélectionner"}
                     </Text>
                   </Pressable>
                 );
@@ -316,16 +372,16 @@ export default function InterestsScreen() {
 
           {!loading && (
             <PrimaryButton
-              label={
-                saving
-                  ? "Enregistrement..."
-                  : "Enregistrer mes choix"
-              }
+              label={saving ? "Enregistrement..." : saveLabel}
               onPress={handleSave}
-              disabled={
-                saving ||
-                selectedIds.length === 0
-              }
+              disabled={saving || selectedIds.length === 0}
+            />
+          )}
+
+          {editingExistingSelection && (
+            <SecondaryButton
+              label="← Retour au profil"
+              onPress={() => router.replace("/profile")}
             />
           )}
 
@@ -335,5 +391,28 @@ export default function InterestsScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SelectionPill({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        paddingVertical: 7,
+        paddingHorizontal: 10,
+        borderRadius: 999,
+        backgroundColor: "rgba(255,255,255,0.12)",
+      }}
+    >
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontSize: 12,
+          fontWeight: "900",
+        }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }

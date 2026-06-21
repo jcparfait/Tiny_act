@@ -17,6 +17,8 @@ import {
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PrimaryButton } from "../components/PrimaryButton";
+import { ScreenHeader } from "../components/ScreenHeader";
+import { SecondaryButton } from "../components/SecondaryButton";
 
 import {
   AvatarName,
@@ -28,25 +30,18 @@ import { useAuth } from "../context/AuthContext";
 export default function AvatarScreen() {
   const router = useRouter();
 
-  const {
-    user,
-    updateProfile,
-  } = useAuth();
+  const { user, updateProfile } = useAuth();
 
-  const editingExistingAvatar =
-    Boolean(user?.avatar);
+  const editingExistingAvatar = Boolean(user?.avatar);
 
   const [selectedAvatar, setSelectedAvatar] =
     useState<AvatarName | null>(
-      isAvatarName(user?.avatar)
-        ? user.avatar
-        : null
+      isAvatarName(user?.avatar) ? user.avatar : null
     );
 
   const [saving, setSaving] = useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAvatarName(user?.avatar)) {
@@ -71,9 +66,7 @@ export default function AvatarScreen() {
       });
 
       router.replace(
-        editingExistingAvatar
-          ? "/profile"
-          : "/"
+        editingExistingAvatar ? "/profile" : "/"
       );
     } catch (saveError) {
       setError(
@@ -84,6 +77,12 @@ export default function AvatarScreen() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleBack() {
+    router.replace(
+      editingExistingAvatar ? "/profile" : "/interests"
+    );
   }
 
   return (
@@ -104,71 +103,113 @@ export default function AvatarScreen() {
           style={{
             width: "100%",
             maxWidth: 620,
+            minHeight: "100%",
+            justifyContent: "center",
             gap: 24,
           }}
         >
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                color: "#FF4B2B",
-                fontWeight: "900",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Personnalisation
-            </Text>
+          <ScreenHeader
+            kicker="Personnalisation"
+            title="Choisis ton avatar"
+            subtitle="Il représentera ton profil dans Tiny Act. Tu pourras le modifier plus tard."
+          />
 
-            <Text
-              style={{
-                fontSize: 36,
-                lineHeight: 42,
-                color: "#17152F",
-                fontWeight: "900",
-              }}
-            >
-              Choisis ton avatar
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 16,
-                lineHeight: 24,
-                color: "#5D5A70",
-              }}
-            >
-              Il représentera ton profil dans Tiny Act.
-              Tu pourras le modifier plus tard.
-            </Text>
-          </View>
-
-          {selectedAvatar && (
+          <View
+            style={{
+              padding: 24,
+              borderRadius: 32,
+              backgroundColor: "#17152F",
+              gap: 18,
+              alignItems: "center",
+            }}
+          >
             <View
               style={{
-                alignItems: "center",
-                gap: 10,
+                padding: 6,
+                borderRadius: 999,
+                backgroundColor: "#FFFFFF",
               }}
             >
               <AvatarImage
                 avatar={selectedAvatar}
-                size={112}
+                size={128}
               />
+            </View>
+
+            <View
+              style={{
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 27,
+                  lineHeight: 33,
+                  fontWeight: "900",
+                  textAlign: "center",
+                }}
+              >
+                {selectedAvatar
+                  ? "Ton avatar est prêt."
+                  : "Sélectionne ton avatar."}
+              </Text>
+
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  opacity: 0.72,
+                  fontSize: 15,
+                  lineHeight: 22,
+                  fontWeight: "600",
+                  textAlign: "center",
+                }}
+              >
+                L’idée n’est pas de te représenter parfaitement, mais de rendre ton espace plus personnel.
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              padding: 18,
+              borderRadius: 28,
+              backgroundColor: "#FFFFFF",
+              borderWidth: 2,
+              borderColor: "#F2D7C8",
+              gap: 16,
+            }}
+          >
+            <View style={{ gap: 4 }}>
+              <Text
+                style={{
+                  color: "#FF4B2B",
+                  fontSize: 12,
+                  fontWeight: "900",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Avatars disponibles
+              </Text>
 
               <Text
                 style={{
                   color: "#17152F",
+                  fontSize: 24,
                   fontWeight: "900",
                 }}
               >
-                Ton avatar
+                Choisis celui qui te parle le plus
               </Text>
             </View>
-          )}
 
-          <AvatarPicker
-            selectedAvatar={selectedAvatar}
-            onSelect={setSelectedAvatar}
-          />
+            <AvatarPicker
+              selectedAvatar={selectedAvatar}
+              onSelect={setSelectedAvatar}
+            />
+          </View>
 
           {error && <ErrorBox message={error} />}
 
@@ -176,12 +217,21 @@ export default function AvatarScreen() {
             label={
               saving
                 ? "Enregistrement..."
-                : "Choisir cet avatar"
+                : editingExistingAvatar
+                  ? "Enregistrer cet avatar"
+                  : "Entrer dans Tiny Act"
             }
             onPress={handleSave}
-            disabled={
-              saving || !selectedAvatar
+            disabled={saving || !selectedAvatar}
+          />
+
+          <SecondaryButton
+            label={
+              editingExistingAvatar
+                ? "← Retour au profil"
+                : "← Retour aux intérêts"
             }
+            onPress={handleBack}
           />
 
           {editingExistingAvatar && (
