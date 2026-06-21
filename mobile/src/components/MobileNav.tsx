@@ -27,12 +27,14 @@ type NavItemProps = {
     | "/profile";
 
   label: string;
+  icon: string;
   isActive: boolean;
 };
 
 function NavItem({
   href,
   label,
+  icon,
   isActive,
 }: NavItemProps) {
   return (
@@ -40,23 +42,36 @@ function NavItem({
       <Pressable
         style={({ pressed }) => ({
           flex: 1,
-          minHeight: 46,
-          paddingVertical: 11,
+          minHeight: 58,
+          paddingVertical: 8,
           paddingHorizontal: 4,
-          borderRadius: 15,
+          borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
+          gap: 4,
           backgroundColor: isActive
             ? "#FF4B2B"
             : "transparent",
-          opacity: pressed ? 0.8 : 1,
+          opacity: pressed ? 0.75 : 1,
         })}
       >
+        <Text
+          style={{
+            color: "#FFFFFF",
+            fontSize: 19,
+            lineHeight: 20,
+            fontWeight: "900",
+          }}
+        >
+          {icon}
+        </Text>
+
         <Text
           numberOfLines={1}
           style={{
             color: "#FFFFFF",
-            fontSize: 12,
+            fontSize: 11,
+            lineHeight: 13,
             fontWeight: "900",
             textAlign: "center",
           }}
@@ -98,37 +113,49 @@ export function MobileNav({
     >
       <View
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          padding: 7,
-          borderRadius: 28,
+          padding: 8,
+          borderRadius: 30,
           backgroundColor: "#17152F",
-          gap: 3,
+          borderWidth: 2,
+          borderColor: "#242043",
+          gap: 8,
         }}
       >
-        <NavItem
-          href="/"
-          label="Activité"
-          isActive={active === "new"}
-        />
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <NavItem
+            href="/"
+            icon="+"
+            label="Action"
+            isActive={active === "new"}
+          />
 
-        <NavItem
-          href="/history"
-          label="Historique"
-          isActive={active === "history"}
-        />
+          <NavItem
+            href="/history"
+            icon="↺"
+            label="Historique"
+            isActive={active === "history"}
+          />
 
-        <NavItem
-          href="/explore"
-          label="Salle"
-          isActive={active === "room"}
-        />
+          <NavItem
+            href="/explore"
+            icon="⌂"
+            label="Salle"
+            isActive={active === "room"}
+          />
 
-        <NavItem
-          href="/profile"
-          label="Profil"
-          isActive={active === "profile"}
-        />
+          <NavItem
+            href="/profile"
+            icon="●"
+            label="Profil"
+            isActive={active === "profile"}
+          />
+        </View>
       </View>
 
       <View
@@ -152,7 +179,7 @@ export function MobileNav({
           >
             <AvatarImage
               avatar={user?.avatar}
-              size={42}
+              size={38}
             />
 
             <View style={{ flex: 1 }}>
@@ -164,7 +191,8 @@ export function MobileNav({
                   fontWeight: "900",
                 }}
               >
-                {user?.first_name || "Mon profil"}
+                {user?.first_name ||
+                  "Mon profil"}
               </Text>
 
               <Text
@@ -185,6 +213,14 @@ export function MobileNav({
           onPress={handleLogout}
           disabled={loggingOut}
           style={({ pressed }) => ({
+            minHeight: 38,
+            paddingHorizontal: 12,
+            borderRadius: 999,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#FFFFFF",
+            borderWidth: 2,
+            borderColor: "#F2D7C8",
             opacity:
               loggingOut || pressed ? 0.55 : 1,
           })}
@@ -192,13 +228,13 @@ export function MobileNav({
           <Text
             style={{
               color: "#FF4B2B",
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: "900",
             }}
           >
             {loggingOut
-              ? "Déconnexion..."
-              : "Se déconnecter"}
+              ? "..."
+              : "Sortir"}
           </Text>
         </Pressable>
       </View>
