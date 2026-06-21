@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 
 import {
+  Image,
   Pressable,
   Text,
   View,
 } from "react-native";
 
-import { Image as ExpoImage } from "expo-image";
 import { Link } from "expo-router";
 
 import { BRAND_LOGO } from "../constants/brandAssets";
@@ -76,18 +76,21 @@ export function MobileNav({
       >
         <Link href="/" asChild>
           <Pressable
+            hitSlop={12}
             style={({ pressed }) => ({
-              width: 126,
-              height: 66,
+              width: 148,
+              height: 82,
+              alignItems: "flex-start",
+              justifyContent: "center",
               opacity: pressed ? 0.74 : 1,
             })}
           >
-            <ExpoImage
+            <Image
               source={BRAND_LOGO}
-              contentFit="contain"
+              resizeMode="contain"
               style={{
-                width: "100%",
-                height: "100%",
+                width: 148,
+                height: 82,
               }}
             />
           </Pressable>
@@ -98,6 +101,7 @@ export function MobileNav({
             flexDirection: "row",
             alignItems: "center",
             gap: 10,
+            paddingTop: 6,
           }}
         >
           <Link href="/history" asChild>
