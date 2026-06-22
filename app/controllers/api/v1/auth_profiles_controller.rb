@@ -17,11 +17,20 @@ module Api
       private
 
       def profile_params
-        params.require(:user).permit(
+        permitted_params = params.require(:user).permit(
           :first_name,
           :last_name,
-          :avatar
+          :avatar,
+          :password,
+          :password_confirmation
         )
+
+        if permitted_params[:password].blank?
+          permitted_params.delete(:password)
+          permitted_params.delete(:password_confirmation)
+        end
+
+        permitted_params
       end
     end
   end

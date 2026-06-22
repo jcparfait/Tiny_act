@@ -161,6 +161,8 @@ export function updateMobileProfile(values: {
   first_name: string;
   last_name: string;
   avatar?: string;
+  password?: string;
+  password_confirmation?: string;
 }) {
   return authFetch<ProfileResponse>(
     "/api/v1/auth/profile",

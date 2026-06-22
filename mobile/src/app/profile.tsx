@@ -10,18 +10,13 @@ import {
   View,
 } from "react-native";
 
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
-import {
-  AuthField,
-  AuthLink,
-} from "../components/AuthScreen";
-
-import { AvatarImage } from "../components/AvatarPicker";
+import { AuthField } from "../components/AuthScreen";
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { SecondaryButton } from "../components/SecondaryButton";
 
 import { useAuth } from "../context/AuthContext";
 
@@ -32,6 +27,8 @@ import {
   ActivitySessionSummary,
   RoomResponse,
 } from "../types/tinyAct";
+
+import { TA } from "../theme/tinyActTheme";
 
 function formatElapsedTime(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -57,25 +54,46 @@ function isFinishedSession(
   );
 }
 
-function isActiveSession(
-  session: ActivitySessionSummary
+function isToday(dateString?: string) {
+  if (!dateString) return false;
+
+  const date = new Date(dateString);
+  const today = new Date();
+
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+}
+
+function missingXpForNextFurniture(
+  nextRequiredXp: number | null | undefined,
+  currentXp: number
 ) {
-  return !isFinishedSession(session);
+  if (!nextRequiredXp) return null;
+
+  return Math.max(nextRequiredXp - currentXp, 0);
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
 
-  const {
-    user,
-    updateProfile,
-  } = useAuth();
+  const { user, updateProfile } = useAuth();
 
   const [firstName, setFirstName] =
     useState(user?.first_name || "");
 
   const [lastName, setLastName] =
     useState(user?.last_name || "");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [
+    passwordConfirmation,
+    setPasswordConfirmation,
+  ] = useState("");
 
   const [sessions, setSessions] = useState<
     ActivitySessionSummary[]
@@ -118,9 +136,12 @@ export default function ProfileScreen() {
     [sessions]
   );
 
-  const activeSessions = useMemo(
-    () => sessions.filter(isActiveSession),
-    [sessions]
+  const todayFinishedSessions = useMemo(
+    () =>
+      finishedSessions.filter((session) =>
+        isToday(session.created_at)
+      ),
+    [finishedSessions]
   );
 
   const totalXp = useMemo(
@@ -143,13 +164,20 @@ export default function ProfileScreen() {
     [finishedSessions]
   );
 
+  const todayElapsedSeconds = useMemo(
+    () =>
+      todayFinishedSessions.reduce(
+        (sum, session) =>
+          sum + session.elapsed_seconds,
+        0
+      ),
+    [todayFinishedSessions]
+  );
+
   const unlockedFurnitureCount =
     roomData?.inventory.filter(
       (item) => item.unlocked
     ).length || 0;
-
-  const placedFurnitureCount =
-    roomData?.room.furnitures.length || 0;
 
   const interestsCount =
     user?.interest_ids.length || 0;
@@ -189,11 +217,43 @@ export default function ProfileScreen() {
     setError(null);
 
     try {
+      const trimmedPassword = password.trim();
+      const trimmedConfirmation =
+        passwordConfirmation.trim();
+
+      if (
+        trimmedPassword.length > 0 ||
+        trimmedConfirmation.length > 0
+      ) {
+        if (trimmedPassword.length < 6) {
+          throw new Error(
+            "Le mot de passe doit contenir au moins 6 caractères."
+          );
+        }
+
+        if (
+          trimmedPassword !== trimmedConfirmation
+        ) {
+          throw new Error(
+            "La confirmation du mot de passe ne correspond pas."
+          );
+        }
+      }
+
       await updateProfile({
         first_name: firstName.trim(),
         last_name: lastName.trim(),
+        ...(trimmedPassword.length > 0
+          ? {
+              password: trimmedPassword,
+              password_confirmation:
+                trimmedConfirmation,
+            }
+          : {}),
       });
 
+      setPassword("");
+      setPasswordConfirmation("");
       setSaved(true);
     } catch (profileError) {
       setError(
@@ -207,491 +267,557 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: "#F4EFE8",
-      }}
+    <LinearGradient
+      colors={[
+        TA.colors.bgStart,
+        TA.colors.bgMiddle,
+        TA.colors.bgEnd,
+      ]}
+      locations={[0, 0.46, 1]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
     >
-      <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-          />
-        }
-        contentContainerStyle={{
-          flexGrow: 1,
-          padding: 18,
-          alignItems: "center",
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: "transparent",
         }}
       >
-        <View
+        <MobileNav
+          active="profile"
+          hideXp
+        />
+
+        <ScrollView
           style={{
-            width: "100%",
-            maxWidth: 560,
-            minHeight: "100%",
-            justifyContent: "center",
-            gap: 24,
+            flex: 1,
+            marginTop: 130,
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />
+          }
+          contentContainerStyle={{
+            paddingHorizontal: 18,
+            paddingBottom: 34,
+            alignItems: "center",
           }}
         >
           <View
             style={{
-              padding: 24,
-              borderRadius: 32,
-              backgroundColor: "#151B2F",
-              gap: 18,
+              width: "100%",
+              maxWidth: 520,
+              padding: 16,
+              borderRadius: 36,
+              backgroundColor:
+                "rgba(255, 253, 249, 0.78)",
+              borderWidth: 1.5,
+              borderColor:
+                "rgba(21, 27, 47, 0.10)",
+              gap: 22,
             }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 16,
-              }}
-            >
-              <View
+            <View style={{ gap: 8 }}>
+              <Text
                 style={{
-                  padding: 4,
-                  borderRadius: 999,
-                  backgroundColor: "#FFFFFF",
+                  color: TA.colors.inkLight,
+                  fontSize: 13,
+                  fontFamily: TA.fonts.black,
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
                 }}
               >
-                <AvatarImage
-                  avatar={user?.avatar}
-                  size={92}
-                />
-              </View>
+                Ton espace personnel
+              </Text>
 
-              <View style={{ flex: 1, gap: 5 }}>
-                <Text
-                  style={{
-                    color: "#FFFFFF",
-                    opacity: 0.65,
-                    fontSize: 12,
-                    fontWeight: "900",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                  }}
-                >
-                  Mon profil
-                </Text>
-
-                <Text
-                  style={{
-                    color: "#FFFFFF",
-                    fontSize: 29,
-                    lineHeight: 34,
-                    fontWeight: "900",
-                  }}
-                >
-                  {user?.first_name ||
-                    "Tiny Act"}
-                </Text>
-
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    color: "#FFFFFF",
-                    opacity: 0.75,
-                    fontSize: 14,
-                    fontWeight: "700",
-                  }}
-                >
-                  {user?.email}
-                </Text>
-              </View>
+              <Text
+                style={{
+                  color: TA.colors.ink,
+                  fontSize: 44,
+                  lineHeight: 45,
+                  fontFamily: TA.fonts.black,
+                  letterSpacing: -2,
+                }}
+              >
+                Profil
+              </Text>
             </View>
 
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 10,
-              }}
-            >
-              <MiniAction
-                label="Avatar"
-                onPress={() =>
-                  router.push("/avatar")
-                }
-              />
+            {error && (
+              <ErrorBox message={error} />
+            )}
 
-              <MiniAction
-                label="Intérêts"
-                onPress={() =>
-                  router.push("/interests")
-                }
-              />
-            </View>
-          </View>
+            <View style={{ gap: 12 }}>
+              <Text
+                style={{
+                  color: TA.colors.inkLight,
+                  fontSize: 13,
+                  fontFamily: TA.fonts.black,
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                }}
+              >
+                Raccourcis
+              </Text>
 
-          {loadingStats && (
-            <ActivityIndicator />
-          )}
-
-          {error && (
-            <ErrorBox message={error} />
-          )}
-
-          {!loadingStats && (
-            <>
               <View
                 style={{
                   flexDirection: "row",
                   flexWrap: "wrap",
-                  gap: 10,
+                  gap: 12,
                 }}
               >
-                <DashboardStat
-                  label="XP total"
-                  value={`${totalXp}`}
+                <ProfileShortcutCard
+                  title="Avatar"
+                  subtitle="Changer ton style"
+                  icon="🎨"
+                  color="#7C63F2"
+                  onPress={() =>
+                    router.push("/avatar")
+                  }
                 />
 
-                <DashboardStat
-                  label="Terminées"
-                  value={`${finishedSessions.length}`}
+                <ProfileShortcutCard
+                  title="Intérêts"
+                  subtitle={`${interestsCount} sélectionné(s)`}
+                  icon="✦"
+                  color="#92BD73"
+                  onPress={() =>
+                    router.push("/interests")
+                  }
                 />
 
-                <DashboardStat
-                  label="À reprendre"
-                  value={`${activeSessions.length}`}
-                />
-
-                <DashboardStat
-                  label="Temps actif"
-                  value={formatElapsedTime(
-                    totalElapsedSeconds
-                  )}
-                />
-              </View>
-
-              <View
-                style={{
-                  padding: 22,
-                  borderRadius: 28,
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 2,
-                  borderColor: "rgba(90, 74, 54, 0.16)",
-                  gap: 18,
-                }}
-              >
-                <View style={{ gap: 5 }}>
-                  <Text
-                    style={{
-                      color: "#7C63F2",
-                      fontSize: 12,
-                      fontWeight: "900",
-                      textTransform: "uppercase",
-                      letterSpacing: 1,
-                    }}
-                  >
-                    Progression
-                  </Text>
-
-                  <Text
-                    style={{
-                      color: "#151B2F",
-                      fontSize: 25,
-                      fontWeight: "900",
-                    }}
-                  >
-                    Ta salle progresse
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: 10,
-                  }}
-                >
-                  <RoomStat
-                    label="Meubles débloqués"
-                    value={`${unlockedFurnitureCount}`}
-                  />
-
-                  <RoomStat
-                    label="Meubles placés"
-                    value={`${placedFurnitureCount}`}
-                  />
-
-                  <RoomStat
-                    label="Centres d’intérêt"
-                    value={`${interestsCount}`}
-                  />
-                </View>
-
-                <PrimaryButton
-                  label="Voir ma salle"
+                <ProfileShortcutCard
+                  title="Ma room"
+                  subtitle="Décorer ton espace"
+                  icon="⌂"
+                  color="#13A8C7"
                   onPress={() =>
                     router.push("/explore")
                   }
                 />
-              </View>
 
-              {roomData &&
-                roomData.progress.length > 0 && (
+                <ProfileShortcutCard
+                  title="Historique"
+                  subtitle="Voir tes sessions"
+                  icon="↺"
+                  color="#F39A20"
+                  onPress={() =>
+                    router.push("/history")
+                  }
+                />
+              </View>
+            </View>
+
+            {loadingStats ? (
+              <View
+                style={{
+                  padding: 22,
+                  borderRadius: 28,
+                  backgroundColor:
+                    TA.colors.surface,
+                  borderWidth: 2,
+                  borderColor:
+                    TA.colors.borderMedium,
+                  alignItems: "center",
+                  ...TA.shadow.card,
+                }}
+              >
+                <ActivityIndicator />
+              </View>
+            ) : (
+              <ProfileStatsBlock
+                totalXp={totalXp}
+                todayElapsedSeconds={
+                  todayElapsedSeconds
+                }
+                totalElapsedSeconds={
+                  totalElapsedSeconds
+                }
+                unlockedFurnitureCount={
+                  unlockedFurnitureCount
+                }
+                roomData={roomData}
+              />
+            )}
+
+            <ProfileAccountCard
+              firstName={firstName}
+              lastName={lastName}
+              email={user?.email || ""}
+              password={password}
+              passwordConfirmation={
+                passwordConfirmation
+              }
+              saving={saving}
+              saved={saved}
+              onFirstNameChange={setFirstName}
+              onLastNameChange={setLastName}
+              onPasswordChange={setPassword}
+              onPasswordConfirmationChange={
+                setPasswordConfirmation
+              }
+              onSave={handleSave}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+}
+
+function ProfileStatsBlock({
+  totalXp,
+  todayElapsedSeconds,
+  totalElapsedSeconds,
+  unlockedFurnitureCount,
+  roomData,
+}: {
+  totalXp: number;
+  todayElapsedSeconds: number;
+  totalElapsedSeconds: number;
+  unlockedFurnitureCount: number;
+  roomData: RoomResponse | null;
+}) {
+  return (
+    <View
+      style={{
+        padding: 18,
+        borderRadius: 32,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 2,
+        borderColor: TA.colors.borderMedium,
+        gap: 16,
+        ...TA.shadow.card,
+      }}
+    >
+      <View style={{ gap: 5 }}>
+        <Text
+          style={{
+            color: TA.colors.purple,
+            fontSize: 12,
+            fontFamily: TA.fonts.black,
+            textTransform: "uppercase",
+            letterSpacing: 1.2,
+          }}
+        >
+          Bilan actif
+        </Text>
+
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 25,
+            lineHeight: 29,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -1,
+          }}
+        >
+          Du temps passif transformé en action
+        </Text>
+      </View>
+
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
+        <ProfileStat
+          label="XP total"
+          value={`${totalXp}`}
+          color="#7C63F2"
+        />
+
+        <ProfileStat
+          label="Aujourd’hui"
+          value={formatElapsedTime(
+            todayElapsedSeconds
+          )}
+          color="#92BD73"
+        />
+
+        <ProfileStat
+          label="Depuis le début"
+          value={formatElapsedTime(
+            totalElapsedSeconds
+          )}
+          color="#13A8C7"
+        />
+
+        <ProfileStat
+          label="Objets débloqués"
+          value={`${unlockedFurnitureCount}`}
+          color="#F39A20"
+        />
+      </View>
+
+      {roomData &&
+        roomData.progress.length > 0 && (
+          <View style={{ gap: 10 }}>
+            <Text
+              style={{
+                color: TA.colors.inkLight,
+                fontSize: 12,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              XP manquant par catégorie
+            </Text>
+
+            <View style={{ gap: 8 }}>
+              {roomData.progress.map((progress) => {
+                const missingXp =
+                  missingXpForNextFurniture(
+                    progress.next_required_xp,
+                    progress.xp
+                  );
+
+                return (
                   <View
+                    key={progress.interest.id}
                     style={{
-                      padding: 22,
-                      borderRadius: 28,
-                      backgroundColor: "#FFFFFF",
-                      borderWidth: 2,
-                      borderColor: "rgba(90, 74, 54, 0.16)",
-                      gap: 16,
+                      padding: 12,
+                      borderRadius: 18,
+                      backgroundColor:
+                        TA.colors.bgMiddle,
+                      borderWidth: 1,
+                      borderColor:
+                        TA.colors.borderMedium,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
                     }}
                   >
                     <Text
+                      numberOfLines={1}
                       style={{
-                        color: "#151B2F",
-                        fontSize: 24,
-                        fontWeight: "900",
+                        flex: 1,
+                        color: TA.colors.ink,
+                        fontSize: 14,
+                        fontFamily: TA.fonts.black,
                       }}
                     >
-                      XP par catégorie
+                      {progress.interest.name}
                     </Text>
 
-                    {roomData.progress.map(
-                      (progress) => (
-                        <View
-                          key={progress.interest.id}
-                          style={{
-                            gap: 7,
-                          }}
-                        >
-                          <View
-                            style={{
-                              flexDirection:
-                                "row",
-                              justifyContent:
-                                "space-between",
-                              gap: 10,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                color:
-                                  "#151B2F",
-                                fontWeight:
-                                  "900",
-                              }}
-                            >
-                              {
-                                progress
-                                  .interest
-                                  .name
-                              }
-                            </Text>
-
-                            <Text
-                              style={{
-                                color:
-                                  "#7C63F2",
-                                fontWeight:
-                                  "900",
-                              }}
-                            >
-                              {progress.xp} XP
-                            </Text>
-                          </View>
-
-                          <Text
-                            style={{
-                              color: "rgba(21, 27, 47, 0.58)",
-                              fontSize: 12,
-                              fontWeight: "700",
-                            }}
-                          >
-                            {progress.next_required_xp
-                              ? `Prochain meuble à ${progress.next_required_xp} XP`
-                              : "Tous les meubles de cette catégorie sont débloqués"}
-                          </Text>
-                        </View>
-                      )
-                    )}
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        color: TA.colors.purple,
+                        fontSize: 13,
+                        fontFamily: TA.fonts.black,
+                      }}
+                    >
+                      {missingXp === null
+                        ? "Tout débloqué"
+                        : `${missingXp} XP`}
+                    </Text>
                   </View>
-                )}
-            </>
-          )}
-
-          <View
-            style={{
-              padding: 22,
-              borderRadius: 28,
-              backgroundColor: "#FFFFFF",
-              borderWidth: 2,
-              borderColor: "rgba(90, 74, 54, 0.16)",
-              gap: 16,
-            }}
-          >
-            <View style={{ gap: 5 }}>
-              <Text
-                style={{
-                  color: "#7C63F2",
-                  fontSize: 12,
-                  fontWeight: "900",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                }}
-              >
-                Compte
-              </Text>
-
-              <Text
-                style={{
-                  color: "#151B2F",
-                  fontSize: 25,
-                  fontWeight: "900",
-                }}
-              >
-                Informations personnelles
-              </Text>
+                );
+              })}
             </View>
-
-            <AuthField
-              label="Prénom"
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-
-            <AuthField
-              label="Nom"
-              value={lastName}
-              onChangeText={setLastName}
-            />
-
-            <Text
-              style={{
-                color: "rgba(21, 27, 47, 0.58)",
-                fontWeight: "700",
-              }}
-            >
-              {interestsCount} centre(s)
-              d’intérêt sélectionné(s)
-            </Text>
-
-            <AuthLink
-              label="Modifier mes centres d’intérêt"
-              onPress={() =>
-                router.push("/interests")
-              }
-            />
-
-            {saved && (
-              <Text
-                style={{
-                  color: "#176C3A",
-                  fontWeight: "900",
-                }}
-              >
-                Profil enregistré.
-              </Text>
-            )}
-
-            <PrimaryButton
-              label={
-                saving
-                  ? "Enregistrement..."
-                  : "Enregistrer"
-              }
-              onPress={handleSave}
-              disabled={saving}
-            />
           </View>
-
-          <SecondaryButton
-            label="Voir l’historique"
-            onPress={() =>
-              router.push("/history")
-            }
-          />
-
-          <MobileNav active="profile" />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        )}
+    </View>
   );
 }
 
-function DashboardStat({
-  label,
-  value,
+function ProfileAccountCard({
+  firstName,
+  lastName,
+  email,
+  password,
+  passwordConfirmation,
+  saving,
+  saved,
+  onFirstNameChange,
+  onLastNameChange,
+  onPasswordChange,
+  onPasswordConfirmationChange,
+  onSave,
 }: {
-  label: string;
-  value: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  passwordConfirmation: string;
+  saving: boolean;
+  saved: boolean;
+  onFirstNameChange: (value: string) => void;
+  onLastNameChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onPasswordConfirmationChange: (value: string) => void;
+  onSave: () => void;
 }) {
+  const displayedName =
+    [firstName, lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "Tiny Act";
+
   return (
     <View
       style={{
-        flexGrow: 1,
-        minWidth: 125,
-        padding: 15,
-        borderRadius: 20,
-        backgroundColor: "#FFFFFF",
+        padding: 18,
+        borderRadius: 32,
+        backgroundColor: TA.colors.surface,
         borderWidth: 2,
-        borderColor: "rgba(90, 74, 54, 0.16)",
-        gap: 4,
+        borderColor: TA.colors.purpleSoft,
+        gap: 16,
+        ...TA.shadow.card,
       }}
     >
-      <Text
-        style={{
-          color: "rgba(21, 27, 47, 0.58)",
-          fontSize: 11,
-          fontWeight: "900",
-          textTransform: "uppercase",
-          letterSpacing: 0.5,
-        }}
-      >
-        {label}
-      </Text>
+      <View style={{ gap: 5 }}>
+        <Text
+          style={{
+            color: TA.colors.purple,
+            fontSize: 12,
+            fontFamily: TA.fonts.black,
+            textTransform: "uppercase",
+            letterSpacing: 1.2,
+          }}
+        >
+          Informations
+        </Text>
 
-      <Text
-        style={{
-          color: "#151B2F",
-          fontSize: 22,
-          fontWeight: "900",
-        }}
-      >
-        {value}
-      </Text>
+        <Text
+          numberOfLines={1}
+          style={{
+            color: TA.colors.ink,
+            fontSize: 27,
+            lineHeight: 31,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -1.2,
+          }}
+        >
+          {displayedName}
+        </Text>
+
+        <Text
+          numberOfLines={1}
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 14,
+            lineHeight: 18,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          {email}
+        </Text>
+      </View>
+
+      <View style={{ gap: 12 }}>
+        <AuthField
+          label="Prénom"
+          value={firstName}
+          onChangeText={onFirstNameChange}
+        />
+
+        <AuthField
+          label="Nom"
+          value={lastName}
+          onChangeText={onLastNameChange}
+        />
+
+        <AuthField
+          label="Nouveau mot de passe"
+          value={password}
+          onChangeText={onPasswordChange}
+          secureTextEntry
+          placeholder="Laisser vide pour ne pas changer"
+        />
+
+        <AuthField
+          label="Confirmer le mot de passe"
+          value={passwordConfirmation}
+          onChangeText={
+            onPasswordConfirmationChange
+          }
+          secureTextEntry
+          placeholder="Confirmation"
+        />
+      </View>
+
+      {saved && (
+        <Text
+          style={{
+            color: "#176C3A",
+            fontSize: 13,
+            fontFamily: TA.fonts.black,
+          }}
+        >
+          Profil enregistré.
+        </Text>
+      )}
+
+      <PrimaryButton
+        label={
+          saving
+            ? "Enregistrement..."
+            : "Enregistrer"
+        }
+        onPress={onSave}
+        disabled={saving}
+      />
     </View>
   );
 }
 
-function RoomStat({
+function ProfileStat({
   label,
   value,
+  color,
 }: {
   label: string;
   value: string;
+  color: string;
 }) {
   return (
     <View
       style={{
         flexGrow: 1,
-        minWidth: 130,
-        padding: 14,
-        borderRadius: 18,
-        backgroundColor: "#F4EFE8",
+        width: "47%",
+        minHeight: 86,
+        paddingVertical: 14,
+        paddingHorizontal: 14,
+        borderRadius: 22,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 2,
+        borderColor: color,
         gap: 4,
+        ...TA.shadow.soft,
       }}
     >
       <Text
+        numberOfLines={1}
         style={{
-          color: "rgba(21, 27, 47, 0.58)",
-          fontSize: 12,
-          fontWeight: "800",
+          color,
+          fontSize: 10,
+          lineHeight: 12,
+          fontFamily: TA.fonts.black,
+          textTransform: "uppercase",
+          letterSpacing: 0.8,
         }}
       >
         {label}
       </Text>
 
       <Text
+        numberOfLines={1}
         style={{
-          color: "#151B2F",
-          fontSize: 24,
-          fontWeight: "900",
+          color: TA.colors.ink,
+          fontSize: 22,
+          lineHeight: 26,
+          fontFamily: TA.fonts.black,
+          letterSpacing: -0.8,
         }}
       >
         {value}
@@ -700,32 +826,87 @@ function RoomStat({
   );
 }
 
-function MiniAction({
-  label,
+function ProfileShortcutCard({
+  title,
+  subtitle,
+  icon,
+  color,
   onPress,
 }: {
-  label: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        flex: 1,
-        padding: 13,
-        borderRadius: 17,
-        backgroundColor: "#FFFFFF",
-        opacity: pressed ? 0.75 : 1,
+        flexGrow: 1,
+        width: "47%",
+        minHeight: 124,
+        padding: 16,
+        borderRadius: 28,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 2,
+        borderColor: color,
+        opacity: pressed ? 0.82 : 1,
+        transform: [
+          {
+            translateY: pressed ? 1 : 0,
+          },
+        ],
+        ...TA.shadow.card,
       })}
     >
-      <Text
+      <View
         style={{
-          color: "#151B2F",
-          fontWeight: "900",
-          textAlign: "center",
+          width: 42,
+          height: 42,
+          borderRadius: 16,
+          backgroundColor: color,
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 12,
         }}
       >
-        {label}
+        <Text
+          style={{
+            color: TA.colors.white,
+            fontSize: 20,
+            lineHeight: 24,
+            fontFamily: TA.fonts.black,
+          }}
+        >
+          {icon}
+        </Text>
+      </View>
+
+      <Text
+        numberOfLines={1}
+        style={{
+          color: TA.colors.ink,
+          fontSize: 22,
+          lineHeight: 25,
+          fontFamily: TA.fonts.black,
+          letterSpacing: -0.8,
+        }}
+      >
+        {title}
+      </Text>
+
+      <Text
+        numberOfLines={2}
+        style={{
+          marginTop: 4,
+          color: TA.colors.inkMuted,
+          fontSize: 12,
+          lineHeight: 16,
+          fontFamily: TA.fonts.bold,
+        }}
+      >
+        {subtitle}
       </Text>
     </Pressable>
   );

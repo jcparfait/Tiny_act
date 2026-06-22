@@ -23,11 +23,13 @@ type MobileNavProps = {
     | "room"
     | "profile";
   onLogoPress?: () => void;
+  hideXp?: boolean;
 };
 
 export function MobileNav({
   active: _active,
   onLogoPress,
+  hideXp = false,
 }: MobileNavProps) {
   const { user } = useAuth();
 
@@ -35,6 +37,8 @@ export function MobileNav({
     useState<number | null>(null);
 
   useEffect(() => {
+    if (hideXp) return;
+
     let cancelled = false;
 
     loadRoom()
@@ -52,7 +56,7 @@ export function MobileNav({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hideXp]);
 
   const logoButton = (
     <Pressable
@@ -115,56 +119,58 @@ export function MobileNav({
             paddingTop: 6,
           }}
         >
-          <Link href="/history" asChild>
-            <Pressable
-              style={({ pressed }) => ({
-                height: 50,
-                minWidth: 104,
-                paddingHorizontal: 17,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: TA.colors.borderDark,
-                backgroundColor: TA.colors.surface,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: pressed ? 0.76 : 1,
-                ...TA.shadow.webCard,
-              })}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "baseline",
+          {!hideXp && (
+            <Link href="/history" asChild>
+              <Pressable
+                style={({ pressed }) => ({
+                  height: 50,
+                  minWidth: 104,
+                  paddingHorizontal: 17,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: TA.colors.borderDark,
+                  backgroundColor: TA.colors.surface,
+                  alignItems: "center",
                   justifyContent: "center",
-                  gap: 7,
-                }}
+                  opacity: pressed ? 0.76 : 1,
+                  ...TA.shadow.webCard,
+                })}
               >
-                <Text
+                <View
                   style={{
-                    color: TA.colors.ink,
-                    fontSize: 19,
-                    lineHeight: 22,
-                    fontFamily: TA.fonts.black,
-                    letterSpacing: -0.6,
+                    flexDirection: "row",
+                    alignItems: "baseline",
+                    justifyContent: "center",
+                    gap: 7,
                   }}
                 >
-                  {totalXp ?? 0}
-                </Text>
+                  <Text
+                    style={{
+                      color: TA.colors.ink,
+                      fontSize: 19,
+                      lineHeight: 22,
+                      fontFamily: TA.fonts.black,
+                      letterSpacing: -0.6,
+                    }}
+                  >
+                    {totalXp ?? 0}
+                  </Text>
 
-                <Text
-                  style={{
-                    color: TA.colors.inkLight,
-                    fontSize: 13,
-                    lineHeight: 16,
-                    fontFamily: TA.fonts.black,
-                    letterSpacing: 1,
-                  }}
-                >
-                  XP
-                </Text>
-              </View>
-            </Pressable>
-          </Link>
+                  <Text
+                    style={{
+                      color: TA.colors.inkLight,
+                      fontSize: 13,
+                      lineHeight: 16,
+                      fontFamily: TA.fonts.black,
+                      letterSpacing: 1,
+                    }}
+                  >
+                    XP
+                  </Text>
+                </View>
+              </Pressable>
+            </Link>
+          )}
 
           <Link href="/profile" asChild>
             <Pressable

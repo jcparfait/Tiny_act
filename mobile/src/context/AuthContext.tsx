@@ -34,6 +34,14 @@ type RegistrationValues = {
   password_confirmation: string;
 };
 
+type ProfileUpdateValues = {
+  first_name: string;
+  last_name: string;
+  avatar?: string;
+  password?: string;
+  password_confirmation?: string;
+};
+
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
@@ -61,11 +69,9 @@ type AuthContextValue = {
     confirmation: string
   ) => Promise<void>;
 
-  updateProfile: (values: {
-    first_name: string;
-    last_name: string;
-    avatar?: string;
-  }) => Promise<void>;
+  updateProfile: (
+    values: ProfileUpdateValues
+  ) => Promise<void>;
 
   updateInterests: (
     interestIds: number[]
@@ -174,11 +180,9 @@ export function AuthProvider({
     );
   }
 
-  async function updateProfile(values: {
-    first_name: string;
-    last_name: string;
-    avatar?: string;
-  }) {
+  async function updateProfile(
+    values: ProfileUpdateValues
+  ) {
     const response =
       await updateMobileProfile(values);
 
