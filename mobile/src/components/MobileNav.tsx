@@ -7,14 +7,14 @@ import {
   View,
 } from "react-native";
 
+import { Image as ExpoImage } from "expo-image";
 import { Link } from "expo-router";
 
 import { BRAND_LOGO } from "../constants/brandAssets";
+import { getAvatarSource } from "../constants/avatarAssets";
 import { useAuth } from "../context/AuthContext";
 import { loadRoom } from "../services/roomApi";
 import { TA } from "../theme/tinyActTheme";
-
-import { AvatarImage } from "./AvatarPicker";
 
 type MobileNavProps = {
   active:
@@ -119,7 +119,7 @@ export function MobileNav({
             <Pressable
               style={({ pressed }) => ({
                 height: 50,
-                minWidth: 96,
+                minWidth: 104,
                 paddingHorizontal: 17,
                 borderRadius: 20,
                 borderWidth: 1,
@@ -131,29 +131,38 @@ export function MobileNav({
                 ...TA.shadow.webCard,
               })}
             >
-              <Text
+              <View
                 style={{
-                  color: TA.colors.ink,
-                  fontSize: 18,
-                  lineHeight: 19,
-                  fontFamily: TA.fonts.black,
-                  letterSpacing: -0.6,
+                  flexDirection: "row",
+                  alignItems: "baseline",
+                  justifyContent: "center",
+                  gap: 7,
                 }}
               >
-                {totalXp ?? 0}
-              </Text>
+                <Text
+                  style={{
+                    color: TA.colors.ink,
+                    fontSize: 19,
+                    lineHeight: 22,
+                    fontFamily: TA.fonts.black,
+                    letterSpacing: -0.6,
+                  }}
+                >
+                  {totalXp ?? 0}
+                </Text>
 
-              <Text
-                style={{
-                  color: TA.colors.inkLight,
-                  fontSize: 11,
-                  lineHeight: 12,
-                  fontFamily: TA.fonts.black,
-                  letterSpacing: 1,
-                }}
-              >
-                XP
-              </Text>
+                <Text
+                  style={{
+                    color: TA.colors.inkLight,
+                    fontSize: 13,
+                    lineHeight: 16,
+                    fontFamily: TA.fonts.black,
+                    letterSpacing: 1,
+                  }}
+                >
+                  XP
+                </Text>
+              </View>
             </Pressable>
           </Link>
 
@@ -165,17 +174,35 @@ export function MobileNav({
                 borderRadius: 999,
                 borderWidth: 1.5,
                 borderColor: "#25272E",
-                backgroundColor: TA.colors.surface,
+                backgroundColor: "#25272E",
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: pressed ? 0.76 : 1,
+                overflow: "hidden",
                 ...TA.shadow.webCard,
               })}
             >
-              <AvatarImage
-                avatar={user?.avatar}
-                size={58}
-              />
+              <View
+                style={{
+                  width: 65,
+                  height: 65,
+                  borderRadius: 999,
+                  overflow: "hidden",
+                  backgroundColor: "#25272E",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ExpoImage
+                  source={getAvatarSource(user?.avatar)}
+                  contentFit="cover"
+                  style={{
+                    width: 88,
+                    height: 88,
+                    borderRadius: 999,
+                  }}
+                />
+              </View>
             </Pressable>
           </Link>
         </View>
