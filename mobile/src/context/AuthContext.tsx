@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import {
+  deleteMobileProfile,
   exchangeOauthCode,
   loadCurrentUser,
   loginMobile,
@@ -78,6 +79,8 @@ type AuthContextValue = {
   ) => Promise<void>;
 
   signOut: () => Promise<void>;
+
+  deleteProfile: () => Promise<void>;
 };
 
 const AuthContext =
@@ -209,6 +212,12 @@ export function AuthProvider({
     }
   }
 
+  async function deleteProfile() {
+    await deleteMobileProfile();
+    await deleteAuthToken();
+    setUser(null);
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -222,6 +231,7 @@ export function AuthProvider({
         updateProfile,
         updateInterests,
         signOut,
+        deleteProfile,
       }}
     >
       {children}

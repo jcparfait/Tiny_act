@@ -127,6 +127,15 @@ export function logoutMobile() {
   );
 }
 
+export function deleteMobileProfile() {
+  return authFetch<void>(
+    "/api/v1/auth/profile",
+    {
+      method: "DELETE",
+    }
+  );
+}
+
 export function requestPasswordReset(email: string) {
   return authFetch<AuthMessageResponse>(
     "/api/v1/auth/password",

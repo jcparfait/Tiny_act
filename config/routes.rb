@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       patch "auth/password", to: "auth_passwords#update"
 
       patch "auth/profile", to: "auth_profiles#update"
+      delete "auth/profile", to: "auth_profiles#destroy"
 
       get "auth/providers", to: "auth_providers#show"
 

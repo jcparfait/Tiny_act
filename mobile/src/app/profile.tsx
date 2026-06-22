@@ -79,7 +79,11 @@ function missingXpForNextFurniture(
 export default function ProfileScreen() {
   const router = useRouter();
 
-  const { user, updateProfile } = useAuth();
+  const {
+    user,
+    updateProfile,
+    deleteProfile,
+  } = useAuth();
 
   const [firstName, setFirstName] =
     useState(user?.first_name || "");
@@ -112,6 +116,14 @@ export default function ProfileScreen() {
     useState(false);
 
   const [saved, setSaved] =
+    useState(false);
+
+  const [
+    confirmingDelete,
+    setConfirmingDelete,
+  ] = useState(false);
+
+  const [deleting, setDeleting] =
     useState(false);
 
   const [error, setError] =
@@ -211,6 +223,34 @@ export default function ProfileScreen() {
     setRefreshing(false);
   }
 
+  function resetSavedState() {
+    if (saved) {
+      setSaved(false);
+    }
+  }
+
+  function handleFirstNameChange(value: string) {
+    resetSavedState();
+    setFirstName(value);
+  }
+
+  function handleLastNameChange(value: string) {
+    resetSavedState();
+    setLastName(value);
+  }
+
+  function handlePasswordChange(value: string) {
+    resetSavedState();
+    setPassword(value);
+  }
+
+  function handlePasswordConfirmationChange(
+    value: string
+  ) {
+    resetSavedState();
+    setPasswordConfirmation(value);
+  }
+
   async function handleSave() {
     setSaving(true);
     setSaved(false);
@@ -266,6 +306,23 @@ export default function ProfileScreen() {
     }
   }
 
+  async function handleDeleteProfile() {
+    setDeleting(true);
+    setError(null);
+
+    try {
+      await deleteProfile();
+      router.replace("/login");
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Impossible de supprimer le profil."
+      );
+      setDeleting(false);
+    }
+  }
+
   return (
     <LinearGradient
       colors={[
@@ -284,6 +341,19 @@ export default function ProfileScreen() {
           backgroundColor: "transparent",
         }}
       >
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 152,
+            zIndex: 80,
+            backgroundColor: TA.colors.bgStart,
+          }}
+        />
+
         <MobileNav
           active="profile"
           hideXp
@@ -292,7 +362,6 @@ export default function ProfileScreen() {
         <ScrollView
           style={{
             flex: 1,
-            marginTop: 130,
           }}
           refreshControl={
             <RefreshControl
@@ -301,6 +370,7 @@ export default function ProfileScreen() {
             />
           }
           contentContainerStyle={{
+            paddingTop: 164,
             paddingHorizontal: 18,
             paddingBottom: 34,
             alignItems: "center",
@@ -313,7 +383,7 @@ export default function ProfileScreen() {
               padding: 16,
               borderRadius: 36,
               backgroundColor:
-                "rgba(255, 253, 249, 0.78)",
+                "rgba(255, 253, 249, 0.86)",
               borderWidth: 1.5,
               borderColor:
                 "rgba(21, 27, 47, 0.10)",
@@ -367,13 +437,12 @@ export default function ProfileScreen() {
                 style={{
                   flexDirection: "row",
                   flexWrap: "wrap",
-                  gap: 12,
+                  gap: 10,
                 }}
               >
                 <ProfileShortcutCard
                   title="Avatar"
                   subtitle="Changer ton style"
-                  icon="🎨"
                   color="#7C63F2"
                   onPress={() =>
                     router.push("/avatar")
@@ -383,7 +452,6 @@ export default function ProfileScreen() {
                 <ProfileShortcutCard
                   title="Intérêts"
                   subtitle={`${interestsCount} sélectionné(s)`}
-                  icon="✦"
                   color="#92BD73"
                   onPress={() =>
                     router.push("/interests")
@@ -393,7 +461,6 @@ export default function ProfileScreen() {
                 <ProfileShortcutCard
                   title="Ma room"
                   subtitle="Décorer ton espace"
-                  icon="⌂"
                   color="#13A8C7"
                   onPress={() =>
                     router.push("/explore")
@@ -403,7 +470,6 @@ export default function ProfileScreen() {
                 <ProfileShortcutCard
                   title="Historique"
                   subtitle="Voir tes sessions"
-                  icon="↺"
                   color="#F39A20"
                   onPress={() =>
                     router.push("/history")
@@ -454,13 +520,30 @@ export default function ProfileScreen() {
               }
               saving={saving}
               saved={saved}
-              onFirstNameChange={setFirstName}
-              onLastNameChange={setLastName}
-              onPasswordChange={setPassword}
+              confirmingDelete={confirmingDelete}
+              deleting={deleting}
+              onFirstNameChange={
+                handleFirstNameChange
+              }
+              onLastNameChange={
+                handleLastNameChange
+              }
+              onPasswordChange={
+                handlePasswordChange
+              }
               onPasswordConfirmationChange={
-                setPasswordConfirmation
+                handlePasswordConfirmationChange
               }
               onSave={handleSave}
+              onAskDelete={() =>
+                setConfirmingDelete(true)
+              }
+              onCancelDelete={() =>
+                setConfirmingDelete(false)
+              }
+              onConfirmDelete={
+                handleDeleteProfile
+              }
             />
           </View>
         </ScrollView>
@@ -568,10 +651,16 @@ function ProfileStatsBlock({
                 letterSpacing: 1,
               }}
             >
-              XP manquant par catégorie
+              XP manquant pour le prochain objet
             </Text>
 
-            <View style={{ gap: 8 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
               {roomData.progress.map((progress) => {
                 const missingXp =
                   missingXpForNextFurniture(
@@ -580,47 +669,15 @@ function ProfileStatsBlock({
                   );
 
                 return (
-                  <View
+                  <CategoryXpPill
                     key={progress.interest.id}
-                    style={{
-                      padding: 12,
-                      borderRadius: 18,
-                      backgroundColor:
-                        TA.colors.bgMiddle,
-                      borderWidth: 1,
-                      borderColor:
-                        TA.colors.borderMedium,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                    }}
-                  >
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        flex: 1,
-                        color: TA.colors.ink,
-                        fontSize: 14,
-                        fontFamily: TA.fonts.black,
-                      }}
-                    >
-                      {progress.interest.name}
-                    </Text>
-
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: TA.colors.purple,
-                        fontSize: 13,
-                        fontFamily: TA.fonts.black,
-                      }}
-                    >
-                      {missingXp === null
+                    name={progress.interest.name}
+                    value={
+                      missingXp === null
                         ? "Tout débloqué"
-                        : `${missingXp} XP`}
-                    </Text>
-                  </View>
+                        : `${missingXp} XP`
+                    }
+                  />
                 );
               })}
             </View>
@@ -638,11 +695,16 @@ function ProfileAccountCard({
   passwordConfirmation,
   saving,
   saved,
+  confirmingDelete,
+  deleting,
   onFirstNameChange,
   onLastNameChange,
   onPasswordChange,
   onPasswordConfirmationChange,
   onSave,
+  onAskDelete,
+  onCancelDelete,
+  onConfirmDelete,
 }: {
   firstName: string;
   lastName: string;
@@ -651,11 +713,16 @@ function ProfileAccountCard({
   passwordConfirmation: string;
   saving: boolean;
   saved: boolean;
+  confirmingDelete: boolean;
+  deleting: boolean;
   onFirstNameChange: (value: string) => void;
   onLastNameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onPasswordConfirmationChange: (value: string) => void;
   onSave: () => void;
+  onAskDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
 }) {
   const displayedName =
     [firstName, lastName]
@@ -747,27 +814,166 @@ function ProfileAccountCard({
       </View>
 
       {saved && (
-        <Text
+        <View
           style={{
-            color: "#176C3A",
-            fontSize: 13,
-            fontFamily: TA.fonts.black,
+            padding: 12,
+            borderRadius: 16,
+            backgroundColor: "#EAF8EF",
+            borderWidth: 1.5,
+            borderColor: "#176C3A",
           }}
         >
-          Profil enregistré.
-        </Text>
+          <Text
+            style={{
+              color: "#176C3A",
+              fontSize: 13,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            Profil enregistré avec succès.
+          </Text>
+        </View>
       )}
 
       <PrimaryButton
         label={
-          saving
-            ? "Enregistrement..."
-            : "Enregistrer"
+          saved
+            ? "Enregistré ✓"
+            : saving
+              ? "Enregistrement..."
+              : "Enregistrer"
         }
         onPress={onSave}
         disabled={saving}
       />
+
+      <View
+        style={{
+          height: 1,
+          backgroundColor:
+            TA.colors.borderMedium,
+        }}
+      />
+
+      {!confirmingDelete ? (
+        <DangerButton
+          label="Supprimer mon profil"
+          onPress={onAskDelete}
+          disabled={deleting}
+        />
+      ) : (
+        <View
+          style={{
+            gap: 12,
+            padding: 14,
+            borderRadius: 20,
+            backgroundColor:
+              TA.colors.dangerBg,
+            borderWidth: 1.5,
+            borderColor:
+              TA.colors.dangerBorder,
+          }}
+        >
+          <Text
+            style={{
+              color: TA.colors.dangerText,
+              fontSize: 14,
+              lineHeight: 19,
+              fontFamily: TA.fonts.bold,
+            }}
+          >
+            Cette action supprimera ton profil, tes sessions,
+            ta room et ta progression. Elle est définitive.
+          </Text>
+
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 10,
+            }}
+          >
+            <SmallSecondaryButton
+              label="Annuler"
+              onPress={onCancelDelete}
+              disabled={deleting}
+            />
+
+            <DangerButton
+              label={
+                deleting
+                  ? "Suppression..."
+                  : "Confirmer"
+              }
+              onPress={onConfirmDelete}
+              disabled={deleting}
+              compact
+            />
+          </View>
+        </View>
+      )}
     </View>
+  );
+}
+
+function ProfileShortcutCard({
+  title,
+  subtitle,
+  color,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexGrow: 1,
+        width: "47%",
+        minHeight: 76,
+        paddingVertical: 13,
+        paddingHorizontal: 14,
+        borderRadius: 22,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 2,
+        borderColor: color,
+        opacity: pressed ? 0.82 : 1,
+        transform: [
+          {
+            translateY: pressed ? 1 : 0,
+          },
+        ],
+        ...TA.shadow.soft,
+      })}
+    >
+      <Text
+        numberOfLines={1}
+        style={{
+          color: TA.colors.ink,
+          fontSize: 21,
+          lineHeight: 24,
+          fontFamily: TA.fonts.black,
+          letterSpacing: -0.8,
+        }}
+      >
+        {title}
+      </Text>
+
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 4,
+          color: TA.colors.inkMuted,
+          fontSize: 12,
+          lineHeight: 15,
+          fontFamily: TA.fonts.bold,
+        }}
+      >
+        {subtitle}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -785,9 +991,9 @@ function ProfileStat({
       style={{
         flexGrow: 1,
         width: "47%",
-        minHeight: 86,
-        paddingVertical: 14,
-        paddingHorizontal: 14,
+        minHeight: 82,
+        paddingVertical: 13,
+        paddingHorizontal: 13,
         borderRadius: 22,
         backgroundColor: TA.colors.surface,
         borderWidth: 2,
@@ -814,8 +1020,8 @@ function ProfileStat({
         numberOfLines={1}
         style={{
           color: TA.colors.ink,
-          fontSize: 22,
-          lineHeight: 26,
+          fontSize: 21,
+          lineHeight: 25,
           fontFamily: TA.fonts.black,
           letterSpacing: -0.8,
         }}
@@ -826,87 +1032,129 @@ function ProfileStat({
   );
 }
 
-function ProfileShortcutCard({
-  title,
-  subtitle,
-  icon,
-  color,
-  onPress,
+function CategoryXpPill({
+  name,
+  value,
 }: {
-  title: string;
-  subtitle: string;
-  icon: string;
-  color: string;
-  onPress: () => void;
+  name: string;
+  value: string;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
+    <View
+      style={{
+        width: "48%",
         flexGrow: 1,
-        width: "47%",
-        minHeight: 124,
-        padding: 16,
-        borderRadius: 28,
-        backgroundColor: TA.colors.surface,
-        borderWidth: 2,
-        borderColor: color,
-        opacity: pressed ? 0.82 : 1,
-        transform: [
-          {
-            translateY: pressed ? 1 : 0,
-          },
-        ],
-        ...TA.shadow.card,
-      })}
+        paddingVertical: 10,
+        paddingHorizontal: 11,
+        borderRadius: 17,
+        backgroundColor: TA.colors.bgMiddle,
+        borderWidth: 1,
+        borderColor: TA.colors.borderMedium,
+        gap: 3,
+      }}
     >
-      <View
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 16,
-          backgroundColor: color,
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 12,
-        }}
-      >
-        <Text
-          style={{
-            color: TA.colors.white,
-            fontSize: 20,
-            lineHeight: 24,
-            fontFamily: TA.fonts.black,
-          }}
-        >
-          {icon}
-        </Text>
-      </View>
-
       <Text
         numberOfLines={1}
         style={{
           color: TA.colors.ink,
-          fontSize: 22,
-          lineHeight: 25,
+          fontSize: 12,
+          lineHeight: 14,
           fontFamily: TA.fonts.black,
-          letterSpacing: -0.8,
         }}
       >
-        {title}
+        {name}
       </Text>
 
       <Text
-        numberOfLines={2}
+        numberOfLines={1}
         style={{
-          marginTop: 4,
-          color: TA.colors.inkMuted,
+          color: TA.colors.purple,
           fontSize: 12,
-          lineHeight: 16,
-          fontFamily: TA.fonts.bold,
+          lineHeight: 14,
+          fontFamily: TA.fonts.black,
         }}
       >
-        {subtitle}
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function DangerButton({
+  label,
+  onPress,
+  disabled,
+  compact = false,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        flex: compact ? 1 : undefined,
+        paddingVertical: compact ? 13 : 15,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        backgroundColor: disabled
+          ? "rgba(122, 27, 19, 0.22)"
+          : TA.colors.dangerBg,
+        borderWidth: 1.5,
+        borderColor: TA.colors.dangerBorder,
+        alignItems: "center",
+        opacity: pressed ? 0.78 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: TA.colors.dangerText,
+          fontSize: 14,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function SmallSecondaryButton({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        flex: 1,
+        paddingVertical: 13,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
+        alignItems: "center",
+        opacity: pressed ? 0.78 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: TA.colors.ink,
+          fontSize: 14,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {label}
       </Text>
     </Pressable>
   );
