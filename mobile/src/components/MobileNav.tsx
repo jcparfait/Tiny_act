@@ -172,20 +172,17 @@ export function MobileNav({
                 width: 68,
                 height: 68,
                 borderRadius: 999,
-                borderWidth: 1.5,
-                borderColor: "#25272E",
                 backgroundColor: "#25272E",
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: pressed ? 0.76 : 1,
-                overflow: "hidden",
                 ...TA.shadow.webCard,
               })}
             >
               <View
                 style={{
-                  width: 65,
-                  height: 65,
+                  width: 63,
+                  height: 63,
                   borderRadius: 999,
                   overflow: "hidden",
                   backgroundColor: "#25272E",
@@ -197,9 +194,8 @@ export function MobileNav({
                   source={getAvatarSource(user?.avatar)}
                   contentFit="cover"
                   style={{
-                    width: 88,
-                    height: 88,
-                    borderRadius: 999,
+                    width: 87,
+                    height: 87,
                   }}
                 />
               </View>
