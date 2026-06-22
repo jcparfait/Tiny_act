@@ -996,6 +996,9 @@ function SelectionTitle({
   title: string;
   subtitle: string;
 }) {
+  const isDurationTitle =
+    title === "Combien de temps ?";
+
   return (
     <View style={{ gap: 10 }}>
       {kicker && (
@@ -1012,17 +1015,45 @@ function SelectionTitle({
         </Text>
       )}
 
-      <Text
-        style={{
-          color: TA.colors.ink,
-          fontSize: 42,
-          lineHeight: 43,
-          fontFamily: TA.fonts.black,
-          letterSpacing: -2,
-        }}
-      >
-        {title}
-      </Text>
+      {isDurationTitle ? (
+        <View>
+          <Text
+            style={{
+              color: TA.colors.ink,
+              fontSize: 42,
+              lineHeight: 43,
+              fontFamily: TA.fonts.black,
+              letterSpacing: -2,
+            }}
+          >
+            Combien de
+          </Text>
+
+          <Text
+            style={{
+              color: TA.colors.ink,
+              fontSize: 42,
+              lineHeight: 43,
+              fontFamily: TA.fonts.black,
+              letterSpacing: -2,
+            }}
+          >
+            temps ?
+          </Text>
+        </View>
+      ) : (
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 42,
+            lineHeight: 43,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -2,
+          }}
+        >
+          {title}
+        </Text>
+      )}
 
       {subtitle.length > 0 && (
         <Text
