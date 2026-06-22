@@ -64,7 +64,6 @@ export function MobileNav({
         alignItems: "flex-start",
         justifyContent: "center",
         opacity: pressed ? 0.74 : 1,
-        ...TA.shadow.logo,
       })}
     >
       <Image
@@ -83,7 +82,7 @@ export function MobileNav({
       pointerEvents="box-none"
       style={{
         position: "absolute",
-        top: 18,
+        top: 36,
         left: 18,
         right: 18,
         zIndex: 100,
@@ -164,8 +163,8 @@ export function MobileNav({
                 width: 68,
                 height: 68,
                 borderRadius: 999,
-                borderWidth: 1,
-                borderColor: TA.colors.borderDark,
+                borderWidth: 1.5,
+                borderColor: "#25272E",
                 backgroundColor: TA.colors.surface,
                 alignItems: "center",
                 justifyContent: "center",
