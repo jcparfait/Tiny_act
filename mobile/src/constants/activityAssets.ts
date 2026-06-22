@@ -77,8 +77,8 @@ const INTEREST_VISUALS: Record<
 
   "Bien-être": {
     label: "Bien-être",
-    color: "#7FCFBF",
-    softColor: "#EEFBF8",
+    color: "#8FC7F2",
+    softColor: "#F1F9FF",
     image: ACTIVITY_IMAGES["Bien-être"],
   },
 
