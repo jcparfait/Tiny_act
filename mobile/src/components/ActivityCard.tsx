@@ -1,5 +1,8 @@
 import { Pressable, Text, View } from "react-native";
 
+import { Image as ExpoImage } from "expo-image";
+
+import { getActivityInterestVisual } from "../constants/activityAssets";
 import { Activity } from "../types/tinyAct";
 import { TA } from "../theme/tinyActTheme";
 
@@ -9,110 +12,11 @@ type ActivityCardProps = {
   onSelect: (activity: Activity) => void;
 };
 
-type InterestVisual = {
-  color: string;
-  softColor: string;
-  icon: string;
-  label: string;
-};
-
-const INTEREST_VISUALS: Record<string, InterestVisual> = {
-  Code: {
-    color: "#7FA8F8",
-    softColor: "#EEF5FF",
-    icon: "</>",
-    label: "Code",
-  },
-  Culture: {
-    color: "#F19B8D",
-    softColor: "#FFF0EC",
-    icon: "▣",
-    label: "Culture",
-  },
-  Langues: {
-    color: "#8B6CF6",
-    softColor: "#F2EDFF",
-    icon: "A",
-    label: "Langues",
-  },
-  Sport: {
-    color: "#89BE69",
-    softColor: "#F0FAEA",
-    icon: "↗",
-    label: "Sport",
-  },
-  "Bien-être": {
-    color: "#7FCFBF",
-    softColor: "#EEFBF8",
-    icon: "◡",
-    label: "Bien-être",
-  },
-  Photo: {
-    color: "#F58AB7",
-    softColor: "#FFF0F7",
-    icon: "▣",
-    label: "Photo",
-  },
-  Dessin: {
-    color: "#8AD6C9",
-    softColor: "#EFFBF9",
-    icon: "✎",
-    label: "Dessin",
-  },
-  Productivité: {
-    color: "#E5B84D",
-    softColor: "#FFF7DC",
-    icon: "✓",
-    label: "Productivité",
-  },
-  Musique: {
-    color: "#F39A20",
-    softColor: "#FFF4E4",
-    icon: "♪",
-    label: "Musique",
-  },
-};
-
-function getInterestVisual(activity: Activity): InterestVisual {
-  const interestName =
-    activity.interest?.name || readableActivityType(activity.activity_type);
-
-  if (INTEREST_VISUALS[interestName]) {
-    return INTEREST_VISUALS[interestName];
-  }
-
-  if (activity.activity_type === "code_quiz") {
-    return INTEREST_VISUALS.Code;
-  }
-
-  if (activity.activity_type === "culture_quiz") {
-    return INTEREST_VISUALS.Culture;
-  }
-
-  if (
-    activity.activity_type === "word_learning" ||
-    activity.activity_type === "sentence_completion"
-  ) {
-    return INTEREST_VISUALS.Langues;
-  }
-
-  if (activity.activity_type === "melody") {
-    return INTEREST_VISUALS.Musique;
-  }
-
-  return {
-    color: TA.colors.purple,
-    softColor: "#F2EDFF",
-    icon: "✦",
-    label: interestName || "Activité",
-  };
-}
-
 function readableActivityType(type: string) {
   const labels: Record<string, string> = {
     standard: "Action simple",
-    culture_quiz: "Culture",
-    code_quiz: "Code",
+    culture_quiz: "Quiz culture",
+    code_quiz: "Quiz code",
     word_learning: "Langues",
     sentence_completion: "Langues",
     melody: "Musique",
@@ -133,25 +37,34 @@ function getCompactTitle(activity: Activity) {
   return activity.name;
 }
 
-function getIllustrationSymbol(activity: Activity) {
-  if (activity.activity_type === "code_quiz") {
-    return "{ }";
-  }
+function getInterestIcon(activity: Activity) {
+  const name =
+    activity.interest?.name ||
+    readableActivityType(activity.activity_type);
 
-  if (activity.activity_type === "culture_quiz") {
-    return "📖";
-  }
+  if (name === "Sport") return "↗";
+  if (name === "Langues") return "A";
+  if (name === "Créativité") return "✦";
+  if (name === "Bien-être") return "◡";
+  if (name === "Photo") return "▣";
+  if (name === "Dessin") return "✎";
+  if (name === "Écriture") return "✎";
+  if (name === "Culture") return "▣";
+  if (name === "Productivité") return "✓";
+  if (name === "Productivite") return "✓";
+  if (name === "Code") return "</>";
+  if (name === "Musique") return "♪";
+  if (name === "Music") return "♪";
 
+  if (activity.activity_type === "code_quiz") return "</>";
+  if (activity.activity_type === "culture_quiz") return "▣";
   if (
     activity.activity_type === "word_learning" ||
     activity.activity_type === "sentence_completion"
   ) {
     return "A";
   }
-
-  if (activity.activity_type === "melody") {
-    return "♪";
-  }
+  if (activity.activity_type === "melody") return "♪";
 
   return "✦";
 }
@@ -161,14 +74,15 @@ export function ActivityCard({
   selectingActivity,
   onSelect,
 }: ActivityCardProps) {
-  const visual = getInterestVisual(activity);
+  const visual =
+    getActivityInterestVisual(activity);
 
   return (
     <Pressable
       onPress={() => onSelect(activity)}
       disabled={selectingActivity}
       style={({ pressed }) => ({
-        minHeight: 122,
+        height: 132,
         borderRadius: 32,
         borderWidth: 2,
         borderColor: visual.color,
@@ -186,10 +100,10 @@ export function ActivityCard({
       <View
         style={{
           position: "absolute",
-          right: -26,
-          top: -28,
-          width: 108,
-          height: 108,
+          right: -28,
+          top: -32,
+          width: 112,
+          height: 112,
           borderRadius: 999,
           backgroundColor: "rgba(255,255,255,0.34)",
         }}
@@ -198,66 +112,67 @@ export function ActivityCard({
       <View
         style={{
           position: "absolute",
-          right: -18,
-          bottom: -36,
-          width: 132,
-          height: 132,
+          right: -22,
+          bottom: -40,
+          width: 138,
+          height: 138,
           borderRadius: 999,
-          backgroundColor: "rgba(255,255,255,0.26)",
+          backgroundColor: "rgba(255,255,255,0.24)",
         }}
       />
 
       <View
         style={{
-          minHeight: 122,
+          height: 132,
           padding: 14,
-          paddingRight: 44,
+          paddingRight: 46,
           flexDirection: "row",
           alignItems: "center",
-          gap: 16,
+          gap: 15,
         }}
       >
         <View
           style={{
-            width: 86,
-            height: 86,
+            width: 90,
+            height: 90,
             borderRadius: 26,
-            backgroundColor: "rgba(255,255,255,0.72)",
+            backgroundColor: "rgba(255,255,255,0.68)",
             borderWidth: 2,
-            borderColor: "rgba(255,255,255,0.88)",
+            borderColor: "rgba(255,255,255,0.86)",
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",
           }}
         >
-          <View
-            style={{
-              position: "absolute",
-              width: 76,
-              height: 76,
-              borderRadius: 24,
-              backgroundColor: visual.color,
-              opacity: 0.16,
-            }}
-          />
-
-          <Text
-            style={{
-              color: visual.color,
-              fontSize: activity.activity_type === "culture_quiz" ? 34 : 24,
-              lineHeight: 38,
-              fontFamily: TA.fonts.black,
-              letterSpacing: -1,
-            }}
-          >
-            {getIllustrationSymbol(activity)}
-          </Text>
+          {visual.image ? (
+            <ExpoImage
+              source={visual.image}
+              contentFit="contain"
+              style={{
+                width: 86,
+                height: 86,
+              }}
+            />
+          ) : (
+            <Text
+              style={{
+                color: visual.color,
+                fontSize: 28,
+                lineHeight: 32,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              ✦
+            </Text>
+          )}
         </View>
 
         <View
           style={{
             flex: 1,
-            gap: 9,
+            height: 94,
+            justifyContent: "center",
+            gap: 8,
           }}
         >
           <View
@@ -285,17 +200,20 @@ export function ActivityCard({
               }}
             >
               <Text
+                numberOfLines={1}
                 style={{
                   color: TA.colors.white,
-                  fontSize: 9,
+                  fontSize: 8,
+                  lineHeight: 10,
                   fontFamily: TA.fonts.black,
                 }}
               >
-                {visual.icon}
+                {getInterestIcon(activity)}
               </Text>
             </View>
 
             <Text
+              numberOfLines={1}
               style={{
                 color: visual.color,
                 fontSize: 12,
@@ -313,8 +231,8 @@ export function ActivityCard({
             numberOfLines={2}
             style={{
               color: TA.colors.ink,
-              fontSize: 26,
-              lineHeight: 27,
+              fontSize: 25,
+              lineHeight: 26,
               fontFamily: TA.fonts.black,
               letterSpacing: -1,
             }}
@@ -322,7 +240,12 @@ export function ActivityCard({
             {getCompactTitle(activity)}
           </Text>
 
-          {activity.duration?.label && (
+          <View
+            style={{
+              height: 15,
+              justifyContent: "center",
+            }}
+          >
             <Text
               numberOfLines={1}
               style={{
@@ -332,16 +255,18 @@ export function ActivityCard({
                 fontFamily: TA.fonts.bold,
               }}
             >
-              {activity.duration.label}
+              {activity.duration?.label ||
+                activity.location?.name ||
+                ""}
             </Text>
-          )}
+          </View>
         </View>
 
         <Text
           style={{
             position: "absolute",
             right: 17,
-            top: 42,
+            top: 43,
             color: TA.colors.purple,
             fontSize: 40,
             lineHeight: 42,
