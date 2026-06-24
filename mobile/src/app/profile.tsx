@@ -380,7 +380,7 @@ export default function ProfileScreen() {
           />
         }
         contentContainerStyle={{
-          paddingTop: 140,
+          paddingTop: 125,
           paddingHorizontal: 18,
           paddingBottom: 34,
           alignItems: "center",
@@ -944,46 +944,40 @@ function ProfileAccountCard({
 }
 
 function ProfileShortcutCard({
-  title,
-  subtitle,
-  backgroundColor,
-  accentColor,
-  onPress,
-}: {
-  title: string;
-  subtitle: string;
-  backgroundColor: string;
-  accentColor: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexGrow: 1,
-        width: "47%",
-        minHeight: 78,
-        paddingVertical: 14,
-        paddingHorizontal: 14,
-        borderRadius: 22,
-        backgroundColor,
-        borderWidth: 1.5,
-        borderColor: backgroundColor,
-        opacity: pressed ? 0.82 : 1,
-        transform: [
-          {
-            translateY: pressed ? 1 : 0,
-          },
-        ],
-        ...TA.shadow.soft,
-      })}
-    >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          gap: 4,
-        }}
+    title,
+    subtitle,
+    backgroundColor,
+    accentColor,
+    onPress,
+  }: {
+    title: string;
+    subtitle: string;
+    backgroundColor: string;
+    accentColor: string;
+    onPress: () => void;
+  }) {
+    void accentColor;
+
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          flexGrow: 1,
+          width: "47%",
+          minHeight: 76,
+          paddingVertical: 13,
+          paddingHorizontal: 14,
+          borderRadius: 22,
+          backgroundColor,
+          borderWidth: 0,
+          opacity: pressed ? 0.82 : 1,
+          transform: [
+            {
+              translateY: pressed ? 1 : 0,
+            },
+          ],
+          ...TA.shadow.soft,
+        })}
       >
         <Text
           numberOfLines={1}
@@ -1001,7 +995,8 @@ function ProfileShortcutCard({
         <Text
           numberOfLines={1}
           style={{
-            color: "rgba(21, 27, 47, 0.68)",
+            marginTop: 4,
+            color: TA.colors.inkSoft,
             fontSize: 12,
             lineHeight: 15,
             fontFamily: TA.fonts.bold,
@@ -1009,23 +1004,9 @@ function ProfileShortcutCard({
         >
           {subtitle}
         </Text>
-      </View>
-
-      <View
-        style={{
-          position: "absolute",
-          right: 12,
-          bottom: 10,
-          width: 22,
-          height: 5,
-          borderRadius: 999,
-          backgroundColor: accentColor,
-          opacity: 0.7,
-        }}
-      />
-    </Pressable>
-  );
-}
+      </Pressable>
+    );
+  }
 
 function ProfileStat({
   label,
