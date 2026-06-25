@@ -4,6 +4,18 @@ module Api
       QUIZ_QUESTIONS_LIMIT = 10
       LANGUAGE_ITEMS_LIMIT = 30
 
+      MOBILE_DISABLED_INTEREST_NAMES = [
+        "Productivité",
+        "Productivite",
+        "Photo",
+        "Bien-être",
+        "Bien etre",
+        "Bien être",
+        "Bien-etre",
+        "Dessin",
+        "Dessins"
+      ].freeze
+
       def index
         user = current_api_user!
         return unless user
@@ -88,13 +100,13 @@ module Api
         return unless user
 
         activity_session = user.activity_sessions.find(params[:id])
-        activity = Activity.find(params.require(:activity_id))
+        activity = Activity.includes(:interest).find(params.require(:activity_id))
 
         candidate_ids = Array(
           activity_session.candidate_activity_ids
         ).map(&:to_i)
 
-        unless candidate_ids.include?(activity.id)
+        unless candidate_ids.include?(activity.id) && mobile_enabled_activity?(activity)
           render json: {
             error: "Cette activité ne fait pas partie des recommandations."
           }, status: :unprocessable_entity
@@ -238,23 +250,24 @@ module Api
       end
 
       def matching_activities_for(user)
-        interest_ids = user.interest_ids
+        interest_ids = mobile_enabled_interest_ids_for(user)
 
         return Activity.none if interest_ids.empty?
 
-        Activity.where(
-          active: true,
-          interest_id: interest_ids,
-          mood_id: activity_session_params[:mood_id],
-          duration_id: activity_session_params[:duration_id],
-          location_id: allowed_location_ids(
-            activity_session_params[:location_id]
+        Activity
+          .where(
+            active: true,
+            interest_id: interest_ids,
+            mood_id: activity_session_params[:mood_id],
+            duration_id: activity_session_params[:duration_id],
+            location_id: allowed_location_ids(
+              activity_session_params[:location_id]
+            )
           )
-        )
       end
 
       def activity_recommendations_for(user, reference_activity)
-        interest_ids = user.interest_ids
+        interest_ids = mobile_enabled_interest_ids_for(user)
 
         return Activity.none if interest_ids.empty?
 
@@ -274,6 +287,18 @@ module Api
           .map(&:sample)
           .compact
           .sample(3)
+      end
+
+      def mobile_enabled_interest_ids_for(user)
+        Interest
+          .where(id: user.interest_ids)
+          .where.not(name: MOBILE_DISABLED_INTEREST_NAMES)
+          .pluck(:id)
+      end
+
+      def mobile_enabled_activity?(activity)
+        activity.interest.present? &&
+          MOBILE_DISABLED_INTEREST_NAMES.exclude?(activity.interest.name)
       end
 
       def activities_in_saved_order(activity_ids)
