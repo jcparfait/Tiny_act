@@ -1,4 +1,4 @@
- import {
+import {
   useEffect,
   useMemo,
   useRef,
@@ -18,7 +18,6 @@ import {
 
 import { Image as ExpoImage } from "expo-image";
 
-import { AvatarImage } from "../components/AvatarPicker";
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 
@@ -26,8 +25,6 @@ import {
   getFurnitureSource,
   ROOM_BACKGROUND,
 } from "../constants/furnitureAssets";
-
-import { useAuth } from "../context/AuthContext";
 
 import {
   deleteRoomFurniture,
@@ -43,17 +40,23 @@ import {
   RoomResponse,
 } from "../types/tinyAct";
 
-export default function RoomScreen() {
-  const { user } = useAuth();
+import { TA } from "../theme/tinyActTheme";
 
+function remainingFurnitureXp(
+  furniture: RoomInventoryItem
+) {
+  return Math.max(
+    furniture.required_xp - furniture.current_xp,
+    0
+  );
+}
+
+export default function RoomScreen() {
   const [roomData, setRoomData] =
     useState<RoomResponse | null>(null);
 
   const [selectedFurnitureId, setSelectedFurnitureId] =
     useState<number | null>(null);
-
-  const [inventoryOpen, setInventoryOpen] =
-    useState(false);
 
   const [roomDragging, setRoomDragging] =
     useState(false);
@@ -75,15 +78,29 @@ export default function RoomScreen() {
     [roomData, selectedFurnitureId]
   );
 
-  const unlockedFurniture =
-    roomData?.inventory.filter(
-      (item) => item.unlocked
-    ) || [];
+  const unlockedFurniture = useMemo(
+    () =>
+      roomData?.inventory.filter(
+        (item) => item.unlocked
+      ) || [],
+    [roomData]
+  );
 
-  const lockedFurniture =
-    roomData?.inventory.filter(
-      (item) => !item.unlocked
-    ) || [];
+  const nextLockedFurniture = useMemo(
+    () =>
+      (
+        roomData?.inventory.filter(
+          (item) => !item.unlocked
+        ) || []
+      )
+        .sort(
+          (firstItem, secondItem) =>
+            remainingFurnitureXp(firstItem) -
+            remainingFurnitureXp(secondItem)
+        )
+        .slice(0, 6),
+    [roomData]
+  );
 
   useEffect(() => {
     void refreshRoom();
@@ -98,24 +115,21 @@ export default function RoomScreen() {
 
       setRoomData(response);
 
-      setSelectedFurnitureId(
-        (currentSelectedId) => {
-          const stillExists =
-            response.room.furnitures.some(
-              (item) =>
-                item.id === currentSelectedId
-            );
+      setSelectedFurnitureId((currentSelectedId) => {
+        const stillExists =
+          response.room.furnitures.some(
+            (item) => item.id === currentSelectedId
+          );
 
-          return stillExists
-            ? currentSelectedId
-            : null;
-        }
-      );
+        return stillExists
+          ? currentSelectedId
+          : null;
+      });
     } catch (loadError) {
       setError(
         loadError instanceof Error
           ? loadError.message
-          : "Impossible de charger la salle."
+          : "Impossible de charger la room."
       );
     } finally {
       setLoading(false);
@@ -125,7 +139,7 @@ export default function RoomScreen() {
   async function handlePlace(
     furniture: RoomInventoryItem
   ) {
-    if (busyAction) return;
+    if (busyAction || !furniture.unlocked) return;
 
     const actionKey = `place-${furniture.id}`;
 
@@ -150,15 +164,14 @@ export default function RoomScreen() {
             ],
           },
 
-          inventory: current.inventory.map(
-            (item) =>
-              item.id === furniture.id
-                ? {
-                    ...item,
-                    placed_count:
-                      item.placed_count + 1,
-                  }
-                : item
+          inventory: current.inventory.map((item) =>
+            item.id === furniture.id
+              ? {
+                  ...item,
+                  placed_count:
+                    item.placed_count + 1,
+                }
+              : item
           ),
         };
       });
@@ -166,8 +179,6 @@ export default function RoomScreen() {
       setSelectedFurnitureId(
         response.room_furniture.id
       );
-
-      setInventoryOpen(false);
     } catch (placeError) {
       setError(
         placeError instanceof Error
@@ -309,18 +320,17 @@ export default function RoomScreen() {
               ),
           },
 
-          inventory: current.inventory.map(
-            (item) =>
-              item.id ===
-              furnitureToDelete.furniture_id
-                ? {
-                    ...item,
-                    placed_count: Math.max(
-                      item.placed_count - 1,
-                      0
-                    ),
-                  }
-                : item
+          inventory: current.inventory.map((item) =>
+            item.id ===
+            furnitureToDelete.furniture_id
+              ? {
+                  ...item,
+                  placed_count: Math.max(
+                    item.placed_count - 1,
+                    0
+                  ),
+                }
+              : item
           ),
         };
       });
@@ -350,11 +360,10 @@ export default function RoomScreen() {
           ...current.room,
 
           furnitures:
-            current.room.furnitures.map(
-              (item) =>
-                item.id === replacement.id
-                  ? replacement
-                  : item
+            current.room.furnitures.map((item) =>
+              item.id === replacement.id
+                ? replacement
+                : item
             ),
         },
       };
@@ -365,61 +374,68 @@ export default function RoomScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#F4EFE8",
+        backgroundColor: TA.colors.bgStart,
       }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 131,
+          zIndex: 80,
+          backgroundColor: TA.colors.bgStart,
+        }}
+      />
+
+      <MobileNav active="room" />
+
       <ScrollView
         scrollEnabled={!roomDragging}
+        style={{
+          flex: 1,
+          backgroundColor: TA.colors.bgStart,
+        }}
         contentContainerStyle={{
           alignItems: "center",
-          padding: 18,
-          paddingBottom: 40,
+          paddingTop: 125,
+          paddingHorizontal: 18,
+          paddingBottom: 34,
         }}
       >
         <View
           style={{
             width: "100%",
-            maxWidth: 720,
-            gap: 20,
+            maxWidth: 520,
+            gap: 18,
           }}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 14,
-            }}
-          >
-            <AvatarImage
-              avatar={user?.avatar}
-              size={64}
-            />
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                color: TA.colors.inkLight,
+                fontSize: 13,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+              }}
+            >
+              Ta room
+            </Text>
 
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  color: "#7C63F2",
-                  fontSize: 13,
-                  fontWeight: "900",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                }}
-              >
-                Ton espace
-              </Text>
-
-              <Text
-                style={{
-                  color: "#151B2F",
-                  fontSize: 32,
-                  lineHeight: 38,
-                  fontWeight: "900",
-                }}
-              >
-                La salle de{" "}
-                {user?.first_name || "Tiny Act"}
-              </Text>
-            </View>
+            <Text
+              style={{
+                color: TA.colors.ink,
+                fontSize: 44,
+                lineHeight: 45,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -2,
+              }}
+            >
+              Décore ton espace
+            </Text>
           </View>
 
           {loading && (
@@ -439,35 +455,8 @@ export default function RoomScreen() {
 
           {!loading && roomData && (
             <>
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 10,
-                }}
-              >
-                <StatCard
-                  label="XP total"
-                  value={`${roomData.total_xp}`}
-                />
-
-                <StatCard
-                  label="Meubles placés"
-                  value={`${roomData.room.furnitures.length}`}
-                />
-
-                <StatCard
-                  label="Débloqués"
-                  value={
-                    `${unlockedFurniture.length}` +
-                    `/${roomData.inventory.length}`
-                  }
-                />
-              </View>
-
               <RoomCanvas
                 room={roomData.room}
-                avatar={user?.avatar}
                 selectedId={selectedFurnitureId}
                 disabled={busyAction !== null}
                 onSelect={setSelectedFurnitureId}
@@ -477,14 +466,15 @@ export default function RoomScreen() {
 
               <Text
                 style={{
-                  color: "rgba(21, 27, 47, 0.58)",
-                  fontSize: 14,
-                  lineHeight: 21,
+                  color: TA.colors.inkMuted,
+                  fontSize: 13,
+                  lineHeight: 18,
+                  fontFamily: TA.fonts.bold,
                   textAlign: "center",
                 }}
               >
-                Appuie sur un meuble puis
-                fais-le glisser sur une autre case.
+                Appuie sur un meuble puis fais-le glisser
+                pour le déplacer.
               </Text>
 
               {selectedFurniture && (
@@ -500,214 +490,35 @@ export default function RoomScreen() {
                 />
               )}
 
-              <SectionTitle
-                kicker="Progression"
-                title="Ton XP par catégorie"
+              <FurnitureShelf
+                unlockedFurniture={unlockedFurniture}
+                nextLockedFurniture={
+                  nextLockedFurniture
+                }
+                busyAction={busyAction}
+                onPlace={handlePlace}
               />
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 10,
-                }}
-              >
-                {roomData.progress.map(
-                  (progress) => (
-                    <View
-                      key={progress.interest.id}
-                      style={{
-                        flexGrow: 1,
-                        minWidth: 145,
-                        padding: 14,
-                        borderRadius: 18,
-                        backgroundColor: "#FFFFFF",
-                        borderWidth: 1,
-                        borderColor: "rgba(90, 74, 54, 0.16)",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "#151B2F",
-                          fontWeight: "900",
-                        }}
-                      >
-                        {progress.interest.name}
-                      </Text>
-
-                      <Text
-                        style={{
-                          marginTop: 5,
-                          color: "#7C63F2",
-                          fontSize: 20,
-                          fontWeight: "900",
-                        }}
-                      >
-                        {progress.xp} XP
-                      </Text>
-
-                      <Text
-                        style={{
-                          marginTop: 4,
-                          color: "rgba(21, 27, 47, 0.58)",
-                          fontSize: 12,
-                          fontWeight: "700",
-                        }}
-                      >
-                        {progress.next_required_xp
-                          ? `Prochain meuble à ${progress.next_required_xp} XP`
-                          : "Tous les meubles sont débloqués"}
-                      </Text>
-                    </View>
-                  )
-                )}
-              </View>
-
               <Pressable
-                onPress={() =>
-                  setInventoryOpen(
-                    (current) => !current
-                  )
-                }
+                onPress={refreshRoom}
+                disabled={loading}
                 style={({ pressed }) => ({
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: 18,
-                  borderRadius: 24,
-                  backgroundColor: "#151B2F",
-                  opacity: pressed ? 0.8 : 1,
+                  opacity:
+                    loading || pressed ? 0.55 : 1,
                 })}
               >
-                <View style={{ gap: 3 }}>
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      opacity: 0.7,
-                      fontSize: 12,
-                      fontWeight: "900",
-                      textTransform: "uppercase",
-                      letterSpacing: 1,
-                    }}
-                  >
-                    Inventaire
-                  </Text>
-
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 21,
-                      fontWeight: "900",
-                    }}
-                  >
-                    {unlockedFurniture.length} meuble(s)
-                    débloqué(s)
-                  </Text>
-                </View>
-
                 <Text
                   style={{
-                    color: "#FFFFFF",
-                    fontSize: 26,
-                    fontWeight: "900",
+                    color: TA.colors.purple,
+                    textAlign: "center",
+                    fontFamily: TA.fonts.black,
                   }}
                 >
-                  {inventoryOpen ? "⌃" : "⌄"}
+                  Actualiser la room
                 </Text>
               </Pressable>
-
-              {inventoryOpen && (
-                <View style={{ gap: 20 }}>
-                  <SectionTitle
-                    kicker="Disponibles"
-                    title="Meubles débloqués"
-                  />
-
-                  {unlockedFurniture.length === 0 ? (
-                    <EmptyCard
-                      text="Termine quelques activités pour débloquer ton premier meuble."
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        flexWrap: "wrap",
-                        gap: 12,
-                      }}
-                    >
-                      {unlockedFurniture.map(
-                        (furniture) => (
-                          <InventoryCard
-                            key={furniture.id}
-                            furniture={furniture}
-                            busy={
-                              busyAction ===
-                              `place-${furniture.id}`
-                            }
-                            disabled={
-                              busyAction !== null
-                            }
-                            onPlace={() =>
-                              handlePlace(furniture)
-                            }
-                          />
-                        )
-                      )}
-                    </View>
-                  )}
-
-                  {lockedFurniture.length > 0 && (
-                    <>
-                      <SectionTitle
-                        kicker="À débloquer"
-                        title="Prochains meubles"
-                      />
-
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          flexWrap: "wrap",
-                          gap: 12,
-                        }}
-                      >
-                        {lockedFurniture.map(
-                          (furniture) => (
-                            <LockedFurnitureCard
-                              key={furniture.id}
-                              furniture={furniture}
-                            />
-                          )
-                        )}
-                      </View>
-                    </>
-                  )}
-                </View>
-              )}
             </>
           )}
-
-          <Pressable
-            onPress={refreshRoom}
-            disabled={loading}
-            style={({ pressed }) => ({
-              opacity:
-                loading || pressed
-                  ? 0.55
-                  : 1,
-            })}
-          >
-            <Text
-              style={{
-                color: "#7C63F2",
-                textAlign: "center",
-                fontWeight: "900",
-              }}
-            >
-              Actualiser la salle
-            </Text>
-          </Pressable>
-
-          <MobileNav active="room" />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -716,7 +527,6 @@ export default function RoomScreen() {
 
 function RoomCanvas({
   room,
-  avatar,
   selectedId,
   disabled,
   onSelect,
@@ -724,7 +534,6 @@ function RoomCanvas({
   onDraggingChange,
 }: {
   room: MobileRoom;
-  avatar?: string | null;
   selectedId: number | null;
   disabled: boolean;
   onSelect: (id: number) => void;
@@ -738,12 +547,8 @@ function RoomCanvas({
   const [canvasWidth, setCanvasWidth] =
     useState(0);
 
-  const aspectRatio = 920 / 620;
-
   const canvasHeight =
-    canvasWidth > 0
-      ? canvasWidth / aspectRatio
-      : 320;
+    canvasWidth > 0 ? canvasWidth : 360;
 
   const scale =
     canvasWidth > 0
@@ -760,16 +565,14 @@ function RoomCanvas({
       style={{
         width: "100%",
         height: canvasHeight,
-        borderRadius: 26,
         overflow: "hidden",
-        backgroundColor: "#E5D8CC",
-        borderWidth: 2,
-        borderColor: "rgba(90, 74, 54, 0.16)",
+        backgroundColor: TA.colors.bgStart,
       }}
     >
       <ExpoImage
         source={ROOM_BACKGROUND}
         contentFit="contain"
+        contentPosition="top center"
         style={{
           position: "absolute",
           top: 0,
@@ -791,32 +594,6 @@ function RoomCanvas({
           onDraggingChange={onDraggingChange}
         />
       ))}
-
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          left: Math.max(
-            canvasWidth / 2 - 26,
-            0
-          ),
-          bottom: 18 * scale,
-          zIndex: 100,
-          padding: 3,
-          borderRadius: 999,
-          backgroundColor: "#FFFFFF",
-          borderWidth: 3,
-          borderColor: "#7C63F2",
-        }}
-      >
-        <AvatarImage
-          avatar={avatar}
-          size={Math.max(
-            42,
-            52 * scale
-          )}
-        />
-      </View>
     </View>
   );
 }
@@ -951,7 +728,6 @@ function DraggableFurniture({
           item.x +
           item.y +
           (selected ? 30 : 10),
-
         transform:
           pan.getTranslateTransform(),
       }}
@@ -965,9 +741,9 @@ function DraggableFurniture({
           height: "100%",
           borderRadius: 14,
           borderWidth: selected ? 3 : 0,
-          borderColor: "#7C63F2",
+          borderColor: TA.colors.purple,
           backgroundColor: selected
-            ? "rgba(255, 75, 43, 0.12)"
+            ? "rgba(124, 99, 242, 0.12)"
             : "transparent",
           opacity: pressed ? 0.72 : 1,
         })}
@@ -984,6 +760,236 @@ function DraggableFurniture({
         />
       </Pressable>
     </Animated.View>
+  );
+}
+
+function FurnitureShelf({
+  unlockedFurniture,
+  nextLockedFurniture,
+  busyAction,
+  onPlace,
+}: {
+  unlockedFurniture: RoomInventoryItem[];
+  nextLockedFurniture: RoomInventoryItem[];
+  busyAction: string | null;
+  onPlace: (furniture: RoomInventoryItem) => void;
+}) {
+  return (
+    <View
+      style={{
+        padding: 16,
+        borderRadius: 30,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
+        gap: 14,
+        ...TA.shadow.soft,
+      }}
+    >
+      <View style={{ gap: 4 }}>
+        <Text
+          style={{
+            color: TA.colors.purple,
+            fontSize: 12,
+            fontFamily: TA.fonts.black,
+            textTransform: "uppercase",
+            letterSpacing: 1.2,
+          }}
+        >
+          Inventaire
+        </Text>
+
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 26,
+            lineHeight: 30,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -1,
+          }}
+        >
+          Objets à placer
+        </Text>
+
+        <Text
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 13,
+            lineHeight: 18,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          Les objets disponibles sont actifs. Les prochains
+          objets apparaissent grisés avec l’XP restant.
+        </Text>
+      </View>
+
+      {unlockedFurniture.length === 0 ? (
+        <EmptyCard text="Termine quelques activités pour débloquer ton premier meuble." />
+      ) : (
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          {unlockedFurniture.map((furniture) => (
+            <InventoryCard
+              key={furniture.id}
+              furniture={furniture}
+              busy={
+                busyAction ===
+                `place-${furniture.id}`
+              }
+              disabled={busyAction !== null}
+              onPlace={() => onPlace(furniture)}
+            />
+          ))}
+
+          {nextLockedFurniture.map((furniture) => (
+            <LockedFurnitureCard
+              key={furniture.id}
+              furniture={furniture}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function InventoryCard({
+  furniture,
+  onPlace,
+  busy,
+  disabled,
+}: {
+  furniture: RoomInventoryItem;
+  onPlace: () => void;
+  busy: boolean;
+  disabled: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPlace}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        width: "48%",
+        minWidth: 142,
+        flexGrow: 1,
+        minHeight: 128,
+        padding: 10,
+        borderRadius: 22,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
+        opacity:
+          disabled || pressed ? 0.68 : 1,
+        ...TA.shadow.soft,
+      })}
+    >
+      <ExpoImage
+        source={getFurnitureSource(
+          furniture.image_key
+        )}
+        contentFit="contain"
+        style={{
+          width: "100%",
+          height: 74,
+        }}
+      />
+
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 6,
+          color: TA.colors.ink,
+          fontSize: 14,
+          lineHeight: 17,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {furniture.name}
+      </Text>
+
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 2,
+          color: TA.colors.purple,
+          fontSize: 12,
+          lineHeight: 15,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {busy ? "Placement..." : "Placer"}
+      </Text>
+    </Pressable>
+  );
+}
+
+function LockedFurnitureCard({
+  furniture,
+}: {
+  furniture: RoomInventoryItem;
+}) {
+  const remainingXp =
+    remainingFurnitureXp(furniture);
+
+  return (
+    <View
+      style={{
+        width: "48%",
+        minWidth: 142,
+        flexGrow: 1,
+        minHeight: 128,
+        padding: 10,
+        borderRadius: 22,
+        backgroundColor: "#E7E0D8",
+        borderWidth: 1.5,
+        borderColor: "rgba(90, 74, 54, 0.12)",
+        opacity: 0.72,
+      }}
+    >
+      <ExpoImage
+        source={getFurnitureSource(
+          furniture.image_key
+        )}
+        contentFit="contain"
+        style={{
+          width: "100%",
+          height: 74,
+          opacity: 0.42,
+        }}
+      />
+
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 6,
+          color: TA.colors.ink,
+          fontSize: 14,
+          lineHeight: 17,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {furniture.name}
+      </Text>
+
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 2,
+          color: TA.colors.inkMuted,
+          fontSize: 12,
+          lineHeight: 15,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        Encore {remainingXp} XP
+      </Text>
+    </View>
   );
 }
 
@@ -1006,18 +1012,22 @@ function FurnitureControls({
   return (
     <View
       style={{
-        padding: 18,
-        borderRadius: 24,
-        backgroundColor: "#151B2F",
+        padding: 16,
+        borderRadius: 26,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
         gap: 14,
+        ...TA.shadow.soft,
       }}
     >
       <View>
         <Text
+          numberOfLines={1}
           style={{
-            color: "#FFFFFF",
+            color: TA.colors.ink,
             fontSize: 20,
-            fontWeight: "900",
+            fontFamily: TA.fonts.black,
           }}
         >
           {furniture.name}
@@ -1026,9 +1036,8 @@ function FurnitureControls({
         <Text
           style={{
             marginTop: 4,
-            color: "#FFFFFF",
-            opacity: 0.7,
-            fontWeight: "700",
+            color: TA.colors.inkMuted,
+            fontFamily: TA.fonts.bold,
           }}
         >
           Position {furniture.x + 1},{" "}
@@ -1080,24 +1089,65 @@ function FurnitureControls({
         style={({ pressed }) => ({
           padding: 13,
           borderRadius: 16,
-          backgroundColor: "#FFE1DD",
+          backgroundColor: TA.colors.dangerBg,
+          borderWidth: 1.5,
+          borderColor: TA.colors.dangerBorder,
           opacity:
             pressed || busy ? 0.65 : 1,
         })}
       >
         <Text
           style={{
-            color: "#B42318",
-            fontWeight: "900",
+            color: TA.colors.dangerText,
+            fontFamily: TA.fonts.black,
             textAlign: "center",
           }}
         >
           {deleting
             ? "Suppression..."
-            : "Retirer de la salle"}
+            : "Retirer de la room"}
         </Text>
       </Pressable>
     </View>
+  );
+}
+
+function MoveButton({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        width: 58,
+        height: 48,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 16,
+        backgroundColor: TA.colors.bgMiddle,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
+        opacity:
+          disabled || pressed ? 0.55 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: TA.colors.ink,
+          fontSize: 22,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -1125,25 +1175,19 @@ function canPlaceFurniture(
     return false;
   }
 
-  return room.furnitures.every(
-    (other) => {
-      if (other.id === item.id) {
-        return true;
-      }
-
-      const overlaps =
-        targetX <
-          other.x + other.width &&
-        targetX + item.width >
-          other.x &&
-        targetY <
-          other.y + other.height &&
-        targetY + item.height >
-          other.y;
-
-      return !overlaps;
+  return room.furnitures.every((other) => {
+    if (other.id === item.id) {
+      return true;
     }
-  );
+
+    const overlaps =
+      targetX < other.x + other.width &&
+      targetX + item.width > other.x &&
+      targetY < other.y + other.height &&
+      targetY + item.height > other.y;
+
+    return !overlaps;
+  });
 }
 
 function gridDeltaFromDrag(
@@ -1207,297 +1251,6 @@ function gridToScreen(
   };
 }
 
-function StatCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <View
-      style={{
-        flexGrow: 1,
-        minWidth: 130,
-        padding: 14,
-        borderRadius: 18,
-        backgroundColor: "#151B2F",
-      }}
-    >
-      <Text
-        style={{
-          color: "#FFFFFF",
-          opacity: 0.7,
-          fontSize: 12,
-          fontWeight: "800",
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </Text>
-
-      <Text
-        style={{
-          marginTop: 5,
-          color: "#FFFFFF",
-          fontSize: 22,
-          fontWeight: "900",
-        }}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function SectionTitle({
-  kicker,
-  title,
-}: {
-  kicker: string;
-  title: string;
-}) {
-  return (
-    <View style={{ gap: 3 }}>
-      <Text
-        style={{
-          color: "#7C63F2",
-          fontSize: 12,
-          fontWeight: "900",
-          textTransform: "uppercase",
-          letterSpacing: 1,
-        }}
-      >
-        {kicker}
-      </Text>
-
-      <Text
-        style={{
-          color: "#151B2F",
-          fontSize: 25,
-          fontWeight: "900",
-        }}
-      >
-        {title}
-      </Text>
-    </View>
-  );
-}
-
-function MoveButton({
-  label,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => ({
-        width: 58,
-        height: 48,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 16,
-        backgroundColor: "#FFFFFF",
-        opacity:
-          disabled || pressed
-            ? 0.55
-            : 1,
-      })}
-    >
-      <Text
-        style={{
-          color: "#151B2F",
-          fontSize: 22,
-          fontWeight: "900",
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function InventoryCard({
-  furniture,
-  onPlace,
-  busy,
-  disabled,
-}: {
-  furniture: RoomInventoryItem;
-  onPlace: () => void;
-  busy: boolean;
-  disabled: boolean;
-}) {
-  return (
-    <View
-      style={{
-        width: "48%",
-        minWidth: 155,
-        flexGrow: 1,
-        padding: 14,
-        borderRadius: 22,
-        backgroundColor: "#FFFFFF",
-        borderWidth: 1,
-        borderColor: "rgba(90, 74, 54, 0.16)",
-        gap: 10,
-      }}
-    >
-      <ExpoImage
-        source={getFurnitureSource(
-          furniture.image_key
-        )}
-        contentFit="contain"
-        style={{
-          width: "100%",
-          height: 110,
-        }}
-      />
-
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            color: "#151B2F",
-            fontSize: 17,
-            fontWeight: "900",
-          }}
-        >
-          {furniture.name}
-        </Text>
-
-        <Text
-          style={{
-            marginTop: 3,
-            color: "rgba(21, 27, 47, 0.58)",
-            fontSize: 12,
-            fontWeight: "700",
-          }}
-        >
-          {furniture.interest.name}
-          {" · "}
-          {furniture.placed_count} placé(s)
-        </Text>
-      </View>
-
-      <Pressable
-        onPress={onPlace}
-        disabled={disabled}
-        style={({ pressed }) => ({
-          padding: 12,
-          borderRadius: 14,
-          backgroundColor: "#7C63F2",
-          opacity:
-            disabled || pressed
-              ? 0.6
-              : 1,
-        })}
-      >
-        <Text
-          style={{
-            color: "#FFFFFF",
-            fontWeight: "900",
-            textAlign: "center",
-          }}
-        >
-          {busy
-            ? "Placement..."
-            : "Placer"}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function LockedFurnitureCard({
-  furniture,
-}: {
-  furniture: RoomInventoryItem;
-}) {
-  const remainingXp = Math.max(
-    furniture.required_xp -
-      furniture.current_xp,
-    0
-  );
-
-  const progress =
-    furniture.required_xp > 0
-      ? Math.min(
-          furniture.current_xp /
-            furniture.required_xp,
-          1
-        )
-      : 0;
-
-  return (
-    <View
-      style={{
-        width: "48%",
-        minWidth: 155,
-        flexGrow: 1,
-        padding: 14,
-        borderRadius: 22,
-        backgroundColor: "#E7E0D8",
-        gap: 10,
-        opacity: 0.82,
-      }}
-    >
-      <ExpoImage
-        source={getFurnitureSource(
-          furniture.image_key
-        )}
-        contentFit="contain"
-        style={{
-          width: "100%",
-          height: 100,
-          opacity: 0.45,
-        }}
-      />
-
-      <Text
-        style={{
-          color: "#151B2F",
-          fontWeight: "900",
-        }}
-      >
-        🔒 {furniture.name}
-      </Text>
-
-      <Text
-        style={{
-          color: "rgba(21, 27, 47, 0.58)",
-          fontSize: 12,
-          fontWeight: "700",
-        }}
-      >
-        Encore {remainingXp} XP en{" "}
-        {furniture.interest.name}
-      </Text>
-
-      <View
-        style={{
-          height: 8,
-          borderRadius: 999,
-          backgroundColor: "#CFC6BD",
-          overflow: "hidden",
-        }}
-      >
-        <View
-          style={{
-            width: `${progress * 100}%`,
-            height: "100%",
-            backgroundColor: "#7C63F2",
-          }}
-        />
-      </View>
-    </View>
-  );
-}
-
 function EmptyCard({
   text,
 }: {
@@ -1508,16 +1261,16 @@ function EmptyCard({
       style={{
         padding: 18,
         borderRadius: 20,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: TA.colors.surface,
         borderWidth: 1,
-        borderColor: "rgba(90, 74, 54, 0.16)",
+        borderColor: TA.colors.borderMedium,
       }}
     >
       <Text
         style={{
-          color: "rgba(21, 27, 47, 0.58)",
+          color: TA.colors.inkMuted,
           lineHeight: 22,
-          fontWeight: "700",
+          fontFamily: TA.fonts.bold,
           textAlign: "center",
         }}
       >
