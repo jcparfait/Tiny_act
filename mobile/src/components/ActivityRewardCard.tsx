@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+
 import { Image as ExpoImage } from "expo-image";
 
 import { getFurnitureSource } from "../constants/furnitureAssets";
@@ -6,23 +7,21 @@ import { getFurnitureSource } from "../constants/furnitureAssets";
 import {
   Activity,
   ActivityReward,
+  ActivityRewardFurniture,
 } from "../types/tinyAct";
 
-import { PrimaryButton } from "./PrimaryButton";
-import { SecondaryButton } from "./SecondaryButton";
+import { TA } from "../theme/tinyActTheme";
 
 type ActivityRewardCardProps = {
   activity: Activity;
   reward: ActivityReward;
-  onViewRoom: () => void;
-  onRestart: () => void;
+  onViewRoom?: () => void;
+  onRestart?: () => void;
 };
 
 export function ActivityRewardCard({
   activity,
   reward,
-  onViewRoom,
-  onRestart,
 }: ActivityRewardCardProps) {
   const newlyUnlocked =
     reward.newly_unlocked_furnitures || [];
@@ -30,336 +29,249 @@ export function ActivityRewardCard({
   const nextFurniture =
     reward.next_furniture || null;
 
-  const nextFurnitureProgress =
-    nextFurniture &&
-    nextFurniture.required_xp > 0
-      ? Math.min(
-          reward.interest_xp / nextFurniture.required_xp,
-          1
-        )
-      : 0;
+  const firstUnlocked = newlyUnlocked[0] || null;
 
   return (
-    <View style={{ gap: 18 }}>
+    <View style={{ gap: 16 }}>
       <View
         style={{
-          padding: 24,
-          borderRadius: 28,
-          backgroundColor: "#151B2F",
-          gap: 10,
+          padding: 18,
+          borderRadius: 34,
+          backgroundColor: "#FFF4D8",
+          borderWidth: 2,
+          borderColor: "#EAD7A0",
+          gap: 18,
+          overflow: "hidden",
+          ...TA.shadow.card,
         }}
       >
-        <Text
+        <View
+          pointerEvents="none"
           style={{
-            color: "#68D391",
-            fontSize: 13,
-            fontWeight: "900",
-            textTransform: "uppercase",
-            letterSpacing: 1,
+            position: "absolute",
+            right: -70,
+            top: -70,
+            width: 190,
+            height: 190,
+            borderRadius: 999,
+            backgroundColor: "rgba(216, 154, 50, 0.22)",
+          }}
+        />
+
+        <View
+          style={{
+            alignSelf: "flex-start",
+            paddingVertical: 9,
+            paddingHorizontal: 14,
+            borderRadius: 999,
+            backgroundColor: "#DDF9E8",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 7,
           }}
         >
-          Activité terminée
-        </Text>
+          <Text
+            style={{
+              color: "#176C3A",
+              fontSize: 15,
+              lineHeight: 18,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            ✓
+          </Text>
+
+          <Text
+            style={{
+              color: "#176C3A",
+              fontSize: 13,
+              lineHeight: 16,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            Terminé
+          </Text>
+        </View>
 
         <Text
           style={{
-            color: "#FFFFFF",
-            fontSize: 34,
-            lineHeight: 40,
-            fontWeight: "900",
+            color: TA.colors.ink,
+            fontSize: 33,
+            lineHeight: 37,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -1.4,
           }}
         >
-          Bien joué !
+          {activity.name}
         </Text>
 
-        <Text
+        <View
           style={{
-            color: "#FFFFFF",
-            opacity: 0.78,
-            fontSize: 16,
-            lineHeight: 23,
+            flexDirection: "row",
+            gap: 9,
           }}
         >
-          Tu as terminé « {activity.name} ».
-        </Text>
+          <SummaryPill
+            label="Catégorie"
+            value={reward.interest.name}
+          />
+
+          <SummaryPill
+            label="Durée"
+            value={`${reward.duration_minutes} min`}
+          />
+
+          <SummaryPill
+            label="Statut"
+            value="Terminé"
+          />
+        </View>
       </View>
 
       <View
         style={{
           flexDirection: "row",
-          flexWrap: "wrap",
           gap: 12,
         }}
       >
-        <RewardStat
+        <RewardMetric
+          label="Temps d’écran gagné"
+          value={`${reward.saved_scroll_minutes} min`}
+          description={`Tu as évité ${reward.saved_scroll_minutes} minutes de scroll.`}
+          symbol="▯"
+          backgroundColor="#F1F7FF"
+          symbolColor="#B7AAFF"
+        />
+
+        <RewardMetric
           label="XP gagnée"
           value={`+${reward.xp_earned} XP`}
-          description={`${reward.interest.name} progresse`}
-        />
-
-        <RewardStat
-          label="Temps récupéré"
-          value={`${reward.saved_scroll_minutes} min`}
-          description="de scroll évité"
-        />
-
-        <RewardStat
-          label="XP total"
-          value={`${reward.total_xp} XP`}
-          description="sur ton compte"
+          description={`Ton intérêt ${reward.interest.name} progresse.`}
+          symbol="ϟ"
+          backgroundColor="#FFF4E4"
+          symbolColor="#DCCBFF"
         />
       </View>
 
-      {newlyUnlocked.length > 0 ? (
-        <View
-          style={{
-            padding: 20,
-            borderRadius: 26,
-            backgroundColor: "#FFF0D5",
-            borderWidth: 2,
-            borderColor: "#F3C567",
-            gap: 16,
-          }}
-        >
-          <View style={{ gap: 4 }}>
-            <Text
-              style={{
-                color: "#A45B00",
-                fontSize: 13,
-                fontWeight: "900",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Nouvelle récompense
-            </Text>
-
-            <Text
-              style={{
-                color: "#151B2F",
-                fontSize: 25,
-                fontWeight: "900",
-              }}
-            >
-              Meuble débloqué !
-            </Text>
-          </View>
-
-          {newlyUnlocked.map((furniture) => (
-            <View
-              key={furniture.id}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 14,
-                padding: 14,
-                borderRadius: 20,
-                backgroundColor: "#FFFFFF",
-              }}
-            >
-              <View
-                style={{
-                  width: 92,
-                  height: 92,
-                  borderRadius: 18,
-                  backgroundColor: "#F4EFE8",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <ExpoImage
-                  source={getFurnitureSource(furniture.image_key)}
-                  contentFit="contain"
-                  style={{
-                    width: 84,
-                    height: 84,
-                  }}
-                />
-              </View>
-
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text
-                  style={{
-                    color: "#7C63F2",
-                    fontSize: 12,
-                    fontWeight: "900",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {furniture.interest.name}
-                </Text>
-
-                <Text
-                  style={{
-                    color: "#151B2F",
-                    fontSize: 20,
-                    fontWeight: "900",
-                  }}
-                >
-                  {furniture.name}
-                </Text>
-
-                <Text
-                  style={{
-                    color: "rgba(21, 27, 47, 0.58)",
-                    fontSize: 13,
-                    fontWeight: "700",
-                  }}
-                >
-                  Disponible dans ta salle
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <View
-          style={{
-            padding: 20,
-            borderRadius: 26,
-            backgroundColor: "#FFFFFF",
-            borderWidth: 2,
-            borderColor: "rgba(90, 74, 54, 0.16)",
-            gap: 14,
-          }}
-        >
-          <View style={{ gap: 4 }}>
-            <Text
-              style={{
-                color: "#7C63F2",
-                fontSize: 13,
-                fontWeight: "900",
-                textTransform: "uppercase",
-              }}
-            >
-              Progression de la salle
-            </Text>
-
-            <Text
-              style={{
-                color: "#151B2F",
-                fontSize: 23,
-                fontWeight: "900",
-              }}
-            >
-              {reward.interest_xp} XP en {reward.interest.name}
-            </Text>
-          </View>
-
-          {nextFurniture ? (
-            <>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 14,
-                }}
-              >
-                <ExpoImage
-                  source={getFurnitureSource(nextFurniture.image_key)}
-                  contentFit="contain"
-                  style={{
-                    width: 86,
-                    height: 86,
-                    opacity: 0.55,
-                  }}
-                />
-
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text
-                    style={{
-                      color: "#151B2F",
-                      fontSize: 18,
-                      fontWeight: "900",
-                    }}
-                  >
-                    Prochain meuble : {nextFurniture.name}
-                  </Text>
-
-                  <Text
-                    style={{
-                      color: "rgba(21, 27, 47, 0.58)",
-                      fontSize: 13,
-                      fontWeight: "700",
-                    }}
-                  >
-                    Encore {nextFurniture.remaining_xp} XP
-                  </Text>
-                </View>
-              </View>
-
-              <View
-                style={{
-                  height: 10,
-                  borderRadius: 999,
-                  backgroundColor: "#E7E0D8",
-                  overflow: "hidden",
-                }}
-              >
-                <View
-                  style={{
-                    width: `${nextFurnitureProgress * 100}%`,
-                    height: "100%",
-                    backgroundColor: "#7C63F2",
-                  }}
-                />
-              </View>
-            </>
-          ) : (
-            <Text
-              style={{
-                color: "#176C3A",
-                fontWeight: "900",
-                lineHeight: 22,
-              }}
-            >
-              Tous les meubles de cette catégorie sont débloqués.
-            </Text>
-          )}
-        </View>
-      )}
-
-      <PrimaryButton
-        label="Voir ma salle"
-        onPress={onViewRoom}
-      />
-
-      <SecondaryButton
-        label="Recommencer une activité"
-        onPress={onRestart}
+      <RoomRewardCard
+        firstUnlocked={firstUnlocked}
+        nextFurniture={nextFurniture}
+        interestName={reward.interest.name}
       />
     </View>
   );
 }
 
-function RewardStat({
+function SummaryPill({
   label,
   value,
-  description,
 }: {
   label: string;
   value: string;
-  description: string;
 }) {
   return (
     <View
       style={{
-        flexGrow: 1,
-        minWidth: 145,
-        padding: 16,
+        flex: 1,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
         borderRadius: 20,
-        backgroundColor: "#FFFFFF",
-        borderWidth: 2,
-        borderColor: "rgba(90, 74, 54, 0.16)",
+        backgroundColor: TA.colors.surface,
         gap: 4,
       }}
     >
       <Text
+        numberOfLines={1}
         style={{
-          color: "rgba(21, 27, 47, 0.58)",
-          fontSize: 12,
-          fontWeight: "900",
+          color: TA.colors.inkLight,
+          fontSize: 10,
+          lineHeight: 12,
+          fontFamily: TA.fonts.black,
           textTransform: "uppercase",
+          letterSpacing: 1.1,
+        }}
+      >
+        {label}
+      </Text>
+
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={{
+          color: TA.colors.ink,
+          fontSize: 15,
+          lineHeight: 18,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function RewardMetric({
+  label,
+  value,
+  description,
+  symbol,
+  backgroundColor,
+  symbolColor,
+}: {
+  label: string;
+  value: string;
+  description: string;
+  symbol: string;
+  backgroundColor: string;
+  symbolColor: string;
+}) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        minHeight: 178,
+        padding: 16,
+        borderRadius: 28,
+        backgroundColor,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
+        overflow: "hidden",
+        ...TA.shadow.soft,
+      }}
+    >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          right: 14,
+          top: 22,
+          width: 68,
+          height: 68,
+          borderRadius: 999,
+          backgroundColor: symbolColor,
+          opacity: 0.42,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 34,
+            fontFamily: TA.fonts.black,
+          }}
+        >
+          {symbol}
+        </Text>
+      </View>
+
+      <Text
+        style={{
+          maxWidth: "72%",
+          color: TA.colors.inkMuted,
+          fontSize: 14,
+          lineHeight: 17,
+          fontFamily: TA.fonts.black,
         }}
       >
         {label}
@@ -367,9 +279,12 @@ function RewardStat({
 
       <Text
         style={{
-          color: "#151B2F",
-          fontSize: 23,
-          fontWeight: "900",
+          marginTop: 8,
+          color: TA.colors.ink,
+          fontSize: 34,
+          lineHeight: 38,
+          fontFamily: TA.fonts.black,
+          letterSpacing: -1.5,
         }}
       >
         {value}
@@ -377,13 +292,128 @@ function RewardStat({
 
       <Text
         style={{
-          color: "rgba(21, 27, 47, 0.58)",
-          fontSize: 12,
-          fontWeight: "700",
+          marginTop: 8,
+          color: TA.colors.inkMuted,
+          fontSize: 14,
+          lineHeight: 18,
+          fontFamily: TA.fonts.bold,
         }}
       >
         {description}
       </Text>
+    </View>
+  );
+}
+
+function RoomRewardCard({
+  firstUnlocked,
+  nextFurniture,
+  interestName,
+}: {
+  firstUnlocked: ActivityRewardFurniture | null;
+  nextFurniture: ActivityRewardFurniture | null;
+  interestName: string;
+}) {
+  const hasUnlockedFurniture = Boolean(firstUnlocked);
+
+  const title = hasUnlockedFurniture
+    ? "Nouveau meuble débloqué !"
+    : nextFurniture
+      ? "Continue à progresser pour débloquer de nouveaux meubles."
+      : `Tous les meubles en ${interestName} sont débloqués.`;
+
+  const subtitle = hasUnlockedFurniture
+    ? firstUnlocked?.name || "Disponible dans ta room."
+    : nextFurniture
+      ? `Encore ${nextFurniture.remaining_xp} XP pour ${nextFurniture.name}.`
+      : "Ta room est déjà complète pour cette catégorie.";
+
+  const imageFurniture = firstUnlocked || nextFurniture;
+
+  return (
+    <View
+      style={{
+        padding: 16,
+        borderRadius: 28,
+        backgroundColor: "#F5EEFF",
+        borderWidth: 1.5,
+        borderColor: "#DFD2FF",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 14,
+        ...TA.shadow.soft,
+      }}
+    >
+      <View
+        style={{
+          width: 66,
+          height: 66,
+          borderRadius: 22,
+          backgroundColor: "#F8EFD6",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {imageFurniture ? (
+          <ExpoImage
+            source={getFurnitureSource(
+              imageFurniture.image_key
+            )}
+            contentFit="contain"
+            style={{
+              width: 56,
+              height: 56,
+              opacity: hasUnlockedFurniture ? 1 : 0.55,
+            }}
+          />
+        ) : (
+          <Text
+            style={{
+              color: TA.colors.gold,
+              fontSize: 30,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            ▰
+          </Text>
+        )}
+      </View>
+
+      <View style={{ flex: 1, gap: 4 }}>
+        <Text
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 13,
+            lineHeight: 16,
+            fontFamily: TA.fonts.black,
+          }}
+        >
+          Récompense room
+        </Text>
+
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 20,
+            lineHeight: 25,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -0.7,
+          }}
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 13,
+            lineHeight: 18,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          {subtitle}
+        </Text>
+      </View>
     </View>
   );
 }

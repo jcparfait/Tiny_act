@@ -398,7 +398,7 @@ export default function HomeScreen() {
             ? "On a trouvé ça pour toi"
             : step === "activity"
               ? "C’est parti"
-              : "Bien joué";
+              : "Activité terminée";
 
   const subtitle =
     step === "mood"
@@ -411,16 +411,14 @@ export default function HomeScreen() {
             ? "Choisis une action."
             : step === "activity"
               ? "Concentre-toi seulement sur cette petite action."
-              : "Ta session est terminée.";
+              : "Tu as choisi une vraie action plutôt qu’un scroll automatique.";
 
   const kicker =
     step === "recommendations"
       ? "Choisis une action"
       : step === "activity"
         ? "Activité"
-        : step === "finished"
-          ? "Récompense"
-          : undefined;
+        : undefined;
 
   function handleBack() {
     setError(null);
@@ -742,7 +740,11 @@ export default function HomeScreen() {
     );
 
   const activityScrollPaddingBottom =
-    step === "activity" ? 250 : 150;
+    step === "activity"
+      ? 250
+      : step === "finished"
+        ? 220
+        : 150;
 
   const screenScrollPaddingTop =
     step === "activity" ? 144 : 128;
@@ -1039,10 +1041,6 @@ export default function HomeScreen() {
                 <ActivityRewardCard
                   activity={selectedActivity}
                   reward={reward}
-                  onViewRoom={() =>
-                    router.push("/explore")
-                  }
-                  onRestart={resetFlow}
                 />
               )}
           </View>
@@ -1085,6 +1083,17 @@ export default function HomeScreen() {
               onPause={handlePauseActivity}
               onResume={handleResumeActivity}
               onFinish={handleFinishActivity}
+            />
+          )}
+
+        {step === "finished" &&
+          selectedActivity &&
+          reward && (
+            <FinishedBottomActions
+              onViewRoom={() =>
+                router.push("/explore")
+              }
+              onRestart={resetFlow}
             />
           )}
 
@@ -1890,6 +1899,52 @@ function FooterActionButton({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+function FinishedBottomActions({
+  onViewRoom,
+  onRestart,
+}: {
+  onViewRoom: () => void;
+  onRestart: () => void;
+}) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingHorizontal: 18,
+        paddingTop: 12,
+        paddingBottom: 24,
+        backgroundColor: TA.colors.bgStart,
+        borderTopWidth: 0,
+        zIndex: 120,
+      }}
+    >
+      <View
+        style={{
+          width: "100%",
+          maxWidth: 520,
+          alignSelf: "center",
+          gap: 10,
+        }}
+      >
+        <FooterActionButton
+          label="Voir ma room"
+          variant="primary"
+          onPress={onViewRoom}
+        />
+
+        <FooterActionButton
+          label="Faire une nouvelle activité"
+          variant="secondary"
+          onPress={onRestart}
+        />
+      </View>
+    </View>
   );
 }
 
