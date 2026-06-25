@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   ActivityIndicator,
   Pressable,
@@ -16,11 +17,7 @@ import {
   MelodyProgress,
 } from "../../types/tinyAct";
 
-import {
-  DarkInfoBox,
-  FeedbackBox,
-  IntroCard,
-} from "./shared";
+import { TA } from "../../theme/tinyActTheme";
 
 type MelodyActivityProps = {
   activity: Activity;
@@ -56,6 +53,7 @@ export function MelodyActivity({
     useState<string[]>(payloadNotes);
 
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [playedNotes, setPlayedNotes] =
     useState<string[]>([]);
 
@@ -63,6 +61,7 @@ export function MelodyActivity({
     useState<string | null>(null);
 
   const [completed, setCompleted] = useState(false);
+
   const [progressLoaded, setProgressLoaded] =
     useState(false);
 
@@ -88,7 +87,8 @@ export function MelodyActivity({
 
         if (cancelled) return;
 
-        const saved = response.progress_data.melody;
+        const saved =
+          response.progress_data.melody;
 
         if (validProgress(saved)) {
           const savedNotes =
@@ -108,14 +108,18 @@ export function MelodyActivity({
             );
 
           setNotes(savedNotes);
+
           setCurrentIndex(
             Math.min(
               Math.max(saved.current_index, 0),
               maximumIndex
             )
           );
+
           setPlayedNotes(safePlayedNotes);
-          setWrongNote(saved.wrong_note);
+
+          setWrongNote(saved.wrong_note || null);
+
           setCompleted(
             saved.completed ||
               safePlayedNotes.length >= savedNotes.length
@@ -222,17 +226,18 @@ export function MelodyActivity({
     return (
       <View
         style={{
-          padding: 22,
+          padding: 18,
           alignItems: "center",
-          gap: 12,
+          gap: 10,
         }}
       >
         <ActivityIndicator />
 
         <Text
           style={{
-            color: "rgba(21, 27, 47, 0.58)",
-            fontWeight: "700",
+            color: TA.colors.inkMuted,
+            fontFamily: TA.fonts.bold,
+            fontSize: 13,
           }}
         >
           Chargement de la progression…
@@ -243,140 +248,151 @@ export function MelodyActivity({
 
   if (!melody || notes.length === 0) {
     return (
-      <View style={{ gap: 14 }}>
-        <IntroCard
-          label="Mélodie"
-          text="Aucune mélodie disponible pour cette activité."
-        />
+      <View
+        style={{
+          padding: 16,
+          borderRadius: 22,
+          backgroundColor: TA.colors.surface,
+          borderWidth: 1.5,
+          borderColor: TA.colors.borderMedium,
+          gap: 8,
+        }}
+      >
+        <Text
+          style={{
+            color: TA.colors.purple,
+            fontSize: 12,
+            fontFamily: TA.fonts.black,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          Mélodie indisponible
+        </Text>
 
-        <DarkInfoBox
-          title="Aucune note reçue"
-          text="Vérifie que Rails renvoie bien payload.melody.notes."
-        />
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 16,
+            lineHeight: 22,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          Aucune note n’a été reçue pour cette activité.
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={{ gap: 14 }}>
-      <IntroCard
-        label={`Mélodie · ${
-          melody.category || "clavier"
-        }`}
-        text={`Joue les notes dans l’ordre. Difficulté : ${
-          melody.difficulty || "non renseignée"
-        }.`}
-      />
-
+    <View style={{ gap: 10 }}>
       <View
         style={{
-          padding: 22,
-          borderRadius: 24,
-          backgroundColor: "#151B2F",
-          alignItems: "center",
-          gap: 8,
+          padding: 14,
+          borderRadius: 22,
+          backgroundColor: "#FFF4E4",
+          borderWidth: 1.5,
+          borderColor: "#F39A20",
+          gap: 10,
         }}
       >
-        <Text
+        <View
           style={{
-            fontSize: 13,
-            color: "#FFFFFF",
-            opacity: 0.7,
-            fontWeight: "800",
-            textTransform: "uppercase",
+            flexDirection: "row",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
           }}
         >
-          Note à jouer
-        </Text>
-
-        <Text
-          style={{
-            fontSize: 54,
-            color: "#FFFFFF",
-            fontWeight: "900",
-            lineHeight: 62,
-          }}
-        >
-          {completed ? "✓" : currentNote}
-        </Text>
-
-        <Text
-          style={{
-            fontSize: 15,
-            color: "#FFFFFF",
-            opacity: 0.8,
-            textAlign: "center",
-            lineHeight: 22,
-          }}
-        >
-          {completed
-            ? "Mélodie terminée. Tu peux maintenant finir l’activité."
-            : `Progression : ${playedNotes.length}/${notes.length}`}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 8,
-          justifyContent: "center",
-        }}
-      >
-        {notes.map((note, index) => {
-          const isPlayed = index < playedNotes.length;
-          const isCurrent =
-            index === currentIndex && !completed;
-
-          return (
-            <View
-              key={`${note}-${index}`}
+          <View style={{ flex: 1 }}>
+            <Text
               style={{
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 999,
-                backgroundColor: isPlayed
-                  ? "#D9F8E5"
-                  : isCurrent
-                    ? "#151B2F"
-                    : "#FFFFFF",
-                borderWidth: 1,
-                borderColor: isPlayed
-                  ? "#2EAD63"
-                  : isCurrent
-                    ? "#151B2F"
-                    : "rgba(90, 74, 54, 0.16)",
+                color: "#F39A20",
+                fontSize: 12,
+                lineHeight: 15,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 1,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "900",
-                  color: isPlayed
-                    ? "#176C3A"
-                    : isCurrent
-                      ? "#FFFFFF"
-                      : "#151B2F",
-                }}
-              >
-                {note}
-              </Text>
-            </View>
-          );
-        })}
+              Mélodie · {playedNotes.length}/{notes.length}
+            </Text>
+
+            <Text
+              style={{
+                marginTop: 4,
+                color: TA.colors.ink,
+                fontSize: 17,
+                lineHeight: 23,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              Joue les notes dans l’ordre.
+            </Text>
+          </View>
+
+          <View
+            style={{
+              minWidth: 92,
+              paddingVertical: 8,
+              paddingHorizontal: 10,
+              borderRadius: 18,
+              backgroundColor: TA.colors.surface,
+              borderWidth: 1.5,
+              borderColor: TA.colors.borderMedium,
+              alignItems: "center",
+              ...TA.shadow.soft,
+            }}
+          >
+            <Text
+              style={{
+                color: TA.colors.inkLight,
+                fontSize: 10,
+                lineHeight: 12,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+              }}
+            >
+              À jouer
+            </Text>
+
+            <Text
+              style={{
+                marginTop: 1,
+                color: completed
+                  ? TA.colors.green
+                  : TA.colors.ink,
+                fontSize: 31,
+                lineHeight: 35,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -1,
+              }}
+            >
+              {completed ? "✓" : currentNote}
+            </Text>
+          </View>
+        </View>
+
+        <MelodyProgressPills
+          notes={notes}
+          playedCount={playedNotes.length}
+          currentIndex={currentIndex}
+          completed={completed}
+        />
       </View>
 
-      {wrongNote && (
-        <FeedbackBox
+      {wrongNote && !completed && (
+        <CompactFeedback
           success={false}
-          text={`Tu as joué ${wrongNote}. La note attendue est ${currentNote}.`}
+          text={`Tu as joué ${wrongNote}. Note attendue : ${currentNote}.`}
         />
       )}
 
       {completed && (
-        <FeedbackBox
+        <CompactFeedback
           success
-          text="Bravo. Toutes les notes ont été jouées dans l’ordre."
+          text="Mélodie terminée. Tu peux valider l’activité."
         />
       )}
 
@@ -388,6 +404,71 @@ export function MelodyActivity({
   );
 }
 
+function MelodyProgressPills({
+  notes,
+  playedCount,
+  currentIndex,
+  completed,
+}: {
+  notes: string[];
+  playedCount: number;
+  currentIndex: number;
+  completed: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 6,
+      }}
+    >
+      {notes.map((note, index) => {
+        const isPlayed = index < playedCount;
+        const isCurrent =
+          index === currentIndex && !completed;
+
+        return (
+          <View
+            key={`${note}-${index}`}
+            style={{
+              paddingVertical: 6,
+              paddingHorizontal: 9,
+              borderRadius: 999,
+              backgroundColor: isPlayed
+                ? "#EAF8EF"
+                : isCurrent
+                  ? "#FFFDF9"
+                  : "rgba(255, 253, 249, 0.58)",
+              borderWidth: 1.5,
+              borderColor: isPlayed
+                ? "#2EAD63"
+                : isCurrent
+                  ? "#F39A20"
+                  : TA.colors.borderMedium,
+            }}
+          >
+            <Text
+              style={{
+                color: isPlayed
+                  ? "#176C3A"
+                  : isCurrent
+                    ? "#F39A20"
+                    : TA.colors.inkMuted,
+                fontSize: 12,
+                lineHeight: 14,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              {note}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function PianoKeyboard({
   onPressNote,
   disabled,
@@ -395,7 +476,7 @@ function PianoKeyboard({
   onPressNote: (note: string) => void;
   disabled: boolean;
 }) {
-  const whiteNotes = [
+  const naturalNotes = [
     "C4",
     "D4",
     "E4",
@@ -406,7 +487,7 @@ function PianoKeyboard({
     "C5",
   ];
 
-  const blackNotes = [
+  const sharpNotes = [
     "C#4",
     "D#4",
     "F#4",
@@ -415,7 +496,24 @@ function PianoKeyboard({
   ];
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: 9 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 5,
+        }}
+      >
+        {naturalNotes.map((note) => (
+          <PianoKey
+            key={note}
+            note={note}
+            disabled={disabled}
+            variant="light"
+            onPress={() => onPressNote(note)}
+          />
+        ))}
+      </View>
+
       <View
         style={{
           flexDirection: "row",
@@ -423,73 +521,115 @@ function PianoKeyboard({
           justifyContent: "center",
         }}
       >
-        {whiteNotes.map((note) => (
-          <Pressable
+        {sharpNotes.map((note) => (
+          <PianoKey
             key={note}
+            note={note}
             disabled={disabled}
+            variant="accent"
             onPress={() => onPressNote(note)}
-            style={{
-              flex: 1,
-              minHeight: 86,
-              borderRadius: 14,
-              backgroundColor: disabled
-                ? "#E7E0D8"
-                : "#FFFFFF",
-              borderWidth: 2,
-              borderColor: "rgba(90, 74, 54, 0.16)",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              paddingBottom: 10,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                color: "#151B2F",
-                fontWeight: "900",
-              }}
-            >
-              {note}
-            </Text>
-          </Pressable>
+          />
         ))}
       </View>
+    </View>
+  );
+}
 
-      <View
+function PianoKey({
+  note,
+  variant,
+  disabled,
+  onPress,
+}: {
+  note: string;
+  variant: "light" | "accent";
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const isAccent = variant === "accent";
+
+  return (
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: isAccent ? undefined : 1,
+        minWidth: isAccent ? 54 : undefined,
+        minHeight: isAccent ? 43 : 66,
+        borderRadius: isAccent ? 15 : 17,
+        backgroundColor: disabled
+          ? "#E7E0D8"
+          : isAccent
+            ? "#FFF4E4"
+            : TA.colors.surface,
+        borderWidth: 2,
+        borderColor: disabled
+          ? "rgba(90, 74, 54, 0.10)"
+          : isAccent
+            ? "#F39A20"
+            : TA.colors.borderMedium,
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: pressed ? 0.72 : 1,
+        transform: [
+          {
+            translateY: pressed ? 1 : 0,
+          },
+        ],
+      })}
+    >
+      <Text
         style={{
-          flexDirection: "row",
-          gap: 8,
-          justifyContent: "center",
+          color: disabled
+            ? TA.colors.inkLight
+            : isAccent
+              ? "#F39A20"
+              : TA.colors.ink,
+          fontSize: isAccent ? 12 : 13,
+          lineHeight: isAccent ? 15 : 16,
+          fontFamily: TA.fonts.black,
         }}
       >
-        {blackNotes.map((note) => (
-          <Pressable
-            key={note}
-            disabled={disabled}
-            onPress={() => onPressNote(note)}
-            style={{
-              minWidth: 54,
-              minHeight: 52,
-              borderRadius: 12,
-              backgroundColor: disabled
-                ? "rgba(21, 27, 47, 0.58)"
-                : "#151B2F",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                color: "#FFFFFF",
-                fontWeight: "900",
-              }}
-            >
-              {note}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+        {note}
+      </Text>
+    </Pressable>
+  );
+}
+
+function CompactFeedback({
+  success,
+  text,
+}: {
+  success: boolean;
+  text: string;
+}) {
+  return (
+    <View
+      style={{
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 18,
+        backgroundColor: success
+          ? "#EAF8EF"
+          : "#FFE1DD",
+        borderWidth: 1.5,
+        borderColor: success
+          ? "#2EAD63"
+          : "#FF9B8F",
+      }}
+    >
+      <Text
+        style={{
+          color: success
+            ? "#176C3A"
+            : TA.colors.dangerText,
+          fontSize: 13,
+          lineHeight: 18,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {text}
+      </Text>
     </View>
   );
 }
