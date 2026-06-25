@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -19,7 +19,6 @@ import { ActivityRewardCard } from "../components/ActivityRewardCard";
 import { ChoiceCard } from "../components/ChoiceCard";
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
-import { PreviewActivityCard } from "../components/PreviewActivityCard";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SecondaryButton } from "../components/SecondaryButton";
 
@@ -192,11 +191,6 @@ export default function HomeScreen() {
   ] = useState(false);
 
   const [
-    startingActivity,
-    setStartingActivity,
-  ] = useState(false);
-
-  const [
     pausingActivity,
     setPausingActivity,
   ] = useState(false);
@@ -308,11 +302,9 @@ export default function HomeScreen() {
           ? "Combien de temps ?"
           : step === "recommendations"
             ? "On a trouvé ça pour toi"
-            : step === "preview"
-              ? "Prêt à commencer ?"
-              : step === "activity"
-                ? "C’est parti"
-                : "Bien joué";
+            : step === "activity"
+              ? "C’est parti"
+              : "Bien joué";
 
   const subtitle =
     step === "mood"
@@ -323,22 +315,18 @@ export default function HomeScreen() {
           ? "Choisis une durée réaliste. L’objectif est de commencer, pas de te charger."
           : step === "recommendations"
             ? "Choisis une action."
-            : step === "preview"
-              ? "Voici le résumé avant de lancer l’activité."
-              : step === "activity"
-                ? "Concentre-toi seulement sur cette petite action."
-                : "Ta session est terminée.";
+            : step === "activity"
+              ? "Concentre-toi seulement sur cette petite action."
+              : "Ta session est terminée.";
 
   const kicker =
     step === "recommendations"
       ? "Choisis une action"
-      : step === "preview"
-        ? "Résumé"
-        : step === "activity"
-          ? "Activité"
-          : step === "finished"
-            ? "Récompense"
-            : undefined;
+      : step === "activity"
+        ? "Activité"
+        : step === "finished"
+          ? "Récompense"
+          : undefined;
 
   function handleBack() {
     setError(null);
@@ -355,11 +343,6 @@ export default function HomeScreen() {
 
     if (step === "recommendations") {
       setStep("duration");
-      return;
-    }
-
-    if (step === "preview") {
-      setStep("recommendations");
     }
   }
 
@@ -439,61 +422,33 @@ export default function HomeScreen() {
     setActivityReadyToFinish(true);
 
     try {
-      const data =
+      const selectedData =
         await selectActivity(
           activitySession.id,
           activity.id
         );
 
-      setActivitySession(
-        data.activity_session
-      );
-
-      setSelectedActivity(data.activity);
-      setStep("preview");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erreur inconnue"
-      );
-    } finally {
-      setSelectingActivity(false);
-    }
-  }
-
-  async function handleStartActivity() {
-    if (!activitySession || !selectedActivity) {
-      return;
-    }
-
-    setStartingActivity(true);
-    setError(null);
-
-    setActivityReadyToFinish(
-      selectedActivity.activity_type !== "melody"
-    );
-
-    try {
-      const data =
+      const startedData =
         await startActivitySession(
-          activitySession.id
+          selectedData.activity_session.id
         );
 
       setActivitySession(
-        data.activity_session
+        startedData.activity_session
       );
 
-      setSelectedActivity(data.activity);
+      setSelectedActivity(
+        startedData.activity
+      );
 
       setElapsedSeconds(
         computeElapsedSeconds(
-          data.activity_session
+          startedData.activity_session
         )
       );
 
       setActivityReadyToFinish(
-        data.activity.activity_type !== "melody"
+        startedData.activity.activity_type !== "melody"
       );
 
       setStep("activity");
@@ -504,7 +459,7 @@ export default function HomeScreen() {
           : "Erreur inconnue"
       );
     } finally {
-      setStartingActivity(false);
+      setSelectingActivity(false);
     }
   }
 
@@ -659,8 +614,7 @@ export default function HomeScreen() {
   const showBackFooter =
     step === "location" ||
     step === "duration" ||
-    step === "recommendations" ||
-    step === "preview";
+    step === "recommendations";
 
   return (
     <LinearGradient
@@ -895,13 +849,6 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {step === "preview" &&
-              selectedActivity && (
-                <PreviewActivityCard
-                  activity={selectedActivity}
-                />
-              )}
-
             {step === "activity" &&
               selectedActivity &&
               activitySession && (
@@ -939,19 +886,6 @@ export default function HomeScreen() {
         {showBackFooter && (
           <BottomBackButton onPress={handleBack} />
         )}
-
-        {step === "preview" &&
-          selectedActivity && (
-            <BottomPrimaryAction
-              label={
-                startingActivity
-                  ? "Démarrage..."
-                  : "Commencer l’activité"
-              }
-              onPress={handleStartActivity}
-              disabled={startingActivity}
-            />
-          )}
 
         {step === "recommendations" && (
           <BottomPrimaryAction
