@@ -1,5 +1,7 @@
 import { useState } from "react";
+
 import { Text, View } from "react-native";
+
 import { useRouter } from "expo-router";
 
 import {
@@ -10,10 +12,13 @@ import {
 
 import { ErrorBox } from "../components/ErrorBox";
 import { PrimaryButton } from "../components/PrimaryButton";
+
 import { useAuth } from "../context/AuthContext";
+import { TA } from "../theme/tinyActTheme";
 
 export default function RegisterScreen() {
   const router = useRouter();
+
   const { signUp } = useAuth();
 
   const [firstName, setFirstName] =
@@ -87,52 +92,71 @@ export default function RegisterScreen() {
 
   return (
     <AuthScreen
-      title="Créer un compte"
-      subtitle="Quelques informations suffisent pour commencer ton parcours."
+      title="Créer ton compte"
+      subtitle="Quelques infos suffisent pour personnaliser tes micro-actions."
     >
       <View
         style={{
-          padding: 20,
-          borderRadius: 26,
-          backgroundColor: "#151B2F",
+          padding: 18,
+          borderRadius: 28,
+          backgroundColor: "#EAF9FD",
+          borderWidth: 1.5,
+          borderColor: "#B9E9F3",
           gap: 12,
         }}
       >
-        <Text
-          style={{
-            color: "#FFFFFF",
-            fontSize: 27,
-            lineHeight: 33,
-            fontWeight: "900",
-          }}
-        >
-          Ton anti-scroll personnel.
-        </Text>
+        <View style={{ gap: 6 }}>
+          <Text
+            style={{
+              color: "#13A8C7",
+              fontSize: 12,
+              lineHeight: 15,
+              fontFamily: TA.fonts.black,
+              textTransform: "uppercase",
+              letterSpacing: 1.2,
+            }}
+          >
+            Démarrage
+          </Text>
 
-        <Text
-          style={{
-            color: "#FFFFFF",
-            opacity: 0.75,
-            fontSize: 15,
-            lineHeight: 22,
-            fontWeight: "600",
-          }}
-        >
-          Choisis tes intérêts, gagne de l’XP, débloque des meubles et construis ta salle.
-        </Text>
+          <Text
+            style={{
+              color: TA.colors.ink,
+              fontSize: 28,
+              lineHeight: 32,
+              fontFamily: TA.fonts.black,
+              letterSpacing: -1.1,
+            }}
+          >
+            Ton anti-scroll personnel.
+          </Text>
+
+          <Text
+            style={{
+              color: TA.colors.inkMuted,
+              fontSize: 14,
+              lineHeight: 20,
+              fontFamily: TA.fonts.bold,
+            }}
+          >
+            Tu choisis tes intérêts, tu gagnes de l’XP et ta salle évolue avec toi.
+          </Text>
+        </View>
 
         <View style={{ gap: 8 }}>
           <StepLine
             number="1"
             text="Crée ton compte"
           />
+
           <StepLine
             number="2"
-            text="Choisis tes centres d’intérêt"
+            text="Choisis tes intérêts"
           />
+
           <StepLine
             number="3"
-            text="Lance ta première micro-action"
+            text="Lance ta première action"
           />
         </View>
       </View>
@@ -223,19 +247,20 @@ function StepLine({
     >
       <View
         style={{
-          width: 26,
-          height: 26,
+          width: 28,
+          height: 28,
           borderRadius: 999,
-          backgroundColor: "#7C63F2",
+          backgroundColor: "#13A8C7",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         <Text
           style={{
-            color: "#FFFFFF",
-            fontWeight: "900",
+            color: TA.colors.white,
             fontSize: 12,
+            lineHeight: 15,
+            fontFamily: TA.fonts.black,
           }}
         >
           {number}
@@ -244,10 +269,11 @@ function StepLine({
 
       <Text
         style={{
-          color: "#FFFFFF",
-          opacity: 0.82,
+          flex: 1,
+          color: TA.colors.ink,
           fontSize: 14,
-          fontWeight: "800",
+          lineHeight: 18,
+          fontFamily: TA.fonts.black,
         }}
       >
         {text}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+
 import { Text, View } from "react-native";
+
 import { useRouter } from "expo-router";
 
 import {
@@ -11,6 +13,7 @@ import {
 
 import { ErrorBox } from "../components/ErrorBox";
 import { PrimaryButton } from "../components/PrimaryButton";
+
 import { useAuth } from "../context/AuthContext";
 import { loadAuthProviders } from "../services/authApi";
 
@@ -18,6 +21,8 @@ import {
   SocialProvider,
   startSocialAuth,
 } from "../services/socialAuth";
+
+import { TA } from "../theme/tinyActTheme";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -28,6 +33,7 @@ export default function LoginScreen() {
   } = useAuth();
 
   const [email, setEmail] = useState("");
+
   const [password, setPassword] =
     useState("");
 
@@ -114,39 +120,56 @@ export default function LoginScreen() {
 
   return (
     <AuthScreen
-      title="Tiny Act"
-      subtitle="Transforme une envie de scroll en petite action utile."
+      title="Connexion"
+      subtitle="Reprends tes micro-actions, ton XP et ta salle là où tu les as laissés."
     >
       <View
         style={{
-          padding: 20,
-          borderRadius: 26,
-          backgroundColor: "#151B2F",
+          padding: 18,
+          borderRadius: 28,
+          backgroundColor: "#F2EDFF",
+          borderWidth: 1.5,
+          borderColor: "#D8CCFF",
           gap: 12,
         }}
       >
-        <Text
-          style={{
-            color: "#FFFFFF",
-            fontSize: 28,
-            lineHeight: 34,
-            fontWeight: "900",
-          }}
-        >
-          Reprends là où tu t’es arrêté.
-        </Text>
+        <View style={{ gap: 6 }}>
+          <Text
+            style={{
+              color: TA.colors.purple,
+              fontSize: 12,
+              lineHeight: 15,
+              fontFamily: TA.fonts.black,
+              textTransform: "uppercase",
+              letterSpacing: 1.2,
+            }}
+          >
+            Ton espace Tiny Act
+          </Text>
 
-        <Text
-          style={{
-            color: "#FFFFFF",
-            opacity: 0.75,
-            fontSize: 15,
-            lineHeight: 22,
-            fontWeight: "600",
-          }}
-        >
-          Tes activités, ton XP, ta salle et tes récompenses sont gardés dans ton compte.
-        </Text>
+          <Text
+            style={{
+              color: TA.colors.ink,
+              fontSize: 28,
+              lineHeight: 32,
+              fontFamily: TA.fonts.black,
+              letterSpacing: -1.1,
+            }}
+          >
+            Reprends là où tu t’es arrêté.
+          </Text>
+
+          <Text
+            style={{
+              color: TA.colors.inkMuted,
+              fontSize: 14,
+              lineHeight: 20,
+              fontFamily: TA.fonts.bold,
+            }}
+          >
+            Tes activités, ton historique et tes récompenses restent gardés dans ton compte.
+          </Text>
+        </View>
 
         <View
           style={{
@@ -201,9 +224,10 @@ export default function LoginScreen() {
         <View style={{ gap: 10 }}>
           <Text
             style={{
-              color: "rgba(21, 27, 47, 0.58)",
+              color: TA.colors.inkMuted,
               textAlign: "center",
-              fontWeight: "800",
+              fontSize: 13,
+              fontFamily: TA.fonts.black,
             }}
           >
             ou
@@ -241,8 +265,8 @@ export default function LoginScreen() {
 
       <View
         style={{
-          paddingTop: 4,
-          gap: 12,
+          paddingTop: 2,
+          gap: 9,
         }}
       >
         <AuthLink
@@ -274,14 +298,17 @@ function LoginPill({
         paddingVertical: 7,
         paddingHorizontal: 10,
         borderRadius: 999,
-        backgroundColor: "rgba(255,255,255,0.12)",
+        backgroundColor: TA.colors.surface,
+        borderWidth: 1,
+        borderColor: "#D8CCFF",
       }}
     >
       <Text
         style={{
-          color: "#FFFFFF",
+          color: TA.colors.purple,
           fontSize: 12,
-          fontWeight: "900",
+          lineHeight: 15,
+          fontFamily: TA.fonts.black,
         }}
       >
         {label}

@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from "react";
 
 import {
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -9,6 +10,9 @@ import {
   type TextInputProps,
   View,
 } from "react-native";
+
+import { BRAND_LOGO } from "../constants/brandAssets";
+import { TA } from "../theme/tinyActTheme";
 
 export function AuthScreen({
   title,
@@ -22,54 +26,74 @@ export function AuthScreen({
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#F4EFE8",
+        backgroundColor: TA.colors.bgStart,
       }}
     >
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "center",
           alignItems: "center",
-          padding: 20,
+          paddingTop: 42,
+          paddingHorizontal: 18,
+          paddingBottom: 34,
         }}
       >
         <View
           style={{
             width: "100%",
-            maxWidth: 440,
-            gap: 20,
+            maxWidth: 520,
+            gap: 18,
           }}
         >
-          <View style={{ gap: 8 }}>
-            <Text
+          <View style={{ gap: 12 }}>
+            <Image
+              source={BRAND_LOGO}
+              resizeMode="contain"
               style={{
-                fontSize: 38,
-                fontWeight: "900",
-                color: "#151B2F",
+                width: 190,
+                height: 106,
+                marginLeft: -4,
               }}
-            >
-              {title}
-            </Text>
+            />
 
-            <Text
-              style={{
-                fontSize: 17,
-                lineHeight: 24,
-                color: "rgba(21, 27, 47, 0.58)",
-              }}
-            >
-              {subtitle}
-            </Text>
+            <View style={{ gap: 7 }}>
+              <Text
+                style={{
+                  color: TA.colors.ink,
+                  fontSize: 43,
+                  lineHeight: 45,
+                  fontFamily: TA.fonts.black,
+                  letterSpacing: -2,
+                }}
+              >
+                {title}
+              </Text>
+
+              <Text
+                style={{
+                  color: TA.colors.inkMuted,
+                  fontSize: 17,
+                  lineHeight: 24,
+                  fontFamily: TA.fonts.bold,
+                }}
+              >
+                {subtitle}
+              </Text>
+            </View>
           </View>
 
           <View
             style={{
-              padding: 22,
-              borderRadius: 28,
-              backgroundColor: "#FFFFFF",
-              borderWidth: 2,
-              borderColor: "rgba(90, 74, 54, 0.16)",
-              gap: 16,
+              width: "100%",
+              padding: 16,
+              borderRadius: 34,
+              backgroundColor: TA.colors.surface,
+              borderWidth: 1.5,
+              borderColor: TA.colors.borderMedium,
+              gap: 17,
+              ...TA.shadow.soft,
             }}
           >
             {children}
@@ -82,6 +106,7 @@ export function AuthScreen({
 
 export function AuthField({
   label,
+  style,
   ...props
 }: TextInputProps & {
   label: string;
@@ -90,8 +115,10 @@ export function AuthField({
     <View style={{ gap: 7 }}>
       <Text
         style={{
-          color: "#151B2F",
-          fontWeight: "800",
+          color: TA.colors.ink,
+          fontSize: 14,
+          lineHeight: 17,
+          fontFamily: TA.fonts.black,
         }}
       >
         {label}
@@ -99,16 +126,23 @@ export function AuthField({
 
       <TextInput
         {...props}
-        placeholderTextColor="#8E8A9D"
-        style={{
-          padding: 14,
-          borderRadius: 16,
-          borderWidth: 2,
-          borderColor: "rgba(90, 74, 54, 0.16)",
-          color: "#151B2F",
-          fontSize: 16,
-          outlineStyle: "none" as never,
-        }}
+        placeholderTextColor="#9A95A7"
+        style={[
+          {
+            minHeight: 58,
+            paddingVertical: 15,
+            paddingHorizontal: 16,
+            borderRadius: 20,
+            borderWidth: 2,
+            borderColor: TA.colors.borderMedium,
+            backgroundColor: TA.colors.surface,
+            color: TA.colors.ink,
+            fontSize: 16,
+            fontFamily: TA.fonts.bold,
+            outlineStyle: "none" as never,
+          },
+          style,
+        ]}
       />
     </View>
   );
@@ -122,11 +156,19 @@ export function AuthLink({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingVertical: 4,
+        opacity: pressed ? 0.72 : 1,
+      })}
+    >
       <Text
         style={{
-          color: "#7C63F2",
-          fontWeight: "900",
+          color: TA.colors.purple,
+          fontSize: 15,
+          lineHeight: 19,
+          fontFamily: TA.fonts.black,
           textAlign: "center",
         }}
       >
@@ -149,18 +191,25 @@ export function SocialButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={{
-        padding: 14,
-        borderRadius: 16,
+      style={({ pressed }) => ({
+        minHeight: 54,
+        paddingVertical: 15,
+        paddingHorizontal: 16,
+        borderRadius: 999,
         borderWidth: 2,
-        borderColor: "#151B2F",
-        opacity: disabled ? 0.5 : 1,
-      }}
+        borderColor: TA.colors.borderMedium,
+        backgroundColor: TA.colors.surface,
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: disabled ? 0.5 : pressed ? 0.75 : 1,
+      })}
     >
       <Text
         style={{
-          color: "#151B2F",
-          fontWeight: "900",
+          color: TA.colors.ink,
+          fontSize: 15,
+          lineHeight: 18,
+          fontFamily: TA.fonts.black,
           textAlign: "center",
         }}
       >
