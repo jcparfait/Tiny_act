@@ -12,8 +12,6 @@ import {
 } from "react-native";
 
 import { Image as ExpoImage } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-
 import { ActiveActivityCard } from "../components/ActiveActivityCard";
 import type { ActivityFooterAction } from "../components/ActiveActivityCard";
 import { ActivityCard } from "../components/ActivityCard";
@@ -744,40 +742,49 @@ export default function HomeScreen() {
     );
 
   const activityScrollPaddingBottom =
-    step === "activity" ? 198 : 150;
+    step === "activity" ? 250 : 150;
+
+  const screenScrollPaddingTop =
+    step === "activity" ? 144 : 128;
 
   return (
-    <LinearGradient
-      colors={[
-        TA.colors.bgStart,
-        TA.colors.bgMiddle,
-        TA.colors.bgEnd,
-      ]}
-      locations={[0, 0.46, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ flex: 1 }}
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: TA.colors.bgStart,
+      }}
     >
-      <SafeAreaView
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 136,
+          zIndex: 80,
+          backgroundColor: TA.colors.bgStart,
+        }}
+      />
+
+      <MobileNav
+        active="new"
+        onLogoPress={resetFlow}
+      />
+
+      <ScrollView
         style={{
           flex: 1,
-          backgroundColor: "transparent",
+          backgroundColor: TA.colors.bgStart,
+        }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: screenScrollPaddingTop,
+          paddingHorizontal: 18,
+          paddingBottom: activityScrollPaddingBottom,
+          alignItems: "center",
         }}
       >
-        <MobileNav
-          active="new"
-          onLogoPress={resetFlow}
-        />
-
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingTop: 128,
-            paddingHorizontal: 18,
-            paddingBottom: activityScrollPaddingBottom,
-            alignItems: "center",
-          }}
-        >
           <View
             style={{
               width: "100%",
@@ -1081,14 +1088,13 @@ export default function HomeScreen() {
             />
           )}
 
-        <PauseActivityModal
-          visible={pauseModalVisible}
-          resuming={resumingActivity}
-          onResume={handleResumeActivity}
-          onQuit={handleQuitActivity}
-        />
-      </SafeAreaView>
-    </LinearGradient>
+      <PauseActivityModal
+        visible={pauseModalVisible}
+        resuming={resumingActivity}
+        onResume={handleResumeActivity}
+        onQuit={handleQuitActivity}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -1783,8 +1789,7 @@ function ActivityBottomActions({
         paddingTop: 12,
         paddingBottom: 24,
         backgroundColor: TA.colors.bgStart,
-        borderTopWidth: 1,
-        borderTopColor: "rgba(21, 27, 47, 0.08)",
+        borderTopWidth: 0,
         zIndex: 120,
       }}
     >
@@ -1852,7 +1857,7 @@ function FooterActionButton({
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => ({
-        minHeight: 62,
+        height: 62,
         paddingHorizontal: 14,
         borderRadius: 24,
         alignItems: "center",
@@ -1940,15 +1945,32 @@ function PauseActivityModal({
               ...TA.shadow.soft,
             }}
           >
-            <Text
+            <View
               style={{
-                color: TA.colors.white,
-                fontSize: 31,
-                fontFamily: TA.fonts.black,
+                flexDirection: "row",
+                gap: 8,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              Ⅱ
-            </Text>
+              <View
+                style={{
+                  width: 8,
+                  height: 30,
+                  borderRadius: 999,
+                  backgroundColor: TA.colors.white,
+                }}
+              />
+
+              <View
+                style={{
+                  width: 8,
+                  height: 30,
+                  borderRadius: 999,
+                  backgroundColor: TA.colors.white,
+                }}
+              />
+            </View>
           </View>
 
           <View style={{ gap: 8 }}>
