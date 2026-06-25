@@ -141,10 +141,7 @@ export default function InterestsScreen() {
         }}
       />
 
-      <MobileNav
-        active="profile"
-        hideXp
-      />
+      <MobileNav active="profile" />
 
       <ScrollView
         style={{

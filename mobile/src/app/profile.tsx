@@ -363,10 +363,7 @@ export default function ProfileScreen() {
         }}
       />
 
-      <MobileNav
-        active="profile"
-        hideXp
-      />
+      <MobileNav active="profile" />
 
       <ScrollView
         style={{
@@ -944,69 +941,69 @@ function ProfileAccountCard({
 }
 
 function ProfileShortcutCard({
-    title,
-    subtitle,
-    backgroundColor,
-    accentColor,
-    onPress,
-  }: {
-    title: string;
-    subtitle: string;
-    backgroundColor: string;
-    accentColor: string;
-    onPress: () => void;
-  }) {
-    void accentColor;
+  title,
+  subtitle,
+  backgroundColor,
+  accentColor,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  backgroundColor: string;
+  accentColor: string;
+  onPress: () => void;
+}) {
+  void accentColor;
 
-    return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => ({
-          flexGrow: 1,
-          width: "47%",
-          minHeight: 76,
-          paddingVertical: 13,
-          paddingHorizontal: 14,
-          borderRadius: 22,
-          backgroundColor,
-          borderWidth: 0,
-          opacity: pressed ? 0.82 : 1,
-          transform: [
-            {
-              translateY: pressed ? 1 : 0,
-            },
-          ],
-          ...TA.shadow.soft,
-        })}
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexGrow: 1,
+        width: "47%",
+        minHeight: 76,
+        paddingVertical: 13,
+        paddingHorizontal: 14,
+        borderRadius: 22,
+        backgroundColor,
+        borderWidth: 0,
+        opacity: pressed ? 0.82 : 1,
+        transform: [
+          {
+            translateY: pressed ? 1 : 0,
+          },
+        ],
+        ...TA.shadow.soft,
+      })}
+    >
+      <Text
+        numberOfLines={1}
+        style={{
+          color: TA.colors.ink,
+          fontSize: 21,
+          lineHeight: 24,
+          fontFamily: TA.fonts.black,
+          letterSpacing: -0.8,
+        }}
       >
-        <Text
-          numberOfLines={1}
-          style={{
-            color: TA.colors.ink,
-            fontSize: 21,
-            lineHeight: 24,
-            fontFamily: TA.fonts.black,
-            letterSpacing: -0.8,
-          }}
-        >
-          {title}
-        </Text>
+        {title}
+      </Text>
 
-        <Text
-          numberOfLines={1}
-          style={{
-            marginTop: 4,
-            color: TA.colors.inkSoft,
-            fontSize: 12,
-            lineHeight: 15,
-            fontFamily: TA.fonts.bold,
-          }}
-        >
-          {subtitle}
-        </Text>
-      </Pressable>
-    );
-  }
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 4,
+          color: TA.colors.inkSoft,
+          fontSize: 12,
+          lineHeight: 15,
+          fontFamily: TA.fonts.bold,
+        }}
+      >
+        {subtitle}
+      </Text>
+    </Pressable>
+  );
+}
 
 function ProfileStat({
   label,

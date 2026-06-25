@@ -9,15 +9,10 @@ import {
 
 import { useRouter } from "expo-router";
 
-import {
-  AvatarImage,
-  AvatarPicker,
-} from "../components/AvatarPicker";
-
+import { AvatarPicker } from "../components/AvatarPicker";
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { ScreenHeader } from "../components/ScreenHeader";
 import { SecondaryButton } from "../components/SecondaryButton";
 
 import {
@@ -26,6 +21,7 @@ import {
 } from "../constants/avatarAssets";
 
 import { useAuth } from "../context/AuthContext";
+import { TA } from "../theme/tinyActTheme";
 
 export default function AvatarScreen() {
   const router = useRouter();
@@ -41,7 +37,8 @@ export default function AvatarScreen() {
 
   const [saving, setSaving] = useState(false);
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] =
+    useState<string | null>(null);
 
   useEffect(() => {
     if (isAvatarName(user?.avatar)) {
@@ -89,130 +86,121 @@ export default function AvatarScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#F4EFE8",
+        backgroundColor: TA.colors.bgStart,
       }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 131,
+          zIndex: 80,
+          backgroundColor: TA.colors.bgStart,
+        }}
+      />
+
+      <MobileNav active="profile" />
+
       <ScrollView
+        style={{
+          flex: 1,
+          backgroundColor: TA.colors.bgStart,
+        }}
         contentContainerStyle={{
-          flexGrow: 1,
+          paddingTop: 125,
+          paddingHorizontal: 18,
+          paddingBottom: 168,
           alignItems: "center",
-          padding: 18,
         }}
       >
         <View
           style={{
             width: "100%",
-            maxWidth: 620,
-            minHeight: "100%",
-            justifyContent: "center",
-            gap: 24,
+            maxWidth: 520,
+            padding: 16,
+            borderRadius: 34,
+            backgroundColor: TA.colors.surface,
+            borderWidth: 1.5,
+            borderColor: "rgba(21, 27, 47, 0.10)",
+            gap: 20,
+            ...TA.shadow.soft,
           }}
         >
-          <ScreenHeader
-            kicker="Personnalisation"
-            title="Choisis ton avatar"
-            subtitle="Il représentera ton profil dans Tiny Act. Tu pourras le modifier plus tard."
-          />
-
-          <View
-            style={{
-              padding: 24,
-              borderRadius: 32,
-              backgroundColor: "#151B2F",
-              gap: 18,
-              alignItems: "center",
-            }}
-          >
-            <View
+          <View style={{ gap: 8 }}>
+            <Text
               style={{
-                padding: 6,
-                borderRadius: 999,
-                backgroundColor: "#FFFFFF",
+                color: TA.colors.inkLight,
+                fontSize: 13,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 2,
               }}
             >
-              <AvatarImage
-                avatar={selectedAvatar}
-                size={128}
-              />
-            </View>
+              Personnalisation
+            </Text>
 
-            <View
+            <Text
               style={{
-                alignItems: "center",
-                gap: 6,
+                color: TA.colors.ink,
+                fontSize: 42,
+                lineHeight: 43,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -2,
               }}
             >
-              <Text
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: 27,
-                  lineHeight: 33,
-                  fontWeight: "900",
-                  textAlign: "center",
-                }}
-              >
-                {selectedAvatar
-                  ? "Ton avatar est prêt."
-                  : "Sélectionne ton avatar."}
-              </Text>
-
-              <Text
-                style={{
-                  color: "#FFFFFF",
-                  opacity: 0.72,
-                  fontSize: 15,
-                  lineHeight: 22,
-                  fontWeight: "600",
-                  textAlign: "center",
-                }}
-              >
-                L’idée n’est pas de te représenter parfaitement, mais de rendre ton espace plus personnel.
-              </Text>
-            </View>
+              Choisis ton avatar
+            </Text>
           </View>
+
+          {error && (
+            <ErrorBox message={error} />
+          )}
 
           <View
             style={{
               padding: 18,
               borderRadius: 28,
-              backgroundColor: "#FFFFFF",
+              backgroundColor: TA.colors.surface,
               borderWidth: 2,
-              borderColor: "rgba(90, 74, 54, 0.16)",
+              borderColor: TA.colors.borderMedium,
               gap: 16,
+              ...TA.shadow.card,
             }}
           >
-            <View style={{ gap: 4 }}>
-              <Text
-                style={{
-                  color: "#7C63F2",
-                  fontSize: 12,
-                  fontWeight: "900",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                }}
-              >
-                Avatars disponibles
-              </Text>
-
-              <Text
-                style={{
-                  color: "#151B2F",
-                  fontSize: 24,
-                  fontWeight: "900",
-                }}
-              >
-                Choisis celui qui te parle le plus
-              </Text>
-            </View>
-
             <AvatarPicker
               selectedAvatar={selectedAvatar}
               onSelect={setSelectedAvatar}
             />
           </View>
+        </View>
+      </ScrollView>
 
-          {error && <ErrorBox message={error} />}
-
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          paddingHorizontal: 18,
+          paddingTop: 14,
+          paddingBottom: 24,
+          backgroundColor: TA.colors.bgStart,
+          borderTopWidth: 1,
+          borderTopColor: "rgba(21, 27, 47, 0.08)",
+          zIndex: 120,
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            alignSelf: "center",
+            gap: 10,
+          }}
+        >
           <PrimaryButton
             label={
               saving
@@ -232,13 +220,10 @@ export default function AvatarScreen() {
                 : "← Retour aux intérêts"
             }
             onPress={handleBack}
+            disabled={saving}
           />
-
-          {editingExistingAvatar && (
-            <MobileNav active="profile" />
-          )}
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
