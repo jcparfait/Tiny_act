@@ -2,6 +2,8 @@ import { Text, View } from "react-native";
 
 import { ActivityRenderer } from "./ActivityRenderer";
 
+import { getActivityInterestVisual } from "../constants/activityAssets";
+
 import {
   Activity,
   ActivitySession,
@@ -9,11 +11,18 @@ import {
 
 import { TA } from "../theme/tinyActTheme";
 
+export type ActivityFooterAction = {
+  label: string;
+  disabled?: boolean;
+  onPress: () => void;
+};
+
 type ActiveActivityCardProps = {
   activity: Activity;
   activitySession: ActivitySession;
   elapsedSeconds: number;
   onActivityReadyToFinishChange?: (ready: boolean) => void;
+  onFooterActionChange?: (action: ActivityFooterAction | null) => void;
 };
 
 function formatElapsedTime(totalSeconds: number) {
@@ -25,26 +34,12 @@ function formatElapsedTime(totalSeconds: number) {
     .padStart(2, "0")}`;
 }
 
-function readableStatus(status: string) {
-  if (status === "in_progress") return "En cours";
-  if (status === "paused") return "En pause";
-  if (status === "finished") return "Terminée";
-  if (status === "preview") return "Prévisualisation";
-
-  return status;
-}
-
-function readableActivityType(type: string) {
-  const labels: Record<string, string> = {
-    standard: "Action simple",
-    culture_quiz: "Quiz culture",
-    code_quiz: "Quiz code",
-    word_learning: "Langues · mots",
-    sentence_completion: "Langues · phrases",
-    melody: "Musique",
-  };
-
-  return labels[type] || "Activité";
+function activityDescription(activity: Activity) {
+  return (
+    activity.description ||
+    activity.content ||
+    "Concentre-toi sur cette petite action."
+  );
 }
 
 export function ActiveActivityCard({
@@ -52,46 +47,136 @@ export function ActiveActivityCard({
   activitySession,
   elapsedSeconds,
   onActivityReadyToFinishChange,
+  onFooterActionChange,
 }: ActiveActivityCardProps) {
+  void activitySession;
+
+  const visual = getActivityInterestVisual(activity);
+
   return (
-    <View
-      style={{
-        padding: 24,
-        borderRadius: TA.radius.large,
-        backgroundColor: TA.colors.surface,
-        borderWidth: 2,
-        borderColor: TA.colors.borderMedium,
-        gap: 18,
-        ...TA.shadow.card,
-      }}
-    >
-      <View style={{ gap: 7 }}>
-        <Text
+    <View style={{ gap: 12 }}>
+      <View
+        style={{
+          minHeight: 160,
+          padding: 16,
+          borderRadius: 28,
+          backgroundColor: visual.softColor,
+          borderWidth: 1.5,
+          borderColor: visual.color,
+          overflow: "hidden",
+        }}
+      >
+        <View
+          pointerEvents="none"
           style={{
-            fontSize: 12,
-            fontWeight: "900",
-            color: activitySession.finished
-              ? TA.colors.green
-              : TA.colors.purple,
-            textTransform: "uppercase",
-            letterSpacing: 0.8,
+            position: "absolute",
+            right: -42,
+            bottom: -48,
+            width: 170,
+            height: 170,
+            borderRadius: 999,
+            backgroundColor: visual.color,
+            opacity: 0.18,
+          }}
+        />
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 10,
           }}
         >
-          {activitySession.finished
-            ? "Activité terminée"
-            : "Activité en cours"}
-        </Text>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              alignItems: "center",
+            }}
+          >
+            <MetaPill
+              label={visual.label}
+              backgroundColor={visual.color}
+              foregroundColor={TA.colors.white}
+            />
+
+            <MetaPill
+              label={activity.duration?.label || "Durée"}
+              backgroundColor={TA.colors.surface}
+              foregroundColor={TA.colors.ink}
+            />
+          </View>
+
+          <View
+            style={{
+              minWidth: 82,
+              paddingVertical: 8,
+              paddingHorizontal: 10,
+              borderRadius: 18,
+              backgroundColor: TA.colors.surface,
+              borderWidth: 1.5,
+              borderColor: TA.colors.borderMedium,
+              alignItems: "center",
+              ...TA.shadow.soft,
+            }}
+          >
+            <Text
+              style={{
+                color: TA.colors.inkLight,
+                fontSize: 9,
+                lineHeight: 11,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 0.8,
+              }}
+            >
+              Temps
+            </Text>
+
+            <Text
+              style={{
+                marginTop: 2,
+                color: TA.colors.ink,
+                fontSize: 20,
+                lineHeight: 23,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -0.8,
+              }}
+            >
+              {formatElapsedTime(elapsedSeconds)}
+            </Text>
+          </View>
+        </View>
 
         <Text
+          numberOfLines={2}
           style={{
-            fontSize: 31,
-            lineHeight: 35,
-            fontWeight: "900",
+            marginTop: 14,
             color: TA.colors.ink,
-            letterSpacing: -0.9,
+            fontSize: 31,
+            lineHeight: 34,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -1.2,
           }}
         >
           {activity.name}
+        </Text>
+
+        <Text
+          numberOfLines={2}
+          style={{
+            marginTop: 6,
+            maxWidth: "86%",
+            color: TA.colors.inkMuted,
+            fontSize: 15,
+            lineHeight: 20,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          {activityDescription(activity)}
         </Text>
       </View>
 
@@ -100,114 +185,41 @@ export function ActiveActivityCard({
         onActivityReadyToFinishChange={
           onActivityReadyToFinishChange
         }
+        onFooterActionChange={onFooterActionChange}
       />
-
-      <View
-        style={{
-          padding: 20,
-          borderRadius: TA.radius.card,
-          backgroundColor: TA.colors.ink,
-          alignItems: "center",
-          gap: 4,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 12,
-            color: TA.colors.white,
-            opacity: 0.64,
-            fontWeight: "900",
-            textTransform: "uppercase",
-            letterSpacing: 0.8,
-          }}
-        >
-          Temps actif
-        </Text>
-
-        <Text
-          style={{
-            fontSize: 44,
-            lineHeight: 49,
-            color: TA.colors.white,
-            fontWeight: "900",
-            letterSpacing: -1,
-          }}
-        >
-          {formatElapsedTime(elapsedSeconds)}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          padding: 16,
-          borderRadius: TA.radius.medium,
-          backgroundColor: TA.colors.surfaceSoft,
-          borderWidth: 1,
-          borderColor: TA.colors.borderSoft,
-          gap: 10,
-        }}
-      >
-        <SessionLine
-          label="Statut"
-          value={readableStatus(
-            activitySession.status
-          )}
-        />
-
-        <SessionLine
-          label="Durée prévue"
-          value={
-            activity.duration?.label ||
-            "Non renseignée"
-          }
-        />
-
-        <SessionLine
-          label="Format"
-          value={readableActivityType(
-            activity.activity_type
-          )}
-        />
-      </View>
     </View>
   );
 }
 
-function SessionLine({
+function MetaPill({
   label,
-  value,
+  backgroundColor,
+  foregroundColor,
 }: {
   label: string;
-  value: string;
+  backgroundColor: string;
+  foregroundColor: string;
 }) {
   return (
     <View
       style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
-        gap: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 13,
+        borderRadius: 999,
+        backgroundColor,
+        borderWidth: backgroundColor === TA.colors.surface ? 1.5 : 0,
+        borderColor: TA.colors.borderMedium,
       }}
     >
       <Text
+        numberOfLines={1}
         style={{
-          color: TA.colors.inkMuted,
-          fontSize: 14,
-          fontWeight: "800",
+          color: foregroundColor,
+          fontSize: 13,
+          fontFamily: TA.fonts.black,
         }}
       >
         {label}
-      </Text>
-
-      <Text
-        style={{
-          color: TA.colors.ink,
-          fontSize: 14,
-          fontWeight: "900",
-          textAlign: "right",
-          flex: 1,
-        }}
-      >
-        {value}
       </Text>
     </View>
   );

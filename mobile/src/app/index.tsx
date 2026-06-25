@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -14,6 +15,7 @@ import { Image as ExpoImage } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { ActiveActivityCard } from "../components/ActiveActivityCard";
+import type { ActivityFooterAction } from "../components/ActiveActivityCard";
 import { ActivityCard } from "../components/ActivityCard";
 import { ActivityRewardCard } from "../components/ActivityRewardCard";
 import { ChoiceCard } from "../components/ChoiceCard";
@@ -119,6 +121,91 @@ function sortFurnituresByZ(
   );
 }
 
+const MOBILE_DISABLED_INTEREST_NAMES = new Set([
+  "productivite",
+  "photo",
+  "bien etre",
+  "dessin",
+]);
+
+function normalizeInterestName(
+  value?: string | null
+) {
+  return (value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function isMobileEnabledActivity(
+  activity: Activity
+) {
+  return !MOBILE_DISABLED_INTEREST_NAMES.has(
+    normalizeInterestName(activity.interest?.name)
+  );
+}
+
+function isQuizActivity(activity: Activity | null) {
+  return (
+    activity?.activity_type === "code_quiz" ||
+    activity?.activity_type === "culture_quiz"
+  );
+}
+
+function quizThemesFor(activity: Activity | null) {
+  if (!isQuizActivity(activity)) return [];
+
+  const questions =
+    activity?.payload?.quiz_questions || [];
+
+  return Array.from(
+    new Set(
+      questions
+        .map((question) =>
+          question.family ||
+          question.category ||
+          question.difficulty ||
+          null
+        )
+        .filter(Boolean) as string[]
+    )
+  );
+}
+
+function activityWithQuizTheme(
+  activity: Activity | null,
+  quizTheme: string | null
+) {
+  if (!activity || !quizTheme || !isQuizActivity(activity)) {
+    return activity;
+  }
+
+  const questions =
+    activity.payload?.quiz_questions || [];
+
+  const filteredQuestions = questions.filter(
+    (question) =>
+      question.family === quizTheme ||
+      question.category === quizTheme ||
+      question.difficulty === quizTheme
+  );
+
+  if (filteredQuestions.length === 0) {
+    return activity;
+  }
+
+  return {
+    ...activity,
+    payload: {
+      ...activity.payload,
+      quiz_questions: filteredQuestions,
+    },
+  };
+}
+
 export default function HomeScreen() {
   const router = useRouter();
 
@@ -207,6 +294,15 @@ export default function HomeScreen() {
 
   const [error, setError] =
     useState<string | null>(null);
+
+  const [pauseModalVisible, setPauseModalVisible] =
+    useState(false);
+
+  const [selectedQuizTheme, setSelectedQuizTheme] =
+    useState<string | null>(null);
+
+  const [activityFooterAction, setActivityFooterAction] =
+    useState<ActivityFooterAction | null>(null);
 
   const bonusChallenge = useMemo(
     () => getDailyBonusChallenge(),
@@ -356,6 +452,9 @@ export default function HomeScreen() {
     setSelectedActivity(null);
     setElapsedSeconds(0);
     setActivityReadyToFinish(true);
+    setSelectedQuizTheme(null);
+    setActivityFooterAction(null);
+    setPauseModalVisible(false);
     setError(null);
     setReward(null);
   }
@@ -377,6 +476,8 @@ export default function HomeScreen() {
     setRecommendedActivities([]);
     setSelectedActivity(null);
     setActivityReadyToFinish(true);
+    setSelectedQuizTheme(null);
+    setActivityFooterAction(null);
     setReward(null);
 
     try {
@@ -389,7 +490,7 @@ export default function HomeScreen() {
 
       const activitiesFromApi =
         Array.isArray(data.activities)
-          ? data.activities
+          ? data.activities.filter(isMobileEnabledActivity)
           : [];
 
       setActivitySession(
@@ -420,6 +521,8 @@ export default function HomeScreen() {
     setSelectingActivity(true);
     setError(null);
     setActivityReadyToFinish(true);
+    setSelectedQuizTheme(null);
+    setActivityFooterAction(null);
 
     try {
       const selectedData =
@@ -487,6 +590,8 @@ export default function HomeScreen() {
       setElapsedSeconds(
         data.activity_session.elapsed_seconds
       );
+
+      setPauseModalVisible(true);
     } catch (err) {
       setError(
         err instanceof Error
@@ -523,6 +628,8 @@ export default function HomeScreen() {
           data.activity_session
         )
       );
+
+      setPauseModalVisible(false);
     } catch (err) {
       setError(
         err instanceof Error
@@ -583,6 +690,11 @@ export default function HomeScreen() {
     }
   }
 
+  function handleQuitActivity() {
+    setPauseModalVisible(false);
+    resetFlow();
+  }
+
   function openResumableSession() {
     if (!resumableSession) return;
 
@@ -616,6 +728,24 @@ export default function HomeScreen() {
     step === "duration" ||
     step === "recommendations";
 
+  const quizThemes = quizThemesFor(selectedActivity);
+
+  const shouldChooseQuizTheme =
+    step === "activity" &&
+    selectedActivity &&
+    isQuizActivity(selectedActivity) &&
+    quizThemes.length > 1 &&
+    selectedQuizTheme === null;
+
+  const displayedActivity =
+    activityWithQuizTheme(
+      selectedActivity,
+      selectedQuizTheme
+    );
+
+  const activityScrollPaddingBottom =
+    step === "activity" ? 198 : 150;
+
   return (
     <LinearGradient
       colors={[
@@ -644,7 +774,7 @@ export default function HomeScreen() {
             flexGrow: 1,
             paddingTop: 128,
             paddingHorizontal: 18,
-            paddingBottom: 150,
+            paddingBottom: activityScrollPaddingBottom,
             alignItems: "center",
           }}
         >
@@ -672,11 +802,13 @@ export default function HomeScreen() {
               />
             )}
 
-            <SelectionTitle
-              kicker={kicker}
-              title={title}
-              subtitle={subtitle}
-            />
+            {step !== "activity" && (
+              <SelectionTitle
+                kicker={kicker}
+                title={title}
+                subtitle={subtitle}
+              />
+            )}
 
             {loading && <ActivityIndicator />}
 
@@ -851,17 +983,47 @@ export default function HomeScreen() {
 
             {step === "activity" &&
               selectedActivity &&
-              activitySession && (
-                <ActiveActivityCard
+              activitySession &&
+              shouldChooseQuizTheme && (
+                <QuizThemeSelection
                   activity={selectedActivity}
-                  activitySession={
-                    activitySession
-                  }
-                  elapsedSeconds={elapsedSeconds}
-                  onActivityReadyToFinishChange={
-                    setActivityReadyToFinish
-                  }
+                  themes={quizThemes}
+                  onSelectTheme={(theme) => {
+                    setSelectedQuizTheme(theme);
+                    setActivityReadyToFinish(false);
+                    setActivityFooterAction(null);
+                  }}
                 />
+              )}
+
+            {step === "activity" &&
+              displayedActivity &&
+              activitySession &&
+              !shouldChooseQuizTheme && (
+                <View
+                  style={{
+                    padding: 12,
+                    borderRadius: 34,
+                    backgroundColor: TA.colors.surface,
+                    borderWidth: 1.5,
+                    borderColor: "rgba(21, 27, 47, 0.10)",
+                    ...TA.shadow.soft,
+                  }}
+                >
+                  <ActiveActivityCard
+                    activity={displayedActivity}
+                    activitySession={
+                      activitySession
+                    }
+                    elapsedSeconds={elapsedSeconds}
+                    onActivityReadyToFinishChange={
+                      setActivityReadyToFinish
+                    }
+                    onFooterActionChange={
+                      setActivityFooterAction
+                    }
+                  />
+                </View>
               )}
 
             {step === "finished" &&
@@ -896,7 +1058,8 @@ export default function HomeScreen() {
 
         {step === "activity" &&
           selectedActivity &&
-          activitySession && (
+          activitySession &&
+          !shouldChooseQuizTheme && (
             <ActivityBottomActions
               activityIsInProgress={
                 activityIsInProgress
@@ -911,11 +1074,19 @@ export default function HomeScreen() {
               activityReadyToFinish={
                 activityReadyToFinish
               }
+              primaryAction={activityFooterAction}
               onPause={handlePauseActivity}
               onResume={handleResumeActivity}
               onFinish={handleFinishActivity}
             />
           )}
+
+        <PauseActivityModal
+          visible={pauseModalVisible}
+          resuming={resumingActivity}
+          onResume={handleResumeActivity}
+          onQuit={handleQuitActivity}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
@@ -1463,6 +1634,97 @@ function BottomPrimaryAction({
   );
 }
 
+function QuizThemeSelection({
+  activity,
+  themes,
+  onSelectTheme,
+}: {
+  activity: Activity;
+  themes: string[];
+  onSelectTheme: (theme: string) => void;
+}) {
+  return (
+    <View
+      style={{
+        padding: 18,
+        borderRadius: 34,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 1.5,
+        borderColor: "rgba(21, 27, 47, 0.10)",
+        gap: 16,
+        ...TA.shadow.soft,
+      }}
+    >
+      <View style={{ gap: 6 }}>
+        <Text
+          style={{
+            color: TA.colors.purple,
+            fontSize: 13,
+            fontFamily: TA.fonts.black,
+            textTransform: "uppercase",
+            letterSpacing: 2,
+          }}
+        >
+          Choix du thème
+        </Text>
+
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 34,
+            lineHeight: 36,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -1.6,
+          }}
+        >
+          {activity.name}
+        </Text>
+
+        <Text
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 15,
+            lineHeight: 21,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          Choisis le thème de questions avant de lancer vraiment l’activité.
+        </Text>
+      </View>
+
+      <View style={{ gap: 10 }}>
+        {themes.map((theme) => (
+          <Pressable
+            key={theme}
+            onPress={() => onSelectTheme(theme)}
+            style={({ pressed }) => ({
+              paddingVertical: 15,
+              paddingHorizontal: 16,
+              borderRadius: 22,
+              backgroundColor: pressed
+                ? TA.colors.bgMiddle
+                : TA.colors.surface,
+              borderWidth: 2,
+              borderColor: TA.colors.borderMedium,
+              opacity: pressed ? 0.82 : 1,
+            })}
+          >
+            <Text
+              style={{
+                color: TA.colors.ink,
+                fontSize: 20,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              {theme}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function ActivityBottomActions({
   activityIsInProgress,
   activityIsPaused,
@@ -1471,6 +1733,7 @@ function ActivityBottomActions({
   finishingActivity,
   finishButtonDisabled,
   activityReadyToFinish,
+  primaryAction,
   onPause,
   onResume,
   onFinish,
@@ -1482,68 +1745,265 @@ function ActivityBottomActions({
   finishingActivity: boolean;
   finishButtonDisabled: boolean;
   activityReadyToFinish: boolean;
+  primaryAction?: ActivityFooterAction | null;
   onPause: () => void;
   onResume: () => void;
   onFinish: () => void;
 }) {
+  const primaryLabel =
+    primaryAction?.label ||
+    (!activityReadyToFinish
+      ? "Termine l’activité"
+      : finishingActivity
+        ? "Finalisation..."
+        : "Terminer");
+
+  const primaryDisabled =
+    primaryAction
+      ? primaryAction.disabled ||
+        pausingActivity ||
+        resumingActivity ||
+        finishingActivity
+      : finishButtonDisabled;
+
+  const primaryPress =
+    primaryAction?.onPress || onFinish;
+
+  const showPauseButton =
+    activityIsInProgress || activityIsPaused;
+
   return (
     <View
       style={{
         position: "absolute",
-        left: 18,
-        right: 18,
-        bottom: 26,
-        flexDirection: "row",
-        gap: 12,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingHorizontal: 18,
+        paddingTop: 12,
+        paddingBottom: 24,
+        backgroundColor: TA.colors.bgStart,
+        borderTopWidth: 1,
+        borderTopColor: "rgba(21, 27, 47, 0.08)",
+        zIndex: 120,
       }}
     >
-      {activityIsInProgress && (
-        <View style={{ flex: 0.9 }}>
-          <SecondaryButton
+      <View
+        style={{
+          width: "100%",
+          maxWidth: 520,
+          alignSelf: "center",
+          flexDirection: "row",
+          gap: 12,
+          alignItems: "stretch",
+        }}
+      >
+        {showPauseButton && (
+          <FooterActionButton
             label={
               pausingActivity
                 ? "Pause..."
-                : "Pause"
+                : activityIsPaused
+                  ? resumingActivity
+                    ? "Reprise..."
+                    : "Reprendre"
+                  : "Pause"
             }
-            onPress={onPause}
+            variant="secondary"
             disabled={
               pausingActivity ||
-              finishingActivity
-            }
-          />
-        </View>
-      )}
-
-      {activityIsPaused && (
-        <View style={{ flex: 0.9 }}>
-          <SecondaryButton
-            label={
-              resumingActivity
-                ? "Reprise..."
-                : "Reprendre"
-            }
-            onPress={onResume}
-            disabled={
               resumingActivity ||
               finishingActivity
             }
+            onPress={activityIsPaused ? onResume : onPause}
+            style={{ flex: 0.9 }}
           />
-        </View>
-      )}
+        )}
 
-      <View style={{ flex: 1.6 }}>
-        <PrimaryButton
-          label={
-            !activityReadyToFinish
-              ? "Termine l’activité"
-              : finishingActivity
-                ? "Finalisation..."
-                : "Terminer"
-          }
-          onPress={onFinish}
-          disabled={finishButtonDisabled}
+        <FooterActionButton
+          label={primaryLabel}
+          variant="primary"
+          disabled={primaryDisabled}
+          onPress={primaryPress}
+          style={{ flex: 1.7 }}
         />
       </View>
     </View>
+  );
+}
+
+function FooterActionButton({
+  label,
+  variant,
+  disabled,
+  onPress,
+  style,
+}: {
+  label: string;
+  variant: "primary" | "secondary";
+  disabled?: boolean;
+  onPress: () => void;
+  style?: object;
+}) {
+  const primary = variant === "primary";
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        minHeight: 62,
+        paddingHorizontal: 14,
+        borderRadius: 24,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: primary
+          ? TA.colors.purple
+          : TA.colors.surface,
+        borderWidth: 1.5,
+        borderColor: primary
+          ? TA.colors.purple
+          : TA.colors.borderMedium,
+        opacity: disabled ? 0.45 : pressed ? 0.78 : 1,
+        ...TA.shadow.soft,
+        ...(style || {}),
+      })}
+    >
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={{
+          color: primary
+            ? TA.colors.white
+            : TA.colors.ink,
+          fontSize: 16,
+          lineHeight: 20,
+          fontFamily: TA.fonts.black,
+          textAlign: "center",
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function PauseActivityModal({
+  visible,
+  resuming,
+  onResume,
+  onQuit,
+}: {
+  visible: boolean;
+  resuming: boolean;
+  onResume: () => void;
+  onQuit: () => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onResume}
+    >
+      <View
+        style={{
+          flex: 1,
+          padding: 26,
+          backgroundColor: "rgba(21, 27, 47, 0.42)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            padding: 24,
+            borderRadius: 34,
+            backgroundColor: TA.colors.surface,
+            borderWidth: 2,
+            borderColor: TA.colors.borderMedium,
+            gap: 18,
+            ...TA.shadow.card,
+          }}
+        >
+          <View
+            style={{
+              alignSelf: "center",
+              width: 72,
+              height: 72,
+              borderRadius: 25,
+              backgroundColor: TA.colors.purple,
+              alignItems: "center",
+              justifyContent: "center",
+              ...TA.shadow.soft,
+            }}
+          >
+            <Text
+              style={{
+                color: TA.colors.white,
+                fontSize: 31,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              Ⅱ
+            </Text>
+          </View>
+
+          <View style={{ gap: 8 }}>
+            <Text
+              style={{
+                color: TA.colors.inkLight,
+                fontSize: 13,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                textAlign: "center",
+              }}
+            >
+              Activité en pause
+            </Text>
+
+            <Text
+              style={{
+                color: TA.colors.ink,
+                fontSize: 31,
+                lineHeight: 33,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -1.2,
+                textAlign: "center",
+              }}
+            >
+              Tu peux reprendre quand tu veux.
+            </Text>
+
+            <Text
+              style={{
+                color: TA.colors.inkMuted,
+                fontSize: 15,
+                lineHeight: 22,
+                fontFamily: TA.fonts.bold,
+                textAlign: "center",
+              }}
+            >
+              Même une petite pause fait partie du chemin. Quitter te ramène à l’accueil.
+            </Text>
+          </View>
+
+          <PrimaryButton
+            label={resuming ? "Reprise..." : "Reprendre"}
+            onPress={onResume}
+            disabled={resuming}
+          />
+
+          <SecondaryButton
+            label="Quitter l’activité"
+            onPress={onQuit}
+            disabled={resuming}
+          />
+        </View>
+      </View>
+    </Modal>
   );
 }
