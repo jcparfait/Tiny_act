@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 
 import { ActivityRenderer } from "./ActivityRenderer";
@@ -15,6 +16,11 @@ export type ActivityFooterAction = {
   label: string;
   disabled?: boolean;
   onPress: () => void;
+};
+
+export type ActivityHeaderMeta = {
+  progressLabel?: string;
+  subtitle?: string;
 };
 
 type ActiveActivityCardProps = {
@@ -53,11 +59,21 @@ export function ActiveActivityCard({
 
   const visual = getActivityInterestVisual(activity);
 
+  const [headerMeta, setHeaderMeta] =
+    useState<ActivityHeaderMeta | null>(null);
+
+  useEffect(() => {
+    setHeaderMeta(null);
+  }, [activity.id]);
+
+  const subtitle =
+    headerMeta?.subtitle || activityDescription(activity);
+
   return (
     <View style={{ gap: 12 }}>
       <View
         style={{
-          minHeight: 160,
+          minHeight: 154,
           padding: 16,
           borderRadius: 28,
           backgroundColor: visual.softColor,
@@ -151,10 +167,27 @@ export function ActiveActivityCard({
           </View>
         </View>
 
+        {headerMeta?.progressLabel && (
+          <Text
+            numberOfLines={1}
+            style={{
+              marginTop: 14,
+              color: visual.color,
+              fontSize: 13,
+              lineHeight: 16,
+              fontFamily: TA.fonts.black,
+              textTransform: "uppercase",
+              letterSpacing: 0.6,
+            }}
+          >
+            {headerMeta.progressLabel}
+          </Text>
+        )}
+
         <Text
           numberOfLines={2}
           style={{
-            marginTop: 14,
+            marginTop: headerMeta?.progressLabel ? 6 : 14,
             color: TA.colors.ink,
             fontSize: 31,
             lineHeight: 34,
@@ -169,14 +202,14 @@ export function ActiveActivityCard({
           numberOfLines={2}
           style={{
             marginTop: 6,
-            maxWidth: "86%",
+            maxWidth: "88%",
             color: TA.colors.inkMuted,
             fontSize: 15,
             lineHeight: 20,
             fontFamily: TA.fonts.bold,
           }}
         >
-          {activityDescription(activity)}
+          {subtitle}
         </Text>
       </View>
 
@@ -186,6 +219,7 @@ export function ActiveActivityCard({
           onActivityReadyToFinishChange
         }
         onFooterActionChange={onFooterActionChange}
+        onHeaderMetaChange={setHeaderMeta}
       />
     </View>
   );
@@ -200,6 +234,8 @@ function MetaPill({
   backgroundColor: string;
   foregroundColor: string;
 }) {
+  const outlined = backgroundColor === TA.colors.surface;
+
   return (
     <View
       style={{
@@ -207,7 +243,7 @@ function MetaPill({
         paddingHorizontal: 13,
         borderRadius: 999,
         backgroundColor,
-        borderWidth: backgroundColor === TA.colors.surface ? 1.5 : 0,
+        borderWidth: outlined ? 1.5 : 0,
         borderColor: TA.colors.borderMedium,
       }}
     >

@@ -18,15 +18,17 @@ import {
   SentenceFeedback,
 } from "../../types/tinyAct";
 
+import type {
+  ActivityFooterAction,
+  ActivityHeaderMeta,
+} from "../ActiveActivityCard";
+
 import {
-  activityMainText,
-  DarkButton,
-  DarkInfoBox,
   FeedbackBox,
-  IntroCard,
   normalizeAnswer,
-  ScoreCard,
 } from "./shared";
+
+import { TA } from "../../theme/tinyActTheme";
 
 function validProgress(
   value: SentenceCompletionProgress | undefined
@@ -42,10 +44,20 @@ function validProgress(
   );
 }
 
+function languageLabelUpper(languageLabel: string) {
+  return languageLabel.toLocaleUpperCase("fr-FR");
+}
+
 export function SentenceCompletionActivity({
   activity,
+  onActivityReadyToFinishChange,
+  onFooterActionChange,
+  onHeaderMetaChange,
 }: {
   activity: Activity;
+  onActivityReadyToFinishChange?: (ready: boolean) => void;
+  onFooterActionChange?: (action: ActivityFooterAction | null) => void;
+  onHeaderMetaChange?: (meta: ActivityHeaderMeta | null) => void;
 }) {
   const sessionId =
     activity.payload?.activity_session_id || null;
@@ -238,6 +250,52 @@ export function SentenceCompletionActivity({
     setFeedback(null);
   }
 
+  useEffect(() => {
+    if (!progressLoaded || items.length === 0) {
+      onActivityReadyToFinishChange?.(false);
+      onFooterActionChange?.(null);
+      onHeaderMetaChange?.(null);
+      return;
+    }
+
+    const progressLabel = `PHRASE EN ${languageLabelUpper(languageLabel)} • ${
+      completed ? items.length : currentIndex + 1
+    }/${items.length}`;
+
+    onHeaderMetaChange?.({
+      progressLabel,
+      subtitle: "Complète le mot manquant. Après 3 erreurs, la réponse s’affiche.",
+    });
+
+    if (completed) {
+      onActivityReadyToFinishChange?.(true);
+      onFooterActionChange?.(null);
+      return;
+    }
+
+    onActivityReadyToFinishChange?.(false);
+    onFooterActionChange?.({
+      label: canGoNext
+        ? currentIndex >= items.length - 1
+          ? "Voir le score"
+          : "Phrase suivante"
+        : "Valider",
+      disabled: !canGoNext && normalizeAnswer(inputValue).length === 0,
+      onPress: canGoNext ? goNext : checkAnswer,
+    });
+  }, [
+    canGoNext,
+    completed,
+    currentIndex,
+    inputValue,
+    items.length,
+    languageLabel,
+    progressLoaded,
+    onActivityReadyToFinishChange,
+    onFooterActionChange,
+    onHeaderMetaChange,
+  ]);
+
   if (!progressLoaded) {
     return (
       <View
@@ -251,8 +309,8 @@ export function SentenceCompletionActivity({
 
         <Text
           style={{
-            color: "rgba(21, 27, 47, 0.58)",
-            fontWeight: "700",
+            color: TA.colors.inkMuted,
+            fontFamily: TA.fonts.bold,
           }}
         >
           Chargement de la progression…
@@ -263,53 +321,42 @@ export function SentenceCompletionActivity({
 
   if (items.length === 0) {
     return (
-      <View style={{ gap: 14 }}>
-        <IntroCard
-          label={`Phrases en ${languageLabel}`}
-          text={activityMainText(activity)}
-        />
-
-        <DarkInfoBox
-          title="Aucune phrase reçue"
-          text="Vérifie que Rails renvoie bien language_items dans le payload."
-        />
-      </View>
+      <LightInfoCard
+        title="Aucune phrase reçue"
+        text="Vérifie que Rails renvoie bien language_items dans le payload."
+      />
     );
   }
 
   if (completed) {
     return (
-      <View style={{ gap: 14 }}>
-        <ScoreCard score={score} total={items.length} />
-      </View>
+      <CompletionCard
+        label="Score"
+        value={`${score}/${items.length}`}
+      />
     );
   }
 
   return (
-    <View style={{ gap: 14 }}>
-      <IntroCard
-        label={`Phrase en ${languageLabel} · ${
-          currentIndex + 1
-        }/${items.length}`}
-        text="Complète le mot manquant. Après 3 erreurs, la réponse est affichée."
-      />
-
+    <View style={{ gap: 12 }}>
       <View
         style={{
-          padding: 16,
+          padding: 14,
           borderRadius: 20,
-          backgroundColor: "#F4EFE8",
-          borderWidth: 1,
-          borderColor: "rgba(90, 74, 54, 0.16)",
-          gap: 8,
+          backgroundColor: TA.colors.bgMiddle,
+          borderWidth: 1.5,
+          borderColor: TA.colors.borderMedium,
+          gap: 6,
         }}
       >
         <Text
           style={{
-            fontSize: 13,
-            fontWeight: "800",
-            color: "#7C63F2",
+            color: TA.colors.purple,
+            fontSize: 12,
+            lineHeight: 15,
+            fontFamily: TA.fonts.black,
             textTransform: "uppercase",
+            letterSpacing: 0.8,
           }}
         >
           Phrase en français
@@ -317,10 +364,10 @@ export function SentenceCompletionActivity({
 
         <Text
           style={{
-            fontSize: 16,
-            color: "#151B2F",
+            color: TA.colors.ink,
+            fontSize: 17,
             lineHeight: 24,
-            fontWeight: "700",
+            fontFamily: TA.fonts.bold,
           }}
         >
           {currentItem.translation ||
@@ -330,93 +377,75 @@ export function SentenceCompletionActivity({
 
       <View
         style={{
-          padding: 18,
+          padding: 17,
           borderRadius: 22,
-          backgroundColor: "#151B2F",
-          gap: 14,
+          backgroundColor: TA.colors.bgMiddle,
+          borderWidth: 1.5,
+          borderColor: TA.colors.purpleSoft,
+          gap: 12,
         }}
       >
         <Text
           style={{
-            fontSize: 13,
-            color: "#FFFFFF",
-            opacity: 0.7,
-            fontWeight: "800",
+            color: TA.colors.purple,
+            fontSize: 12,
+            lineHeight: 15,
+            fontFamily: TA.fonts.black,
             textTransform: "uppercase",
+            letterSpacing: 0.8,
           }}
         >
           Complète la phrase
         </Text>
 
-        <View style={{ gap: 10 }}>
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 20,
+            lineHeight: 29,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -0.5,
+          }}
+        >
+          {sentenceParts.before}{" "}
           <Text
             style={{
-              fontSize: 18,
-              color: "#FFFFFF",
-              lineHeight: 28,
-              fontWeight: "800",
+              color: answerIsVisible
+                ? feedback === "correct"
+                  ? "#176C3A"
+                  : TA.colors.dangerText
+                : TA.colors.inkMuted,
             }}
           >
-            {sentenceParts.before}
-          </Text>
+            {answerIsVisible ? currentItem.answer : "___"}
+          </Text>{" "}
+          {sentenceParts.after}
+        </Text>
 
-          {answerIsVisible ? (
-            <View
-              style={{
-                padding: 14,
-                borderRadius: 16,
-                backgroundColor:
-                  feedback === "correct"
-                    ? "#D9F8E5"
-                    : "#FFE1DD",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "900",
-                  color:
-                    feedback === "correct"
-                      ? "#176C3A"
-                      : "#B42318",
-                }}
-              >
-                {currentItem.answer}
-              </Text>
-            </View>
-          ) : (
-            <TextInput
-              value={inputValue}
-              onChangeText={setInputValue}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="Écris le mot manquant"
-              placeholderTextColor="#8E8A9D"
-              returnKeyType="done"
-              onSubmitEditing={checkAnswer}
-              style={{
-                padding: 14,
-                borderRadius: 16,
-                backgroundColor: "#FFFFFF",
-                color: "#151B2F",
-                fontSize: 18,
-                fontWeight: "800",
-                outlineStyle: "none" as never,
-              }}
-            />
-          )}
-
-          <Text
+        {!answerIsVisible && (
+          <TextInput
+            value={inputValue}
+            onChangeText={setInputValue}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="Écris le mot manquant"
+            placeholderTextColor="rgba(21, 27, 47, 0.34)"
+            returnKeyType="done"
+            onSubmitEditing={checkAnswer}
             style={{
-              fontSize: 18,
-              color: "#FFFFFF",
-              lineHeight: 28,
-              fontWeight: "800",
+              paddingVertical: 13,
+              paddingHorizontal: 15,
+              borderRadius: 18,
+              backgroundColor: TA.colors.surface,
+              borderWidth: 1.5,
+              borderColor: TA.colors.borderMedium,
+              color: TA.colors.ink,
+              fontSize: 17,
+              fontFamily: TA.fonts.bold,
+              outlineStyle: "none" as never,
             }}
-          >
-            {sentenceParts.after}
-          </Text>
-        </View>
+          />
+        )}
       </View>
 
       {feedback === "wrong" && (
@@ -436,19 +465,6 @@ export function SentenceCompletionActivity({
         <FeedbackBox
           success={false}
           text={`Réponse affichée : ${currentItem.answer}`}
-        />
-      )}
-
-      {!canGoNext ? (
-        <DarkButton label="Valider" onPress={checkAnswer} />
-      ) : (
-        <DarkButton
-          label={
-            currentIndex >= items.length - 1
-              ? "Voir le score"
-              : "Phrase suivante"
-          }
-          onPress={goNext}
         />
       )}
     </View>
@@ -480,4 +496,104 @@ function splitSentenceAroundAnswer(item: LanguageItem) {
       .slice(index + answer.length)
       .trimStart(),
   };
+}
+
+function LightInfoCard({
+  title,
+  text,
+}: {
+  title: string;
+  text: string;
+}) {
+  return (
+    <View
+      style={{
+        padding: 18,
+        borderRadius: 22,
+        backgroundColor: TA.colors.bgMiddle,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
+        gap: 6,
+      }}
+    >
+      <Text
+        style={{
+          color: TA.colors.ink,
+          fontSize: 18,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {title}
+      </Text>
+
+      <Text
+        style={{
+          color: TA.colors.inkMuted,
+          fontSize: 14,
+          lineHeight: 20,
+          fontFamily: TA.fonts.bold,
+        }}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+function CompletionCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <View
+      style={{
+        padding: 18,
+        borderRadius: 22,
+        backgroundColor: "#EAF8EF",
+        borderWidth: 1.5,
+        borderColor: "#176C3A",
+        alignItems: "center",
+        gap: 6,
+      }}
+    >
+      <Text
+        style={{
+          color: "#176C3A",
+          fontSize: 12,
+          fontFamily: TA.fonts.black,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+        }}
+      >
+        {label}
+      </Text>
+
+      <Text
+        style={{
+          color: TA.colors.ink,
+          fontSize: 32,
+          lineHeight: 37,
+          fontFamily: TA.fonts.black,
+          letterSpacing: -1,
+        }}
+      >
+        {value}
+      </Text>
+
+      <Text
+        style={{
+          color: TA.colors.inkMuted,
+          fontSize: 14,
+          lineHeight: 19,
+          fontFamily: TA.fonts.bold,
+          textAlign: "center",
+        }}
+      >
+        Tu peux maintenant terminer l’activité avec le bouton en bas.
+      </Text>
+    </View>
+  );
 }
