@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import {
   ActivityIndicator,
   Pressable,
@@ -8,15 +9,17 @@ import {
   Text,
   View,
 } from "react-native";
+
 import { useRouter } from "expo-router";
 
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { ScreenHeader } from "../components/ScreenHeader";
+import { SecondaryButton } from "../components/SecondaryButton";
 
 import { loadActivitySessions } from "../services/api";
 
+import { TA } from "../theme/tinyActTheme";
 import { ActivitySessionSummary } from "../types/tinyAct";
 
 type HistoryFilter =
@@ -63,12 +66,12 @@ function statusColor(
   finished: boolean
 ) {
   if (finished) return "#176C3A";
-  if (status === "in_progress") return "#7C63F2";
+  if (status === "in_progress") return TA.colors.purple;
   if (status === "paused") return "#8B5E00";
   if (status === "preview") return "#5B3FD8";
-  if (status === "selecting") return "rgba(21, 27, 47, 0.58)";
+  if (status === "selecting") return TA.colors.inkMuted;
 
-  return "rgba(21, 27, 47, 0.58)";
+  return TA.colors.inkMuted;
 }
 
 function readableActivityType(type: string) {
@@ -208,14 +211,37 @@ export default function HistoryScreen() {
     });
   }
 
+  function handleBack() {
+    router.replace("/profile");
+  }
+
   return (
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#F4EFE8",
+        backgroundColor: TA.colors.bgStart,
       }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 131,
+          zIndex: 80,
+          backgroundColor: TA.colors.bgStart,
+        }}
+      />
+
+      <MobileNav active="history" />
+
       <ScrollView
+        style={{
+          flex: 1,
+          backgroundColor: TA.colors.bgStart,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -223,26 +249,78 @@ export default function HistoryScreen() {
           />
         }
         contentContainerStyle={{
-          flexGrow: 1,
-          padding: 18,
+          paddingTop: 125,
+          paddingHorizontal: 18,
+          paddingBottom: 124,
           alignItems: "center",
         }}
       >
         <View
           style={{
             width: "100%",
-            maxWidth: 560,
-            minHeight: "100%",
-            justifyContent: "center",
-            gap: 24,
+            maxWidth: 520,
+            padding: 16,
+            borderRadius: 34,
+            backgroundColor: TA.colors.surface,
+            borderWidth: 1.5,
+            borderColor: "rgba(21, 27, 47, 0.10)",
+            gap: 20,
+            ...TA.shadow.soft,
           }}
         >
-          <ScreenHeader
-            title="Historique"
-            subtitle="Reprends une activité en cours ou revois les récompenses déjà gagnées."
-          />
+          <View style={{ gap: 8 }}>
+            <Text
+              style={{
+                color: TA.colors.inkLight,
+                fontSize: 13,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+              }}
+            >
+              Ton activité
+            </Text>
 
-          {loading && <ActivityIndicator />}
+            <Text
+              style={{
+                color: TA.colors.ink,
+                fontSize: 44,
+                lineHeight: 45,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -2,
+              }}
+            >
+              Historique
+            </Text>
+
+            <Text
+              style={{
+                color: TA.colors.inkMuted,
+                fontSize: 14,
+                lineHeight: 20,
+                fontFamily: TA.fonts.bold,
+              }}
+            >
+              Reprends une activité en cours ou revois les
+              récompenses déjà gagnées.
+            </Text>
+          </View>
+
+          {loading && (
+            <View
+              style={{
+                padding: 28,
+                borderRadius: 28,
+                backgroundColor: TA.colors.surface,
+                borderWidth: 2,
+                borderColor: TA.colors.borderMedium,
+                alignItems: "center",
+                ...TA.shadow.card,
+              }}
+            >
+              <ActivityIndicator />
+            </View>
+          )}
 
           {error && (
             <ErrorBox message={error} />
@@ -284,7 +362,7 @@ export default function HistoryScreen() {
                 style={{
                   padding: 6,
                   borderRadius: 22,
-                  backgroundColor: "#151B2F",
+                  backgroundColor: TA.colors.ink,
                   flexDirection: "row",
                   gap: 6,
                 }}
@@ -344,10 +422,37 @@ export default function HistoryScreen() {
               )}
             </>
           )}
-
-          <MobileNav active="history" />
         </View>
       </ScrollView>
+
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          paddingHorizontal: 18,
+          paddingTop: 14,
+          paddingBottom: 24,
+          backgroundColor: TA.colors.bgStart,
+          borderTopWidth: 1,
+          borderTopColor: "rgba(21, 27, 47, 0.08)",
+          zIndex: 120,
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            alignSelf: "center",
+          }}
+        >
+          <SecondaryButton
+            label="← Retour au profil"
+            onPress={handleBack}
+          />
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -366,17 +471,18 @@ function SummaryStat({
         minWidth: 125,
         padding: 15,
         borderRadius: 20,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: TA.colors.surface,
         borderWidth: 2,
-        borderColor: "rgba(90, 74, 54, 0.16)",
+        borderColor: TA.colors.borderMedium,
         gap: 4,
+        ...TA.shadow.soft,
       }}
     >
       <Text
         style={{
-          color: "rgba(21, 27, 47, 0.58)",
+          color: TA.colors.inkMuted,
           fontSize: 11,
-          fontWeight: "900",
+          fontFamily: TA.fonts.black,
           textTransform: "uppercase",
           letterSpacing: 0.5,
         }}
@@ -386,9 +492,9 @@ function SummaryStat({
 
       <Text
         style={{
-          color: "#151B2F",
+          color: TA.colors.ink,
           fontSize: 22,
-          fontWeight: "900",
+          fontFamily: TA.fonts.black,
         }}
       >
         {value}
@@ -418,7 +524,7 @@ function FilterButton({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: selected
-          ? "#7C63F2"
+          ? TA.colors.purple
           : "transparent",
         opacity: pressed ? 0.75 : 1,
       })}
@@ -426,9 +532,9 @@ function FilterButton({
       <Text
         numberOfLines={1}
         style={{
-          color: "#FFFFFF",
+          color: TA.colors.white,
           fontSize: 12,
-          fontWeight: "900",
+          fontFamily: TA.fonts.black,
           textAlign: "center",
         }}
       >
@@ -465,17 +571,18 @@ function SessionCard({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        padding: 20,
+        padding: 18,
         borderRadius: 28,
         backgroundColor: pressed
-          ? "#FFF9F5"
-          : "#FFFFFF",
+          ? TA.colors.bgMiddle
+          : TA.colors.surface,
         borderWidth: 2,
         borderColor: finished
           ? "#CDEEDB"
-          : "rgba(90, 74, 54, 0.16)",
+          : TA.colors.borderMedium,
         gap: 14,
         opacity: pressed ? 0.85 : 1,
+        ...TA.shadow.soft,
       })}
     >
       <View
@@ -494,7 +601,7 @@ function SessionCard({
             justifyContent: "center",
             backgroundColor: finished
               ? "#E6F6EC"
-              : "#F4EFE8",
+              : TA.colors.bgMiddle,
           }}
         >
           <Text
@@ -514,7 +621,7 @@ function SessionCard({
                 session.finished
               ),
               fontSize: 12,
-              fontWeight: "900",
+              fontFamily: TA.fonts.black,
               textTransform: "uppercase",
               letterSpacing: 0.6,
             }}
@@ -524,10 +631,10 @@ function SessionCard({
 
           <Text
             style={{
-              color: "#151B2F",
+              color: TA.colors.ink,
               fontSize: 22,
               lineHeight: 27,
-              fontWeight: "900",
+              fontFamily: TA.fonts.black,
             }}
           >
             {session.activity.name}
@@ -536,10 +643,10 @@ function SessionCard({
           <Text
             numberOfLines={2}
             style={{
-              color: "rgba(21, 27, 47, 0.58)",
+              color: TA.colors.inkMuted,
               fontSize: 14,
               lineHeight: 21,
-              fontWeight: "600",
+              fontFamily: TA.fonts.semiBold,
             }}
           >
             {session.activity.description ||
@@ -581,9 +688,9 @@ function SessionCard({
 
       <Text
         style={{
-          color: "#7C63F2",
+          color: TA.colors.purple,
           fontSize: 15,
-          fontWeight: "900",
+          fontFamily: TA.fonts.black,
           textAlign: "right",
         }}
       >
@@ -604,14 +711,14 @@ function DetailPill({
         paddingVertical: 7,
         paddingHorizontal: 10,
         borderRadius: 999,
-        backgroundColor: "#F4EFE8",
+        backgroundColor: TA.colors.bgMiddle,
       }}
     >
       <Text
         style={{
-          color: "rgba(21, 27, 47, 0.58)",
+          color: TA.colors.inkMuted,
           fontSize: 12,
-          fontWeight: "800",
+          fontFamily: TA.fonts.extraBold,
         }}
       >
         {label}
@@ -636,18 +743,19 @@ function EmptyState({
       style={{
         padding: 22,
         borderRadius: 28,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: TA.colors.surface,
         borderWidth: 2,
-        borderColor: "rgba(90, 74, 54, 0.16)",
+        borderColor: TA.colors.borderMedium,
         gap: 16,
+        ...TA.shadow.soft,
       }}
     >
       <View style={{ gap: 8 }}>
         <Text
           style={{
-            color: "#151B2F",
+            color: TA.colors.ink,
             fontSize: 24,
-            fontWeight: "900",
+            fontFamily: TA.fonts.black,
           }}
         >
           {title}
@@ -655,10 +763,10 @@ function EmptyState({
 
         <Text
           style={{
-            color: "rgba(21, 27, 47, 0.58)",
+            color: TA.colors.inkMuted,
             fontSize: 15,
             lineHeight: 22,
-            fontWeight: "600",
+            fontFamily: TA.fonts.semiBold,
           }}
         >
           {text}
