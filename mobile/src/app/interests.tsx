@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -9,63 +9,21 @@ import {
   View,
 } from "react-native";
 
+import { Image as ExpoImage } from "expo-image";
 import { useRouter } from "expo-router";
 
 import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { ScreenHeader } from "../components/ScreenHeader";
 import { SecondaryButton } from "../components/SecondaryButton";
+
+import { getInterestVisualByName } from "../constants/activityAssets";
 
 import { useAuth } from "../context/AuthContext";
 import { loadMobileInterests } from "../services/interestsApi";
 
+import { TA } from "../theme/tinyActTheme";
 import { Interest } from "../types/tinyAct";
-
-const INTEREST_DETAILS: Record<
-  string,
-  {
-    icon: string;
-    description: string;
-  }
-> = {
-  Sport: {
-    icon: "🏃",
-    description: "Bouger, respirer, relancer ton énergie.",
-  },
-  "Bien-être": {
-    icon: "🌿",
-    description: "Ralentir, te recentrer, reprendre le contrôle.",
-  },
-  Photo: {
-    icon: "📷",
-    description: "Observer, cadrer, regarder autrement.",
-  },
-  Dessin: {
-    icon: "✏️",
-    description: "Créer sans pression, même quelques minutes.",
-  },
-  Langues: {
-    icon: "🌍",
-    description: "Apprendre des mots ou des phrases utiles.",
-  },
-  Culture: {
-    icon: "🧠",
-    description: "Nourrir ta curiosité au lieu de scroller.",
-  },
-  Productivité: {
-    icon: "✓",
-    description: "Clarifier, ranger, avancer un petit peu.",
-  },
-  Code: {
-    icon: "⌨️",
-    description: "Résoudre un mini-problème technique.",
-  },
-  Musique: {
-    icon: "♪",
-    description: "Écouter, jouer, reconnaître ou créer du son.",
-  },
-};
 
 export default function InterestsScreen() {
   const router = useRouter();
@@ -81,15 +39,8 @@ export default function InterestsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [error, setError] = useState<string | null>(null);
-
-  const selectedInterests = useMemo(
-    () =>
-      interests.filter((interest) =>
-        selectedIds.includes(interest.id)
-      ),
-    [interests, selectedIds]
-  );
+  const [error, setError] =
+    useState<string | null>(null);
 
   const saveLabel = editingExistingSelection
     ? "Enregistrer mes choix"
@@ -166,89 +117,128 @@ export default function InterestsScreen() {
     }
   }
 
+  function handleBack() {
+    router.replace("/profile");
+  }
+
   return (
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: "#F4EFE8",
+        backgroundColor: TA.colors.bgStart,
       }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 131,
+          zIndex: 80,
+          backgroundColor: TA.colors.bgStart,
+        }}
+      />
+
+      <MobileNav
+        active="profile"
+        hideXp
+      />
+
       <ScrollView
+        style={{
+          flex: 1,
+          backgroundColor: TA.colors.bgStart,
+        }}
         contentContainerStyle={{
-          flexGrow: 1,
+          paddingTop: 125,
+          paddingHorizontal: 18,
+          paddingBottom: editingExistingSelection ? 168 : 104,
           alignItems: "center",
-          padding: 18,
         }}
       >
         <View
           style={{
             width: "100%",
-            maxWidth: 620,
-            minHeight: "100%",
-            justifyContent: "center",
-            gap: 24,
+            maxWidth: 520,
+            padding: 16,
+            borderRadius: 34,
+            backgroundColor: TA.colors.surface,
+            borderWidth: 1.5,
+            borderColor: "rgba(21, 27, 47, 0.10)",
+            gap: 20,
+            ...TA.shadow.soft,
           }}
         >
-          <ScreenHeader
-            kicker="Personnalisation"
-            title="Choisis tes centres d’intérêt"
-            subtitle="Tiny Act utilisera ces choix pour te proposer des micro-actions adaptées à ce que tu veux vraiment nourrir."
-          />
-
-          <View
-            style={{
-              padding: 22,
-              borderRadius: 28,
-              backgroundColor: "#151B2F",
-              gap: 14,
-            }}
-          >
+          <View style={{ gap: 12 }}>
             <Text
               style={{
-                color: "#FFFFFF",
-                fontSize: 25,
-                lineHeight: 31,
-                fontWeight: "900",
+                color: TA.colors.inkLight,
+                fontSize: 13,
+                fontFamily: TA.fonts.black,
+                textTransform: "uppercase",
+                letterSpacing: 2,
               }}
             >
-              Plus tes choix sont précis, plus les activités seront utiles.
+              Personnalisation
             </Text>
 
             <Text
               style={{
-                color: "#FFFFFF",
-                opacity: 0.76,
-                fontSize: 15,
-                lineHeight: 22,
-                fontWeight: "600",
+                color: TA.colors.ink,
+                fontSize: 42,
+                lineHeight: 43,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -2,
               }}
             >
-              Tu peux en sélectionner plusieurs. Chaque activité terminée fera progresser la salle liée à son thème.
+              Choisis tes centres d’intérêt
             </Text>
 
             <View
               style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 8,
+                alignSelf: "flex-start",
+                paddingVertical: 8,
+                paddingHorizontal: 13,
+                borderRadius: 999,
+                backgroundColor: "#F2EDFF",
+                borderWidth: 1.5,
+                borderColor: "#D8CCFF",
               }}
             >
-              <SelectionPill
-                label={`${selectedIds.length} sélectionné(s)`}
-              />
-
-              {selectedInterests.slice(0, 3).map((interest) => (
-                <SelectionPill
-                  key={interest.id}
-                  label={interest.name}
-                />
-              ))}
+              <Text
+                style={{
+                  color: TA.colors.purple,
+                  fontSize: 13,
+                  fontFamily: TA.fonts.black,
+                  letterSpacing: 0.2,
+                }}
+              >
+                {selectedIds.length} sélectionné(s)
+              </Text>
             </View>
           </View>
 
-          {loading && <ActivityIndicator />}
+          {loading && (
+            <View
+              style={{
+                padding: 22,
+                borderRadius: 28,
+                backgroundColor: TA.colors.surface,
+                borderWidth: 2,
+                borderColor: TA.colors.borderMedium,
+                alignItems: "center",
+                ...TA.shadow.card,
+              }}
+            >
+              <ActivityIndicator />
+            </View>
+          )}
 
-          {error && <ErrorBox message={error} />}
+          {error && (
+            <ErrorBox message={error} />
+          )}
 
           {!loading && (
             <View
@@ -259,160 +249,183 @@ export default function InterestsScreen() {
               }}
             >
               {interests.map((interest) => {
-                const selected = selectedIds.includes(interest.id);
+                const selected =
+                  selectedIds.includes(interest.id);
 
-                const details =
-                  INTEREST_DETAILS[interest.name] || {
-                    icon: "✦",
-                    description: "Ajouter cette catégorie.",
-                  };
+                const visual =
+                  getInterestVisualByName(
+                    interest.name
+                  );
 
                 return (
                   <Pressable
                     key={interest.id}
-                    onPress={() => toggleInterest(interest.id)}
+                    onPress={() =>
+                      toggleInterest(interest.id)
+                    }
                     style={({ pressed }) => ({
                       width: "48%",
-                      minWidth: 155,
+                      minWidth: 145,
                       flexGrow: 1,
-                      padding: 18,
-                      borderRadius: 26,
+                      minHeight: 132,
+                      padding: 12,
+                      borderRadius: 24,
                       borderWidth: 2,
                       borderColor: selected
-                        ? "#7C63F2"
-                        : "rgba(90, 74, 54, 0.16)",
+                        ? visual.color
+                        : TA.colors.borderMedium,
                       backgroundColor: selected
-                        ? "#FFF0EB"
-                        : "#FFFFFF",
-                      gap: 10,
+                        ? visual.softColor
+                        : TA.colors.surface,
                       opacity: pressed ? 0.82 : 1,
                       transform: [
                         {
                           translateY: pressed ? 1 : 0,
                         },
                       ],
+                      ...TA.shadow.soft,
                     })}
                   >
                     <View
                       style={{
-                        flexDirection: "row",
                         alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 10,
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 86,
+                          height: 86,
+                          borderRadius: 26,
+                          backgroundColor:
+                            visual.softColor,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {visual.image ? (
+                          <ExpoImage
+                            source={visual.image}
+                            contentFit="contain"
+                            style={{
+                              width: 84,
+                              height: 84,
+                            }}
+                          />
+                        ) : (
+                          <Text
+                            style={{
+                              color: visual.color,
+                              fontSize: 34,
+                              fontFamily: TA.fonts.black,
+                            }}
+                          >
+                            ✦
+                          </Text>
+                        )}
+                      </View>
+
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: TA.colors.ink,
+                          fontSize: 21,
+                          lineHeight: 24,
+                          fontFamily: TA.fonts.black,
+                          letterSpacing: -0.8,
+                          textAlign: "center",
+                        }}
+                      >
+                        {interest.name}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 10,
+                        right: 10,
+                        width: 28,
+                        height: 28,
+                        borderRadius: 999,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: selected
+                          ? visual.color
+                          : TA.colors.bgMiddle,
+                        borderWidth: 2,
+                        borderColor: selected
+                          ? visual.color
+                          : TA.colors.borderMedium,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 34,
+                          color: selected
+                            ? TA.colors.white
+                            : TA.colors.inkLight,
+                          fontSize: 14,
+                          fontFamily: TA.fonts.black,
                         }}
                       >
-                        {details.icon}
+                        {selected ? "✓" : "+"}
                       </Text>
-
-                      <View
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 999,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: selected
-                            ? "#7C63F2"
-                            : "#F4EFE8",
-                          borderWidth: 2,
-                          borderColor: selected
-                            ? "#7C63F2"
-                            : "rgba(90, 74, 54, 0.16)",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: selected ? "#FFFFFF" : "#8E8A9D",
-                            fontWeight: "900",
-                          }}
-                        >
-                          {selected ? "✓" : "+"}
-                        </Text>
-                      </View>
                     </View>
-
-                    <Text
-                      style={{
-                        fontSize: 21,
-                        color: "#151B2F",
-                        fontWeight: "900",
-                      }}
-                    >
-                      {interest.name}
-                    </Text>
-
-                    <Text
-                      style={{
-                        color: "rgba(21, 27, 47, 0.58)",
-                        lineHeight: 20,
-                        fontWeight: "600",
-                      }}
-                    >
-                      {details.description}
-                    </Text>
-
-                    <Text
-                      style={{
-                        color: selected ? "#7C63F2" : "#8E8A9D",
-                        fontWeight: "900",
-                      }}
-                    >
-                      {selected ? "Sélectionné" : "Sélectionner"}
-                    </Text>
                   </Pressable>
                 );
               })}
             </View>
           )}
+        </View>
+      </ScrollView>
 
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          paddingHorizontal: 18,
+          paddingTop: 14,
+          paddingBottom: 24,
+          backgroundColor: TA.colors.bgStart,
+          borderTopWidth: 1,
+          borderTopColor: "rgba(21, 27, 47, 0.08)",
+          zIndex: 120,
+        }}
+      >
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            alignSelf: "center",
+            gap: 10,
+          }}
+        >
           {!loading && (
             <PrimaryButton
-              label={saving ? "Enregistrement..." : saveLabel}
+              label={
+                saving
+                  ? "Enregistrement..."
+                  : saveLabel
+              }
               onPress={handleSave}
-              disabled={saving || selectedIds.length === 0}
+              disabled={
+                saving || selectedIds.length === 0
+              }
             />
           )}
 
           {editingExistingSelection && (
             <SecondaryButton
               label="← Retour au profil"
-              onPress={() => router.replace("/profile")}
+              onPress={handleBack}
+              disabled={saving}
             />
           )}
-
-          {editingExistingSelection && (
-            <MobileNav active="profile" />
-          )}
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
-  );
-}
-
-function SelectionPill({ label }: { label: string }) {
-  return (
-    <View
-      style={{
-        paddingVertical: 7,
-        paddingHorizontal: 10,
-        borderRadius: 999,
-        backgroundColor: "rgba(255,255,255,0.12)",
-      }}
-    >
-      <Text
-        style={{
-          color: "#FFFFFF",
-          fontSize: 12,
-          fontWeight: "900",
-        }}
-      >
-        {label}
-      </Text>
-    </View>
   );
 }
