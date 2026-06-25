@@ -1,4 +1,4 @@
-class DisableUnpolishedActivityInterests < ActiveRecord::Migration[8.1]
+class DisableUnpolishedActivityInterests < ActiveRecord::Migration[7.1]
   DISABLED_INTEREST_NAMES = [
     "Productivité",
     "Photo",
