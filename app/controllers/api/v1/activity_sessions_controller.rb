@@ -1,7 +1,6 @@
 module Api
   module V1
     class ActivitySessionsController < BaseController
-      QUIZ_QUESTIONS_LIMIT = 10
       LANGUAGE_ITEMS_LIMIT = 30
 
       MOBILE_DISABLED_INTEREST_NAMES = [
@@ -254,16 +253,15 @@ module Api
 
         return Activity.none if interest_ids.empty?
 
-        Activity
-          .where(
-            active: true,
-            interest_id: interest_ids,
-            mood_id: activity_session_params[:mood_id],
-            duration_id: activity_session_params[:duration_id],
-            location_id: allowed_location_ids(
-              activity_session_params[:location_id]
-            )
+        Activity.where(
+          active: true,
+          interest_id: interest_ids,
+          mood_id: activity_session_params[:mood_id],
+          duration_id: activity_session_params[:duration_id],
+          location_id: allowed_location_ids(
+            activity_session_params[:location_id]
           )
+        )
       end
 
       def activity_recommendations_for(user, reference_activity)
@@ -298,7 +296,7 @@ module Api
 
       def mobile_enabled_activity?(activity)
         activity.interest.present? &&
-          MOBILE_DISABLED_INTEREST_NAMES.exclude?(activity.interest.name)
+          !MOBILE_DISABLED_INTEREST_NAMES.include?(activity.interest.name)
       end
 
       def activities_in_saved_order(activity_ids)
@@ -409,7 +407,7 @@ module Api
         if activity.code_quiz?
           base_payload.merge(
             quiz_kind: "code",
-            quiz_questions: serialize_code_quiz_questions(activity)
+            quiz_questions: serialize_code_quiz_questions
           )
         elsif activity.culture_activity?
           base_payload.merge(
@@ -439,20 +437,13 @@ module Api
         end
       end
 
-      def serialize_code_quiz_questions(activity)
-        questions_per_family = 4
-
-        questions = CodeQuestion::FAMILY_NAMES.flat_map do |family|
-          CodeQuestion.weighted_pool(
-            family: family,
-            mood_name: activity.mood.name,
-            limit: questions_per_family
-          )
+      def serialize_code_quiz_questions
+        CodeQuestion::FAMILY_NAMES.flat_map do |family|
+          CodeQuestion
+            .where(family: family)
+            .order(Arel.sql("RANDOM()"))
+            .map { |question| serialize_quiz_question(question) }
         end
-
-        questions
-          .sample(quiz_questions_limit_for(activity))
-          .map { |question| serialize_quiz_question(question) }
       end
 
       def serialize_culture_quiz_questions(activity)
@@ -460,8 +451,8 @@ module Api
           .where(
             difficulty: culture_difficulty_for(activity)
           )
+          .order(:category)
           .order(Arel.sql("RANDOM()"))
-          .limit(quiz_questions_limit_for(activity))
           .map { |question| serialize_quiz_question(question) }
       end
 
@@ -479,15 +470,6 @@ module Api
           correct_answer: question.correct_answer,
           answers: question.answers
         }
-      end
-
-      def quiz_questions_limit_for(activity)
-        duration_value = activity.duration.value.to_i
-
-        [
-          [duration_value, 5].max,
-          QUIZ_QUESTIONS_LIMIT
-        ].min
       end
 
       def culture_difficulty_for(activity)
