@@ -30,12 +30,6 @@ export default class extends Controller {
     this.remainingSeconds = this.durationSecondsValue || 300
     this.timerInterval = null
     this.quizFinished = false
-    this.pausedByModal = false
-
-    this.boundPauseTimer = this.pauseTimer.bind(this)
-    this.boundResumeTimer = this.resumeTimer.bind(this)
-    window.addEventListener("tiny-act:activity-paused", this.boundPauseTimer)
-    window.addEventListener("tiny-act:activity-resumed", this.boundResumeTimer)
 
     this.startScreenTarget.hidden = false
     this.quizHeaderTarget.hidden = true
@@ -47,8 +41,6 @@ export default class extends Controller {
 
   disconnect() {
     this.clearTimer()
-    window.removeEventListener("tiny-act:activity-paused", this.boundPauseTimer)
-    window.removeEventListener("tiny-act:activity-resumed", this.boundResumeTimer)
   }
 
   selectCategory(event) {
@@ -66,7 +58,6 @@ export default class extends Controller {
     this.completedCount = 0
     this.answered = false
     this.quizFinished = false
-    this.pausedByModal = false
     this.remainingSeconds = this.durationSecondsValue || 300
 
     this.selectedCategoryTarget.textContent = category
@@ -95,20 +86,6 @@ export default class extends Controller {
         this.showResult()
       }
     }, 1000)
-  }
-
-  pauseTimer() {
-    if (this.quizFinished || this.startScreenTarget.hidden === false) return
-
-    this.pausedByModal = true
-    this.clearTimer()
-  }
-
-  resumeTimer() {
-    if (!this.pausedByModal || this.quizFinished) return
-
-    this.pausedByModal = false
-    this.startTimer()
   }
 
   clearTimer() {
@@ -180,7 +157,7 @@ export default class extends Controller {
   }
 
   selectAnswer(event) {
-    if (this.answered || this.quizFinished || this.pausedByModal) return
+    if (this.answered || this.quizFinished) return
 
     if (this.remainingSeconds <= 0) {
       this.showResult()
@@ -230,7 +207,7 @@ export default class extends Controller {
   }
 
   nextQuestion() {
-    if (!this.answered || this.quizFinished || this.pausedByModal) return
+    if (!this.answered || this.quizFinished) return
 
     if (this.remainingSeconds <= 0) {
       this.showResult()
