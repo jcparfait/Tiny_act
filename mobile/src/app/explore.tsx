@@ -47,17 +47,20 @@ const ROOM_IMAGE_SIZE = 920;
 const ISO_TILE_WIDTH = 96;
 const ISO_TILE_HEIGHT = 54;
 
-/*
-  Réglage actuel de la grille :
-  - décalée vers la droite pour ne plus partir trop à gauche ;
-  - descendue pour coller au sol ;
-  - hauteur de room passée à 7 pour aller plus loin vers le bas-gauche.
-*/
-const ISO_ORIGIN_X = 470;
-const ISO_ORIGIN_Y = 452;
+const ISO_ORIGIN_X = 490;
+const ISO_ORIGIN_Y = 472;
 
 const GRID_LINE_COLOR = "#FF1F14";
 const SHOW_PLACEMENT_GRID = false;
+
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 2.8;
+const ZOOM_STEP = 0.28;
+
+type ViewOffset = {
+  x: number;
+  y: number;
+};
 
 function remainingFurnitureXp(
   furniture: RoomInventoryItem
@@ -68,6 +71,70 @@ function remainingFurnitureXp(
   );
 }
 
+function clamp(
+  value: number,
+  min: number,
+  max: number
+) {
+  return Math.min(
+    Math.max(value, min),
+    max
+  );
+}
+
+function distanceBetweenTouches(
+  touches: Array<{
+    pageX: number;
+    pageY: number;
+  }>
+) {
+  if (touches.length < 2) return 0;
+
+  const firstTouch = touches[0];
+  const secondTouch = touches[1];
+
+  const deltaX =
+    secondTouch.pageX - firstTouch.pageX;
+
+  const deltaY =
+    secondTouch.pageY - firstTouch.pageY;
+
+  return Math.sqrt(
+    deltaX * deltaX + deltaY * deltaY
+  );
+}
+
+function clampViewOffset(
+  offset: ViewOffset,
+  canvasWidth: number,
+  canvasHeight: number,
+  zoom: number
+): ViewOffset {
+  if (canvasWidth <= 0 || canvasHeight <= 0) {
+    return {
+      x: 0,
+      y: 0,
+    };
+  }
+
+  const worldSize = canvasWidth * zoom;
+
+  const minX = Math.min(
+    0,
+    canvasWidth - worldSize
+  );
+
+  const minY = Math.min(
+    0,
+    canvasHeight - worldSize
+  );
+
+  return {
+    x: clamp(offset.x, minX, 0),
+    y: clamp(offset.y, minY, 0),
+  };
+}
+
 export default function RoomScreen() {
   const [roomData, setRoomData] =
     useState<RoomResponse | null>(null);
@@ -76,9 +143,6 @@ export default function RoomScreen() {
     selectedFurnitureId,
     setSelectedFurnitureId,
   ] = useState<number | null>(null);
-
-  const [roomDragging, setRoomDragging] =
-    useState(false);
 
   const [loading, setLoading] =
     useState(true);
@@ -174,6 +238,7 @@ export default function RoomScreen() {
 
         return {
           ...current,
+
           room: {
             ...current.room,
             furnitures: [
@@ -181,6 +246,7 @@ export default function RoomScreen() {
               response.room_furniture,
             ],
           },
+
           inventory: current.inventory.map((item) =>
             item.id === furniture.id
               ? {
@@ -205,21 +271,6 @@ export default function RoomScreen() {
     } finally {
       setBusyAction(null);
     }
-  }
-
-  async function handleMove(
-    deltaX: number,
-    deltaY: number
-  ) {
-    if (!selectedFurniture || busyAction) {
-      return;
-    }
-
-    await moveFurnitureTo(
-      selectedFurniture,
-      selectedFurniture.x + deltaX,
-      selectedFurniture.y + deltaY
-    );
   }
 
   async function handleDrop(
@@ -258,10 +309,6 @@ export default function RoomScreen() {
         targetY
       )
     ) {
-      setError(
-        "Le meuble ne peut pas être placé ici."
-      );
-
       return;
     }
 
@@ -292,10 +339,9 @@ export default function RoomScreen() {
     } catch (moveError) {
       replacePlacedFurniture(previousItem);
 
-      setError(
-        moveError instanceof Error
-          ? moveError.message
-          : "Impossible de déplacer ce meuble."
+      console.warn(
+        "Impossible de déplacer ce meuble",
+        moveError
       );
     } finally {
       setBusyAction(null);
@@ -326,6 +372,7 @@ export default function RoomScreen() {
 
         return {
           ...current,
+
           room: {
             ...current.room,
             furnitures:
@@ -335,6 +382,7 @@ export default function RoomScreen() {
                   furnitureToDelete.id
               ),
           },
+
           inventory: current.inventory.map((item) =>
             item.id ===
             furnitureToDelete.furniture_id
@@ -370,8 +418,10 @@ export default function RoomScreen() {
 
       return {
         ...current,
+
         room: {
           ...current.room,
+
           furnitures:
             current.room.furnitures.map((item) =>
               item.id === replacement.id
@@ -405,16 +455,11 @@ export default function RoomScreen() {
 
       <MobileNav active="room" />
 
-      <ScrollView
-        scrollEnabled={!roomDragging}
+      <View
         style={{
           flex: 1,
-          backgroundColor: TA.colors.bgStart,
-        }}
-        contentContainerStyle={{
-          alignItems: "center",
           paddingTop: 125,
-          paddingBottom: 34,
+          backgroundColor: TA.colors.bgStart,
         }}
       >
         <View
@@ -422,16 +467,17 @@ export default function RoomScreen() {
             width: "100%",
             maxWidth: 520,
             paddingHorizontal: 18,
-            gap: 6,
+            alignSelf: "center",
+            gap: 3,
           }}
         >
           <Text
             style={{
               color: TA.colors.inkLight,
-              fontSize: 13,
+              fontSize: 12,
               fontFamily: TA.fonts.black,
               textTransform: "uppercase",
-              letterSpacing: 2,
+              letterSpacing: 1.7,
             }}
           >
             Ta room
@@ -440,10 +486,10 @@ export default function RoomScreen() {
           <Text
             style={{
               color: TA.colors.ink,
-              fontSize: 44,
-              lineHeight: 45,
+              fontSize: 34,
+              lineHeight: 36,
               fontFamily: TA.fonts.black,
-              letterSpacing: -2,
+              letterSpacing: -1.6,
             }}
           >
             Décore ton espace
@@ -453,24 +499,13 @@ export default function RoomScreen() {
         {loading && (
           <View
             style={{
-              padding: 40,
+              flex: 1,
               alignItems: "center",
+              justifyContent: "center",
+              padding: 40,
             }}
           >
             <ActivityIndicator />
-          </View>
-        )}
-
-        {!loading && error && (
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 520,
-              paddingHorizontal: 18,
-              marginTop: 16,
-            }}
-          >
-            <ErrorBox message={error} />
           </View>
         )}
 
@@ -479,8 +514,9 @@ export default function RoomScreen() {
             <View
               style={{
                 width: "100%",
-                maxWidth: 680,
-                marginTop: 18,
+                maxWidth: 760,
+                alignSelf: "center",
+                marginTop: 8,
               }}
             >
               <RoomCanvas
@@ -489,76 +525,102 @@ export default function RoomScreen() {
                 disabled={busyAction !== null}
                 onSelect={setSelectedFurnitureId}
                 onDrop={handleDrop}
-                onDraggingChange={setRoomDragging}
               />
             </View>
 
-            <View
+            <ScrollView
               style={{
+                flex: 1,
                 width: "100%",
-                maxWidth: 520,
-                paddingHorizontal: 18,
-                marginTop: 10,
-                gap: 16,
+                backgroundColor: TA.colors.bgStart,
+              }}
+              contentContainerStyle={{
+                alignItems: "center",
+                paddingTop: 10,
+                paddingBottom: 34,
               }}
             >
-              <Text
+              <View
                 style={{
-                  color: TA.colors.inkMuted,
-                  fontSize: 13,
-                  lineHeight: 18,
-                  fontFamily: TA.fonts.bold,
-                  textAlign: "center",
+                  width: "100%",
+                  maxWidth: 520,
+                  paddingHorizontal: 18,
+                  gap: 14,
                 }}
               >
-                Appuie sur un objet puis fais-le glisser
-                sur la grille.
-              </Text>
+                {error && <ErrorBox message={error} />}
 
-              {selectedFurniture && (
-                <FurnitureControls
-                  furniture={selectedFurniture}
-                  busy={busyAction !== null}
-                  deleting={
-                    busyAction ===
-                    `delete-${selectedFurniture.id}`
-                  }
-                  onMove={handleMove}
-                  onDelete={handleDelete}
-                />
-              )}
-
-              <FurnitureShelf
-                unlockedFurniture={unlockedFurniture}
-                nextLockedFurniture={
-                  nextLockedFurniture
-                }
-                busyAction={busyAction}
-                onPlace={handlePlace}
-              />
-
-              <Pressable
-                onPress={refreshRoom}
-                disabled={loading}
-                style={({ pressed }) => ({
-                  opacity:
-                    loading || pressed ? 0.55 : 1,
-                })}
-              >
                 <Text
                   style={{
-                    color: TA.colors.purple,
+                    color: TA.colors.inkMuted,
+                    fontSize: 12,
+                    lineHeight: 17,
+                    fontFamily: TA.fonts.bold,
                     textAlign: "center",
-                    fontFamily: TA.fonts.black,
                   }}
                 >
-                  Actualiser la room
+                  Pince ou utilise les boutons pour zoomer. Fais glisser le fond pour te déplacer, puis les objets pour les placer.
                 </Text>
-              </Pressable>
-            </View>
+
+                {selectedFurniture && (
+                  <FurnitureControls
+                    furniture={selectedFurniture}
+                    busy={busyAction !== null}
+                    deleting={
+                      busyAction ===
+                      `delete-${selectedFurniture.id}`
+                    }
+                    onDelete={handleDelete}
+                  />
+                )}
+
+                <FurnitureShelf
+                  unlockedFurniture={unlockedFurniture}
+                  nextLockedFurniture={
+                    nextLockedFurniture
+                  }
+                  busyAction={busyAction}
+                  onPlace={handlePlace}
+                />
+
+                <Pressable
+                  onPress={refreshRoom}
+                  disabled={loading}
+                  style={({ pressed }) => ({
+                    opacity:
+                      loading || pressed ? 0.55 : 1,
+                    paddingVertical: 8,
+                  })}
+                >
+                  <Text
+                    style={{
+                      color: TA.colors.purple,
+                      textAlign: "center",
+                      fontFamily: TA.fonts.black,
+                    }}
+                  >
+                    Actualiser la room
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </>
         )}
-      </ScrollView>
+
+        {!loading && !roomData && error && (
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              paddingHorizontal: 18,
+              alignSelf: "center",
+              marginTop: 16,
+            }}
+          >
+            <ErrorBox message={error} />
+          </View>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -569,7 +631,6 @@ function RoomCanvas({
   disabled,
   onSelect,
   onDrop,
-  onDraggingChange,
 }: {
   room: MobileRoom;
   selectedId: number | null;
@@ -580,20 +641,201 @@ function RoomCanvas({
     targetX: number,
     targetY: number
   ) => void;
-  onDraggingChange: (dragging: boolean) => void;
 }) {
   const [canvasWidth, setCanvasWidth] =
     useState(0);
+
+  const [zoom, setZoom] =
+    useState(1.28);
+
+  const [viewOffset, setViewOffset] =
+    useState<ViewOffset>({
+      x: 0,
+      y: 0,
+    });
+
+  const panStartOffset =
+    useRef<ViewOffset>({
+      x: 0,
+      y: 0,
+    });
+
+  const pinchStartDistance =
+    useRef(0);
+
+  const pinchStartZoom =
+    useRef(zoom);
 
   const canvasHeight =
     canvasWidth > 0
       ? Math.min(canvasWidth, 680)
       : 390;
 
-  const scale =
+  const baseScale =
     canvasWidth > 0
       ? canvasWidth / ROOM_IMAGE_SIZE
       : 1;
+
+  const worldScale = baseScale * zoom;
+  const worldSize = ROOM_IMAGE_SIZE * worldScale;
+
+  function setClampedZoom(
+    nextZoom: number
+  ) {
+    const safeZoom = clamp(
+      nextZoom,
+      MIN_ZOOM,
+      MAX_ZOOM
+    );
+
+    setZoom(safeZoom);
+
+    setViewOffset((currentOffset) =>
+      clampViewOffset(
+        currentOffset,
+        canvasWidth,
+        canvasHeight,
+        safeZoom
+      )
+    );
+  }
+
+  function resetView() {
+    const defaultZoom = 1.28;
+
+    setZoom(defaultZoom);
+
+    setViewOffset(
+      clampViewOffset(
+        {
+          x: -canvasWidth * 0.12,
+          y: -canvasHeight * 0.08,
+        },
+        canvasWidth,
+        canvasHeight,
+        defaultZoom
+      )
+    );
+  }
+
+  useEffect(() => {
+    if (canvasWidth <= 0) return;
+
+    setViewOffset(
+      clampViewOffset(
+        {
+          x: -canvasWidth * 0.12,
+          y: -canvasHeight * 0.08,
+        },
+        canvasWidth,
+        canvasHeight,
+        zoom
+      )
+    );
+  }, [canvasWidth]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () =>
+          false,
+
+        onMoveShouldSetPanResponder: (
+          event,
+          gesture
+        ) => {
+          const touches =
+            event.nativeEvent.touches || [];
+
+          return (
+            touches.length >= 2 ||
+            Math.abs(gesture.dx) +
+              Math.abs(gesture.dy) >
+              8
+          );
+        },
+
+        onPanResponderGrant: (event) => {
+          const touches =
+            event.nativeEvent.touches || [];
+
+          panStartOffset.current =
+            viewOffset;
+
+          if (touches.length >= 2) {
+            pinchStartDistance.current =
+              distanceBetweenTouches(touches);
+
+            pinchStartZoom.current = zoom;
+          }
+        },
+
+        onPanResponderMove: (
+          event,
+          gesture
+        ) => {
+          const touches =
+            event.nativeEvent.touches || [];
+
+          if (touches.length >= 2) {
+            const currentDistance =
+              distanceBetweenTouches(touches);
+
+            if (
+              pinchStartDistance.current <= 0 ||
+              currentDistance <= 0
+            ) {
+              return;
+            }
+
+            const nextZoom =
+              pinchStartZoom.current *
+              (currentDistance /
+                pinchStartDistance.current);
+
+            setClampedZoom(nextZoom);
+
+            return;
+          }
+
+          setViewOffset(
+            clampViewOffset(
+              {
+                x:
+                  panStartOffset.current.x +
+                  gesture.dx,
+
+                y:
+                  panStartOffset.current.y +
+                  gesture.dy,
+              },
+              canvasWidth,
+              canvasHeight,
+              zoom
+            )
+          );
+        },
+
+        onPanResponderRelease: () => {
+          panStartOffset.current =
+            viewOffset;
+        },
+
+        onPanResponderTerminate: () => {
+          panStartOffset.current =
+            viewOffset;
+        },
+
+        onPanResponderTerminationRequest:
+          () => false,
+      }),
+    [
+      canvasHeight,
+      canvasWidth,
+      viewOffset,
+      zoom,
+    ]
+  );
 
   return (
     <View
@@ -609,39 +851,126 @@ function RoomCanvas({
         backgroundColor: TA.colors.bgStart,
       }}
     >
-      <ExpoImage
-        source={ROOM_BACKGROUND}
-        contentFit="contain"
-        contentPosition="center"
+      <View
+        {...panResponder.panHandlers}
         style={{
           position: "absolute",
           top: 0,
           left: 0,
-          width: canvasWidth,
-          height: canvasHeight,
+          right: 0,
+          bottom: 0,
         }}
-      />
+      >
+        <Animated.View
+          style={{
+            position: "absolute",
+            left: viewOffset.x,
+            top: viewOffset.y,
+            width: worldSize,
+            height: worldSize,
+          }}
+        >
+          <ExpoImage
+            source={ROOM_BACKGROUND}
+            contentFit="contain"
+            contentPosition="center"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: worldSize,
+              height: worldSize,
+            }}
+          />
 
-      {SHOW_PLACEMENT_GRID && (
-        <IsoPlacementGrid
-          room={room}
-          scale={scale}
-        />
-      )}
+          {SHOW_PLACEMENT_GRID && (
+            <IsoPlacementGrid
+              room={room}
+              scale={worldScale}
+            />
+          )}
 
-      {room.furnitures.map((item) => (
-        <DraggableFurniture
-          key={item.id}
-          item={item}
-          scale={scale}
-          selected={selectedId === item.id}
-          disabled={disabled}
-          onSelect={onSelect}
-          onDrop={onDrop}
-          onDraggingChange={onDraggingChange}
+          {room.furnitures.map((item) => (
+            <DraggableFurniture
+              key={item.id}
+              item={item}
+              scale={worldScale}
+              selected={selectedId === item.id}
+              disabled={disabled}
+              onSelect={onSelect}
+              onDrop={onDrop}
+            />
+          ))}
+        </Animated.View>
+      </View>
+
+      <View
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          flexDirection: "row",
+          gap: 7,
+          zIndex: 120,
+        }}
+      >
+        <ZoomButton
+          label="−"
+          onPress={() =>
+            setClampedZoom(zoom - ZOOM_STEP)
+          }
         />
-      ))}
+
+        <ZoomButton
+          label="+"
+          onPress={() =>
+            setClampedZoom(zoom + ZOOM_STEP)
+          }
+        />
+
+        <ZoomButton
+          label="↺"
+          onPress={resetView}
+        />
+      </View>
     </View>
+  );
+}
+
+function ZoomButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 40,
+        height: 40,
+        borderRadius: 999,
+        backgroundColor: TA.colors.surface,
+        borderWidth: 1.5,
+        borderColor: TA.colors.borderMedium,
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: pressed ? 0.72 : 1,
+        ...TA.shadow.soft,
+      })}
+    >
+      <Text
+        style={{
+          color: TA.colors.ink,
+          fontSize: 22,
+          lineHeight: 25,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -753,7 +1082,6 @@ function DraggableFurniture({
   disabled,
   onSelect,
   onDrop,
-  onDraggingChange,
 }: {
   item: RoomFurnitureItem;
   scale: number;
@@ -765,7 +1093,6 @@ function DraggableFurniture({
     targetX: number,
     targetY: number
   ) => void;
-  onDraggingChange: (dragging: boolean) => void;
 }) {
   const pan = useRef(
     new Animated.ValueXY()
@@ -798,7 +1125,6 @@ function DraggableFurniture({
 
         onPanResponderGrant: () => {
           onSelect(item.id);
-          onDraggingChange(true);
         },
 
         onPanResponderMove: (
@@ -827,8 +1153,6 @@ function DraggableFurniture({
             y: 0,
           });
 
-          onDraggingChange(false);
-
           if (
             delta.x !== 0 ||
             delta.y !== 0
@@ -849,8 +1173,6 @@ function DraggableFurniture({
             },
             useNativeDriver: false,
           }).start();
-
-          onDraggingChange(false);
         },
 
         onPanResponderTerminationRequest:
@@ -859,7 +1181,6 @@ function DraggableFurniture({
     [
       disabled,
       item,
-      onDraggingChange,
       onDrop,
       onSelect,
       pan,
@@ -1150,27 +1471,22 @@ function FurnitureControls({
   furniture,
   busy,
   deleting,
-  onMove,
   onDelete,
 }: {
   furniture: RoomFurnitureItem;
   busy: boolean;
   deleting: boolean;
-  onMove: (
-    deltaX: number,
-    deltaY: number
-  ) => void;
   onDelete: () => void;
 }) {
   return (
     <View
       style={{
-        padding: 16,
-        borderRadius: 26,
+        padding: 14,
+        borderRadius: 24,
         backgroundColor: TA.colors.surface,
         borderWidth: 1.5,
         borderColor: TA.colors.borderMedium,
-        gap: 14,
+        gap: 12,
         ...TA.shadow.soft,
       }}
     >
@@ -1191,49 +1507,11 @@ function FurnitureControls({
             marginTop: 4,
             color: TA.colors.inkMuted,
             fontFamily: TA.fonts.bold,
+            fontSize: 13,
           }}
         >
-          Position {furniture.x + 1},{" "}
-          {furniture.y + 1}
+          Sélectionné · glisse-le directement dans la room.
         </Text>
-      </View>
-
-      <View
-        style={{
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <MoveButton
-          label="↑"
-          disabled={busy}
-          onPress={() => onMove(0, -1)}
-        />
-
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 8,
-          }}
-        >
-          <MoveButton
-            label="←"
-            disabled={busy}
-            onPress={() => onMove(-1, 0)}
-          />
-
-          <MoveButton
-            label="↓"
-            disabled={busy}
-            onPress={() => onMove(0, 1)}
-          />
-
-          <MoveButton
-            label="→"
-            disabled={busy}
-            onPress={() => onMove(1, 0)}
-          />
-        </View>
       </View>
 
       <Pressable
@@ -1262,45 +1540,6 @@ function FurnitureControls({
         </Text>
       </Pressable>
     </View>
-  );
-}
-
-function MoveButton({
-  label,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => ({
-        width: 58,
-        height: 48,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 16,
-        backgroundColor: TA.colors.bgMiddle,
-        borderWidth: 1.5,
-        borderColor: TA.colors.borderMedium,
-        opacity:
-          disabled || pressed ? 0.55 : 1,
-      })}
-    >
-      <Text
-        style={{
-          color: TA.colors.ink,
-          fontSize: 22,
-          fontFamily: TA.fonts.black,
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -1419,13 +1658,13 @@ function furnitureScreenSize(
     2;
 
   const width = Math.max(
-    90,
-    footprintWidth * 1.06
+    128,
+    footprintWidth * 1.35
   );
 
   const height = Math.max(
-    100,
-    width * 0.92 + item.height * 22
+    132,
+    width * 0.96 + item.height * 24
   );
 
   return {
