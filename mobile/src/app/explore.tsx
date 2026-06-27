@@ -5,6 +5,8 @@ import {
   useState,
 } from "react";
 
+import { useRouter } from "expo-router";
+
 import {
   ActivityIndicator,
   Animated,
@@ -136,6 +138,8 @@ function clampViewOffset(
 }
 
 export default function RoomScreen() {
+  const router = useRouter();
+
   const [roomData, setRoomData] =
     useState<RoomResponse | null>(null);
 
@@ -468,32 +472,63 @@ export default function RoomScreen() {
             maxWidth: 520,
             paddingHorizontal: 18,
             alignSelf: "center",
-            gap: 3,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
           }}
         >
-          <Text
-            style={{
-              color: TA.colors.inkLight,
-              fontSize: 12,
-              fontFamily: TA.fonts.black,
-              textTransform: "uppercase",
-              letterSpacing: 1.7,
-            }}
-          >
-            Ta room
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                color: TA.colors.ink,
+                fontSize: 34,
+                lineHeight: 36,
+                fontFamily: TA.fonts.black,
+                letterSpacing: -1.6,
+              }}
+            >
+              Room
+            </Text>
 
-          <Text
-            style={{
-              color: TA.colors.ink,
-              fontSize: 34,
-              lineHeight: 36,
-              fontFamily: TA.fonts.black,
-              letterSpacing: -1.6,
-            }}
+            <Text
+              style={{
+                marginTop: 2,
+                color: TA.colors.inkMuted,
+                fontSize: 13,
+                lineHeight: 17,
+                fontFamily: TA.fonts.bold,
+              }}
+            >
+              {roomData?.room.furnitures.length || 0} objet(s) placé(s)
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={refreshRoom}
+            disabled={loading}
+            style={({ pressed }) => ({
+              paddingVertical: 9,
+              paddingHorizontal: 13,
+              borderRadius: 999,
+              backgroundColor: TA.colors.surface,
+              borderWidth: 1.5,
+              borderColor: TA.colors.borderMedium,
+              opacity: loading || pressed ? 0.62 : 1,
+              ...TA.shadow.soft,
+            })}
           >
-            Décore ton espace
-          </Text>
+            <Text
+              style={{
+                color: TA.colors.purple,
+                fontSize: 12,
+                lineHeight: 15,
+                fontFamily: TA.fonts.black,
+              }}
+            >
+              Actualiser
+            </Text>
+          </Pressable>
         </View>
 
         {loading && (
@@ -521,10 +556,18 @@ export default function RoomScreen() {
             >
               <RoomCanvas
                 room={roomData.room}
+                selectedFurniture={selectedFurniture}
                 selectedId={selectedFurnitureId}
                 disabled={busyAction !== null}
+                deleteBusy={
+                  selectedFurniture
+                    ? busyAction ===
+                      `delete-${selectedFurniture.id}`
+                    : false
+                }
                 onSelect={setSelectedFurnitureId}
                 onDrop={handleDrop}
+                onDelete={handleDelete}
               />
             </View>
 
@@ -537,7 +580,7 @@ export default function RoomScreen() {
               contentContainerStyle={{
                 alignItems: "center",
                 paddingTop: 10,
-                paddingBottom: 34,
+                paddingBottom: 116,
               }}
             >
               <View
@@ -550,30 +593,6 @@ export default function RoomScreen() {
               >
                 {error && <ErrorBox message={error} />}
 
-                <Text
-                  style={{
-                    color: TA.colors.inkMuted,
-                    fontSize: 12,
-                    lineHeight: 17,
-                    fontFamily: TA.fonts.bold,
-                    textAlign: "center",
-                  }}
-                >
-                  Pince ou utilise les boutons pour zoomer. Fais glisser le fond pour te déplacer, puis les objets pour les placer.
-                </Text>
-
-                {selectedFurniture && (
-                  <FurnitureControls
-                    furniture={selectedFurniture}
-                    busy={busyAction !== null}
-                    deleting={
-                      busyAction ===
-                      `delete-${selectedFurniture.id}`
-                    }
-                    onDelete={handleDelete}
-                  />
-                )}
-
                 <FurnitureShelf
                   unlockedFurniture={unlockedFurniture}
                   nextLockedFurniture={
@@ -582,26 +601,6 @@ export default function RoomScreen() {
                   busyAction={busyAction}
                   onPlace={handlePlace}
                 />
-
-                <Pressable
-                  onPress={refreshRoom}
-                  disabled={loading}
-                  style={({ pressed }) => ({
-                    opacity:
-                      loading || pressed ? 0.55 : 1,
-                    paddingVertical: 8,
-                  })}
-                >
-                  <Text
-                    style={{
-                      color: TA.colors.purple,
-                      textAlign: "center",
-                      fontFamily: TA.fonts.black,
-                    }}
-                  >
-                    Actualiser la room
-                  </Text>
-                </Pressable>
               </View>
             </ScrollView>
           </>
@@ -621,26 +620,37 @@ export default function RoomScreen() {
           </View>
         )}
       </View>
+
+      <RoomFooterActions
+        onBack={() => router.back()}
+        onNewActivity={() => router.replace("/")}
+      />
     </SafeAreaView>
   );
 }
 
 function RoomCanvas({
   room,
+  selectedFurniture,
   selectedId,
   disabled,
+  deleteBusy,
   onSelect,
   onDrop,
+  onDelete,
 }: {
   room: MobileRoom;
+  selectedFurniture: RoomFurnitureItem | null;
   selectedId: number | null;
   disabled: boolean;
+  deleteBusy: boolean;
   onSelect: (id: number) => void;
   onDrop: (
     item: RoomFurnitureItem,
     targetX: number,
     targetY: number
   ) => void;
+  onDelete: () => void;
 }) {
   const [canvasWidth, setCanvasWidth] =
     useState(0);
@@ -910,8 +920,14 @@ function RoomCanvas({
           top: 10,
           right: 10,
           flexDirection: "row",
-          gap: 7,
-          zIndex: 120,
+          gap: 5,
+          padding: 5,
+          borderRadius: 999,
+          backgroundColor: "rgba(255,253,249,0.94)",
+          borderWidth: 1.5,
+          borderColor: TA.colors.borderMedium,
+          zIndex: 140,
+          ...TA.shadow.soft,
         }}
       >
         <ZoomButton
@@ -933,6 +949,39 @@ function RoomCanvas({
           onPress={resetView}
         />
       </View>
+
+      {selectedFurniture && (
+        <Pressable
+          onPress={onDelete}
+          disabled={disabled}
+          style={({ pressed }) => ({
+            position: "absolute",
+            left: 12,
+            bottom: 12,
+            paddingVertical: 11,
+            paddingHorizontal: 15,
+            borderRadius: 999,
+            backgroundColor: TA.colors.dangerBg,
+            borderWidth: 1.5,
+            borderColor: TA.colors.dangerBorder,
+            opacity:
+              disabled || pressed ? 0.66 : 1,
+            zIndex: 140,
+            ...TA.shadow.soft,
+          })}
+        >
+          <Text
+            style={{
+              color: TA.colors.dangerText,
+              fontSize: 13,
+              lineHeight: 16,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            {deleteBusy ? "Suppression..." : "Retirer"}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -948,12 +997,12 @@ function ZoomButton({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 40,
-        height: 40,
+        width: 34,
+        height: 34,
         borderRadius: 999,
-        backgroundColor: TA.colors.surface,
-        borderWidth: 1.5,
-        borderColor: TA.colors.borderMedium,
+        backgroundColor: "transparent",
+        borderWidth: 0,
+        borderColor: "transparent",
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed ? 0.72 : 1,
@@ -963,8 +1012,8 @@ function ZoomButton({
       <Text
         style={{
           color: TA.colors.ink,
-          fontSize: 22,
-          lineHeight: 25,
+          fontSize: 19,
+          lineHeight: 22,
           fontFamily: TA.fonts.black,
         }}
       >
@@ -1251,61 +1300,85 @@ function FurnitureShelf({
   return (
     <View
       style={{
-        padding: 16,
+        paddingVertical: 14,
         borderRadius: 30,
         backgroundColor: TA.colors.surface,
         borderWidth: 1.5,
         borderColor: TA.colors.borderMedium,
-        gap: 14,
+        gap: 13,
         ...TA.shadow.soft,
       }}
     >
-      <View style={{ gap: 4 }}>
-        <Text
-          style={{
-            color: TA.colors.purple,
-            fontSize: 12,
-            fontFamily: TA.fonts.black,
-            textTransform: "uppercase",
-            letterSpacing: 1.2,
-          }}
-        >
-          Inventaire
-        </Text>
+      <View
+        style={{
+          paddingHorizontal: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+        }}
+      >
+        <View>
+          <Text
+            style={{
+              color: TA.colors.ink,
+              fontSize: 22,
+              lineHeight: 26,
+              fontFamily: TA.fonts.black,
+              letterSpacing: -0.7,
+            }}
+          >
+            Objets
+          </Text>
 
-        <Text
-          style={{
-            color: TA.colors.ink,
-            fontSize: 26,
-            lineHeight: 30,
-            fontFamily: TA.fonts.black,
-            letterSpacing: -1,
-          }}
-        >
-          Objets à placer
-        </Text>
+          <Text
+            style={{
+              marginTop: 2,
+              color: TA.colors.inkMuted,
+              fontSize: 12,
+              lineHeight: 15,
+              fontFamily: TA.fonts.bold,
+            }}
+          >
+            {unlockedFurniture.length} disponible(s)
+          </Text>
+        </View>
 
-        <Text
+        <View
           style={{
-            color: TA.colors.inkMuted,
-            fontSize: 13,
-            lineHeight: 18,
-            fontFamily: TA.fonts.bold,
+            paddingVertical: 7,
+            paddingHorizontal: 10,
+            borderRadius: 999,
+            backgroundColor: "#F2EDFF",
+            borderWidth: 1,
+            borderColor: "#D8CCFF",
           }}
         >
-          Les objets disponibles sont actifs. Les prochains
-          objets apparaissent grisés avec l’XP restant.
-        </Text>
+          <Text
+            style={{
+              color: TA.colors.purple,
+              fontSize: 11,
+              lineHeight: 14,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            Placer dans la room
+          </Text>
+        </View>
       </View>
 
       {unlockedFurniture.length === 0 ? (
-        <EmptyCard text="Termine quelques activités pour débloquer ton premier meuble." />
+        <View style={{ paddingHorizontal: 14 }}>
+          <EmptyCard text="Termine quelques activités pour débloquer ton premier meuble." />
+        </View>
       ) : (
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
             gap: 10,
+            paddingHorizontal: 14,
+            paddingBottom: 3,
           }}
         >
           {unlockedFurniture.map((furniture) => (
@@ -1320,13 +1393,41 @@ function FurnitureShelf({
               onPlace={() => onPlace(furniture)}
             />
           ))}
+        </ScrollView>
+      )}
 
-          {nextLockedFurniture.map((furniture) => (
-            <LockedFurnitureCard
-              key={furniture.id}
-              furniture={furniture}
-            />
-          ))}
+      {nextLockedFurniture.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <Text
+            style={{
+              paddingHorizontal: 14,
+              color: TA.colors.inkLight,
+              fontSize: 12,
+              lineHeight: 15,
+              fontFamily: TA.fonts.black,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            Prochains objets
+          </Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              gap: 10,
+              paddingHorizontal: 14,
+              paddingBottom: 3,
+            }}
+          >
+            {nextLockedFurniture.map((furniture) => (
+              <LockedFurnitureCard
+                key={furniture.id}
+                furniture={furniture}
+              />
+            ))}
+          </ScrollView>
         </View>
       )}
     </View>
@@ -1349,10 +1450,8 @@ function InventoryCard({
       onPress={onPlace}
       disabled={disabled}
       style={({ pressed }) => ({
-        width: "48%",
-        minWidth: 142,
-        flexGrow: 1,
-        minHeight: 128,
+        width: 112,
+        minHeight: 126,
         padding: 10,
         borderRadius: 22,
         backgroundColor: TA.colors.surface,
@@ -1370,7 +1469,7 @@ function InventoryCard({
         contentFit="contain"
         style={{
           width: "100%",
-          height: 74,
+          height: 70,
         }}
       />
 
@@ -1414,10 +1513,8 @@ function LockedFurnitureCard({
   return (
     <View
       style={{
-        width: "48%",
-        minWidth: 142,
-        flexGrow: 1,
-        minHeight: 128,
+        width: 112,
+        minHeight: 126,
         padding: 10,
         borderRadius: 22,
         backgroundColor: "#E7E0D8",
@@ -1433,7 +1530,7 @@ function LockedFurnitureCard({
         contentFit="contain"
         style={{
           width: "100%",
-          height: 74,
+          height: 70,
           opacity: 0.42,
         }}
       />
@@ -1467,78 +1564,90 @@ function LockedFurnitureCard({
   );
 }
 
-function FurnitureControls({
-  furniture,
-  busy,
-  deleting,
-  onDelete,
+function RoomFooterActions({
+  onBack,
+  onNewActivity,
 }: {
-  furniture: RoomFurnitureItem;
-  busy: boolean;
-  deleting: boolean;
-  onDelete: () => void;
+  onBack: () => void;
+  onNewActivity: () => void;
 }) {
   return (
     <View
       style={{
-        padding: 14,
-        borderRadius: 24,
-        backgroundColor: TA.colors.surface,
-        borderWidth: 1.5,
-        borderColor: TA.colors.borderMedium,
-        gap: 12,
-        ...TA.shadow.soft,
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingHorizontal: 18,
+        paddingTop: 12,
+        paddingBottom: 18,
+        backgroundColor: TA.colors.bgStart,
+        borderTopWidth: 1,
+        borderTopColor: "rgba(90, 74, 54, 0.10)",
       }}
     >
-      <View>
-        <Text
-          numberOfLines={1}
-          style={{
-            color: TA.colors.ink,
-            fontSize: 20,
-            fontFamily: TA.fonts.black,
-          }}
-        >
-          {furniture.name}
-        </Text>
-
-        <Text
-          style={{
-            marginTop: 4,
-            color: TA.colors.inkMuted,
-            fontFamily: TA.fonts.bold,
-            fontSize: 13,
-          }}
-        >
-          Sélectionné · glisse-le directement dans la room.
-        </Text>
-      </View>
-
-      <Pressable
-        disabled={busy}
-        onPress={onDelete}
-        style={({ pressed }) => ({
-          padding: 13,
-          borderRadius: 16,
-          backgroundColor: TA.colors.dangerBg,
-          borderWidth: 1.5,
-          borderColor: TA.colors.dangerBorder,
-          opacity:
-            pressed || busy ? 0.65 : 1,
-        })}
+      <View
+        style={{
+          width: "100%",
+          maxWidth: 520,
+          alignSelf: "center",
+          flexDirection: "row",
+          gap: 10,
+        }}
       >
-        <Text
-          style={{
-            color: TA.colors.dangerText,
-            fontFamily: TA.fonts.black,
-            textAlign: "center",
-          }}
+        <Pressable
+          onPress={onBack}
+          style={({ pressed }) => ({
+            flex: 1,
+            minHeight: 54,
+            borderRadius: 999,
+            backgroundColor: TA.colors.surface,
+            borderWidth: 1.5,
+            borderColor: TA.colors.borderMedium,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.72 : 1,
+          })}
         >
-          {deleting
-            ? "Suppression..."
-            : "Retirer de la room"}
-        </Text>
-      </Pressable>
+          <Text
+            style={{
+              color: TA.colors.ink,
+              fontSize: 14,
+              lineHeight: 17,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            Retour
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onNewActivity}
+          style={({ pressed }) => ({
+            flex: 1.35,
+            minHeight: 54,
+            borderRadius: 999,
+            backgroundColor: TA.colors.purple,
+            borderWidth: 1.5,
+            borderColor: TA.colors.purple,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.78 : 1,
+            ...TA.shadow.soft,
+          })}
+        >
+          <Text
+            style={{
+              color: TA.colors.white,
+              fontSize: 14,
+              lineHeight: 17,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            Nouvelle activité
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
