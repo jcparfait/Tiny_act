@@ -42,6 +42,23 @@ import {
 
 import { TA } from "../theme/tinyActTheme";
 
+const ROOM_IMAGE_SIZE = 920;
+
+const ISO_TILE_WIDTH = 96;
+const ISO_TILE_HEIGHT = 54;
+
+/*
+  Réglage actuel de la grille :
+  - décalée vers la droite pour ne plus partir trop à gauche ;
+  - descendue pour coller au sol ;
+  - hauteur de room passée à 7 pour aller plus loin vers le bas-gauche.
+*/
+const ISO_ORIGIN_X = 470;
+const ISO_ORIGIN_Y = 452;
+
+const GRID_LINE_COLOR = "#FF1F14";
+const SHOW_PLACEMENT_GRID = false;
+
 function remainingFurnitureXp(
   furniture: RoomInventoryItem
 ) {
@@ -55,8 +72,10 @@ export default function RoomScreen() {
   const [roomData, setRoomData] =
     useState<RoomResponse | null>(null);
 
-  const [selectedFurnitureId, setSelectedFurnitureId] =
-    useState<number | null>(null);
+  const [
+    selectedFurnitureId,
+    setSelectedFurnitureId,
+  ] = useState<number | null>(null);
 
   const [roomDragging, setRoomDragging] =
     useState(false);
@@ -155,7 +174,6 @@ export default function RoomScreen() {
 
         return {
           ...current,
-
           room: {
             ...current.room,
             furnitures: [
@@ -163,7 +181,6 @@ export default function RoomScreen() {
               response.room_furniture,
             ],
           },
-
           inventory: current.inventory.map((item) =>
             item.id === furniture.id
               ? {
@@ -309,7 +326,6 @@ export default function RoomScreen() {
 
         return {
           ...current,
-
           room: {
             ...current.room,
             furnitures:
@@ -319,7 +335,6 @@ export default function RoomScreen() {
                   furnitureToDelete.id
               ),
           },
-
           inventory: current.inventory.map((item) =>
             item.id ===
             furnitureToDelete.furniture_id
@@ -340,7 +355,7 @@ export default function RoomScreen() {
       setError(
         deleteError instanceof Error
           ? deleteError.message
-          : "Impossible de retirer ce meuble."
+          : "Impossible de retirer de la room."
       );
     } finally {
       setBusyAction(null);
@@ -355,10 +370,8 @@ export default function RoomScreen() {
 
       return {
         ...current,
-
         room: {
           ...current.room,
-
           furnitures:
             current.room.furnitures.map((item) =>
               item.id === replacement.id
@@ -401,7 +414,6 @@ export default function RoomScreen() {
         contentContainerStyle={{
           alignItems: "center",
           paddingTop: 125,
-          paddingHorizontal: 18,
           paddingBottom: 34,
         }}
       >
@@ -409,52 +421,68 @@ export default function RoomScreen() {
           style={{
             width: "100%",
             maxWidth: 520,
-            gap: 18,
+            paddingHorizontal: 18,
+            gap: 6,
           }}
         >
-          <View style={{ gap: 6 }}>
-            <Text
-              style={{
-                color: TA.colors.inkLight,
-                fontSize: 13,
-                fontFamily: TA.fonts.black,
-                textTransform: "uppercase",
-                letterSpacing: 2,
-              }}
-            >
-              Ta room
-            </Text>
+          <Text
+            style={{
+              color: TA.colors.inkLight,
+              fontSize: 13,
+              fontFamily: TA.fonts.black,
+              textTransform: "uppercase",
+              letterSpacing: 2,
+            }}
+          >
+            Ta room
+          </Text>
 
-            <Text
-              style={{
-                color: TA.colors.ink,
-                fontSize: 44,
-                lineHeight: 45,
-                fontFamily: TA.fonts.black,
-                letterSpacing: -2,
-              }}
-            >
-              Décore ton espace
-            </Text>
+          <Text
+            style={{
+              color: TA.colors.ink,
+              fontSize: 44,
+              lineHeight: 45,
+              fontFamily: TA.fonts.black,
+              letterSpacing: -2,
+            }}
+          >
+            Décore ton espace
+          </Text>
+        </View>
+
+        {loading && (
+          <View
+            style={{
+              padding: 40,
+              alignItems: "center",
+            }}
+          >
+            <ActivityIndicator />
           </View>
+        )}
 
-          {loading && (
+        {!loading && error && (
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              paddingHorizontal: 18,
+              marginTop: 16,
+            }}
+          >
+            <ErrorBox message={error} />
+          </View>
+        )}
+
+        {!loading && roomData && (
+          <>
             <View
               style={{
-                padding: 40,
-                alignItems: "center",
+                width: "100%",
+                maxWidth: 680,
+                marginTop: 18,
               }}
             >
-              <ActivityIndicator />
-            </View>
-          )}
-
-          {error && (
-            <ErrorBox message={error} />
-          )}
-
-          {!loading && roomData && (
-            <>
               <RoomCanvas
                 room={roomData.room}
                 selectedId={selectedFurnitureId}
@@ -463,7 +491,17 @@ export default function RoomScreen() {
                 onDrop={handleDrop}
                 onDraggingChange={setRoomDragging}
               />
+            </View>
 
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 520,
+                paddingHorizontal: 18,
+                marginTop: 10,
+                gap: 16,
+              }}
+            >
               <Text
                 style={{
                   color: TA.colors.inkMuted,
@@ -473,8 +511,8 @@ export default function RoomScreen() {
                   textAlign: "center",
                 }}
               >
-                Appuie sur un meuble puis fais-le glisser
-                pour le déplacer.
+                Appuie sur un objet puis fais-le glisser
+                sur la grille.
               </Text>
 
               {selectedFurniture && (
@@ -517,9 +555,9 @@ export default function RoomScreen() {
                   Actualiser la room
                 </Text>
               </Pressable>
-            </>
-          )}
-        </View>
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -548,11 +586,13 @@ function RoomCanvas({
     useState(0);
 
   const canvasHeight =
-    canvasWidth > 0 ? canvasWidth : 360;
+    canvasWidth > 0
+      ? Math.min(canvasWidth, 680)
+      : 390;
 
   const scale =
     canvasWidth > 0
-      ? canvasWidth / 920
+      ? canvasWidth / ROOM_IMAGE_SIZE
       : 1;
 
   return (
@@ -572,15 +612,22 @@ function RoomCanvas({
       <ExpoImage
         source={ROOM_BACKGROUND}
         contentFit="contain"
-        contentPosition="top center"
+        contentPosition="center"
         style={{
           position: "absolute",
           top: 0,
-          right: 0,
-          bottom: 0,
           left: 0,
+          width: canvasWidth,
+          height: canvasHeight,
         }}
       />
+
+      {SHOW_PLACEMENT_GRID && (
+        <IsoPlacementGrid
+          room={room}
+          scale={scale}
+        />
+      )}
 
       {room.furnitures.map((item) => (
         <DraggableFurniture
@@ -595,6 +642,107 @@ function RoomCanvas({
         />
       ))}
     </View>
+  );
+}
+
+function IsoPlacementGrid({
+  room,
+  scale,
+}: {
+  room: MobileRoom;
+  scale: number;
+}) {
+  const gridLines = [];
+
+  for (let x = 0; x <= room.width; x += 1) {
+    gridLines.push({
+      from: isoPoint(x, 0),
+      to: isoPoint(x, room.height),
+      key: `x-${x}`,
+    });
+  }
+
+  for (let y = 0; y <= room.height; y += 1) {
+    gridLines.push({
+      from: isoPoint(0, y),
+      to: isoPoint(room.width, y),
+      key: `y-${y}`,
+    });
+  }
+
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 20,
+      }}
+    >
+      {gridLines.map((line) => (
+        <IsoGridLine
+          key={line.key}
+          from={line.from}
+          to={line.to}
+          scale={scale}
+        />
+      ))}
+    </View>
+  );
+}
+
+function IsoGridLine({
+  from,
+  to,
+  scale,
+}: {
+  from: {
+    x: number;
+    y: number;
+  };
+  to: {
+    x: number;
+    y: number;
+  };
+  scale: number;
+}) {
+  const deltaX = to.x - from.x;
+  const deltaY = to.y - from.y;
+
+  const length = Math.sqrt(
+    deltaX * deltaX + deltaY * deltaY
+  );
+
+  const angle = Math.atan2(deltaY, deltaX);
+
+  const centerX = (from.x + to.x) / 2;
+  const centerY = (from.y + to.y) / 2;
+
+  const thickness = 4;
+
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left:
+          (centerX - length / 2) * scale,
+        top:
+          (centerY - thickness / 2) * scale,
+        width: length * scale,
+        height: thickness,
+        borderRadius: 999,
+        backgroundColor: GRID_LINE_COLOR,
+        opacity: 0.72,
+        transform: [
+          {
+            rotate: `${angle}rad`,
+          },
+        ],
+      }}
+    />
   );
 }
 
@@ -624,8 +772,12 @@ function DraggableFurniture({
   ).current;
 
   const position = gridToScreen(
-    item.x,
-    item.y,
+    item,
+    scale
+  );
+
+  const size = furnitureScreenSize(
+    item,
     scale
   );
 
@@ -722,12 +874,13 @@ function DraggableFurniture({
         position: "absolute",
         left: position.left,
         top: position.top,
-        width: 170 * scale,
-        height: 210 * scale,
+        width: size.width,
+        height: size.height,
         zIndex:
+          30 +
           item.x +
           item.y +
-          (selected ? 30 : 10),
+          (selected ? 80 : 0),
         transform:
           pan.getTranslateTransform(),
       }}
@@ -739,11 +892,11 @@ function DraggableFurniture({
         style={({ pressed }) => ({
           width: "100%",
           height: "100%",
-          borderRadius: 14,
+          borderRadius: 16,
           borderWidth: selected ? 3 : 0,
-          borderColor: TA.colors.purple,
+          borderColor: "#1267D8",
           backgroundColor: selected
-            ? "rgba(124, 99, 242, 0.12)"
+            ? "rgba(18, 103, 216, 0.08)"
             : "transparent",
           opacity: pressed ? 0.72 : 1,
         })}
@@ -1198,56 +1351,86 @@ function gridDeltaFromDrag(
   const safeScale =
     Math.max(scale, 0.001);
 
+  const normalizedX = dragX / safeScale;
+  const normalizedY = dragY / safeScale;
+
   const gridX =
-    dragX / (85 * safeScale) +
-    dragY / (48 * safeScale);
+    normalizedX / (ISO_TILE_WIDTH / 2) +
+    normalizedY / (ISO_TILE_HEIGHT / 2);
 
   const gridY =
-    -dragX / (85 * safeScale) +
-    dragY / (48 * safeScale);
+    -normalizedX / (ISO_TILE_WIDTH / 2) +
+    normalizedY / (ISO_TILE_HEIGHT / 2);
 
   return {
-    x: Math.round(gridX),
-    y: Math.round(gridY),
+    x: Math.round(gridX / 2),
+    y: Math.round(gridY / 2),
+  };
+}
+
+function isoPoint(
+  x: number,
+  y: number
+) {
+  return {
+    x:
+      ISO_ORIGIN_X +
+      ((x - y) * ISO_TILE_WIDTH) / 2,
+
+    y:
+      ISO_ORIGIN_Y +
+      ((x + y) * ISO_TILE_HEIGHT) / 2,
   };
 }
 
 function gridToScreen(
-  x: number,
-  y: number,
+  item: RoomFurnitureItem,
   scale: number
 ) {
-  const tileWidth = 85;
-  const tileHeight = 48;
-  const offsetX = 460;
-  const offsetY = 260;
-  const visualWidth = 170;
-  const visualHeight = 192;
-  const furnitureOffsetX = 25;
-  const furnitureOffsetY = 115;
+  const size = furnitureScreenSize(item, 1);
 
-  const isoX =
-    offsetX +
-    ((x - y) * tileWidth) / 2;
+  const centerX =
+    item.x + item.width / 2;
 
-  const isoY =
-    offsetY +
-    ((x + y) * tileHeight) / 2;
+  const centerY =
+    item.y + item.height / 2;
+
+  const anchor = isoPoint(
+    centerX,
+    centerY
+  );
 
   return {
     left:
-      (
-        isoX -
-        visualWidth / 2 +
-        furnitureOffsetX
-      ) * scale,
+      (anchor.x - size.width / 2) * scale,
 
     top:
-      (
-        isoY -
-        visualHeight +
-        furnitureOffsetY
-      ) * scale,
+      (anchor.y - size.height + 24) * scale,
+  };
+}
+
+function furnitureScreenSize(
+  item: RoomFurnitureItem,
+  scale: number
+) {
+  const footprintWidth =
+    ((item.width + item.height) *
+      ISO_TILE_WIDTH) /
+    2;
+
+  const width = Math.max(
+    90,
+    footprintWidth * 1.06
+  );
+
+  const height = Math.max(
+    100,
+    width * 0.92 + item.height * 22
+  );
+
+  return {
+    width: width * scale,
+    height: height * scale,
   };
 }
 
