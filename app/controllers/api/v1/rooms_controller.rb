@@ -23,20 +23,19 @@ module Api
           .order(:name)
           .to_a
 
-        selected_interest_ids =
-          selected_interests.map(&:id)
-
         furnitures =
           Furniture
-          .joins(:interest)
           .includes(:interest)
-          .where(interest_id: selected_interest_ids)
           .order(
             "interests.name ASC",
             "furnitures.required_xp ASC",
             "furnitures.id ASC"
           )
+          .references(:interest)
           .to_a
+
+        total_xp =
+          XpCalculator.total_for(current_api_user)
 
         xp_by_interest_id =
           current_api_user
@@ -58,8 +57,7 @@ module Api
         {
           owner: serialize_api_user(current_api_user),
 
-          total_xp:
-            XpCalculator.total_for(current_api_user),
+          total_xp: total_xp,
 
           room: {
             id: room.id,
@@ -79,11 +77,6 @@ module Api
           },
 
           inventory: furnitures.map do |furniture|
-            current_xp =
-              xp_by_interest_id[
-                furniture.interest_id
-              ].to_i
-
             required_xp =
               furniture.required_xp.to_i
 
@@ -94,8 +87,8 @@ module Api
               width: furniture.width.to_i,
               height: furniture.height.to_i,
               required_xp: required_xp,
-              current_xp: current_xp,
-              unlocked: current_xp >= required_xp,
+              current_xp: total_xp,
+              unlocked: total_xp >= required_xp,
 
               placed_count:
                 placed_counts[furniture.id].to_i,

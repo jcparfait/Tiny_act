@@ -118,19 +118,13 @@ module Api
       end
 
       def available_furniture_scope
-        Furniture
-          .includes(:interest)
-          .where(
-            interest_id:
-              current_api_user.interest_ids
-          )
+        Furniture.includes(:interest)
       end
 
       def furniture_unlocked?(furniture)
         user_xp =
-          XpCalculator.total_for_interest(
-            current_api_user,
-            furniture.interest
+          XpCalculator.total_for(
+            current_api_user
           )
 
         user_xp >= furniture.required_xp.to_i
