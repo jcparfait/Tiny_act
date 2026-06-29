@@ -474,6 +474,8 @@ export default function RoomScreen() {
         style={{
           flex: 1,
           paddingTop: 125,
+          paddingBottom:
+            FOOTER_HEIGHT + INVENTORY_RAIL_HEIGHT + 20,
           backgroundColor: TA.colors.bgStart,
         }}
       >
@@ -536,6 +538,8 @@ export default function RoomScreen() {
                 width: "100%",
                 maxWidth: 760,
                 alignSelf: "center",
+                flex: 1,
+                minHeight: 460,
                 marginTop: 4,
               }}
             >
@@ -647,8 +651,14 @@ function RoomCanvas({
   ) => void;
   onDelete: () => void;
 }) {
-  const [canvasWidth, setCanvasWidth] =
-    useState(0);
+  const [canvasSize, setCanvasSize] =
+    useState({
+      width: 0,
+      height: 0,
+    });
+
+  const canvasWidth = canvasSize.width;
+  const canvasHeight = canvasSize.height;
 
   const [zoom, setZoom] =
     useState(DEFAULT_ZOOM);
@@ -671,14 +681,6 @@ function RoomCanvas({
   const pinchStartZoom =
     useRef(zoom);
 
-  const canvasHeight =
-    canvasWidth > 0
-      ? Math.min(
-          Math.max(canvasWidth * 0.78, 300),
-          400
-        )
-      : 300;
-
   const baseScale =
     canvasWidth > 0
       ? canvasWidth / ROOM_IMAGE_SIZE
@@ -686,6 +688,22 @@ function RoomCanvas({
 
   const worldScale = baseScale * zoom;
   const worldSize = ROOM_IMAGE_SIZE * worldScale;
+
+  function centeredOffset(
+    targetZoom: number
+  ) {
+    const worldSize = canvasWidth * targetZoom;
+
+    return clampViewOffset(
+      {
+        x: (canvasWidth - worldSize) / 2,
+        y: (canvasHeight - worldSize) / 2,
+      },
+      canvasWidth,
+      canvasHeight,
+      targetZoom
+    );
+  }
 
   function setClampedZoom(
     nextZoom: number
@@ -696,48 +714,55 @@ function RoomCanvas({
       MAX_ZOOM
     );
 
-    setZoom(safeZoom);
+    setViewOffset((currentOffset) => {
+      if (canvasWidth <= 0 || canvasHeight <= 0) {
+        return currentOffset;
+      }
 
-    setViewOffset((currentOffset) =>
-      clampViewOffset(
-        currentOffset,
+      const previousWorldSize = Math.max(
+        canvasWidth * zoom,
+        0.001
+      );
+
+      const nextWorldSize = Math.max(
+        canvasWidth * safeZoom,
+        0.001
+      );
+
+      const ratio =
+        nextWorldSize / previousWorldSize;
+
+      const centerX = canvasWidth / 2;
+      const centerY = canvasHeight / 2;
+
+      return clampViewOffset(
+        {
+          x:
+            centerX -
+            (centerX - currentOffset.x) * ratio,
+
+          y:
+            centerY -
+            (centerY - currentOffset.y) * ratio,
+        },
         canvasWidth,
         canvasHeight,
         safeZoom
-      )
-    );
+      );
+    });
+
+    setZoom(safeZoom);
   }
 
   function resetView() {
     setZoom(DEFAULT_ZOOM);
-
-    setViewOffset(
-      clampViewOffset(
-        {
-          x: 0,
-          y: -canvasHeight * 0.04,
-        },
-        canvasWidth,
-        canvasHeight,
-        DEFAULT_ZOOM
-      )
-    );
+    setViewOffset(centeredOffset(DEFAULT_ZOOM));
   }
 
   useEffect(() => {
-    if (canvasWidth <= 0) return;
+    if (canvasWidth <= 0 || canvasHeight <= 0) return;
 
-    setViewOffset(
-      clampViewOffset(
-        {
-          x: 0,
-          y: -canvasHeight * 0.04,
-        },
-        canvasWidth,
-        canvasHeight,
-        DEFAULT_ZOOM
-      )
-    );
+    setViewOffset(centeredOffset(DEFAULT_ZOOM));
   }, [canvasHeight, canvasWidth]);
 
   const panResponder = useMemo(
@@ -846,13 +871,18 @@ function RoomCanvas({
   return (
     <View
       onLayout={(event) => {
-        setCanvasWidth(
-          event.nativeEvent.layout.width
-        );
+        const { width, height } =
+          event.nativeEvent.layout;
+
+        setCanvasSize({
+          width,
+          height,
+        });
       }}
       style={{
         width: "100%",
-        height: canvasHeight,
+        height: "100%",
+        minHeight: 460,
         overflow: "hidden",
         backgroundColor: TA.colors.bgStart,
       }}
@@ -948,7 +978,7 @@ function RoomCanvas({
           style={({ pressed }) => ({
             position: "absolute",
             left: 12,
-            bottom: 12,
+            top: 10,
             paddingVertical: 11,
             paddingHorizontal: 15,
             borderRadius: 999,
