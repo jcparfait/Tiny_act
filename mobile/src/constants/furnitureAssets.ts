@@ -1,7 +1,84 @@
 import type { ImageSourcePropType } from "react-native";
 
+export type RoomBackgroundKey =
+  | "cozy"
+  | "sport"
+  | "musique"
+  | "atelier"
+  | "premium";
+
+export type RoomBackgroundOption = {
+  key: RoomBackgroundKey;
+  name: string;
+  required_xp: number;
+  image_key: string;
+};
+
+export const DEFAULT_ROOM_BACKGROUND_KEY: RoomBackgroundKey =
+  "cozy";
+
+export const ROOM_BACKGROUNDS: RoomBackgroundOption[] = [
+  {
+    key: "cozy",
+    name: "Cozy",
+    required_xp: 0,
+    image_key: "rooms/Room_cozy.png",
+  },
+  {
+    key: "sport",
+    name: "Sport",
+    required_xp: 500,
+    image_key: "rooms/Room_sport.png",
+  },
+  {
+    key: "musique",
+    name: "Musique",
+    required_xp: 1000,
+    image_key: "rooms/Room_musique.png",
+  },
+  {
+    key: "atelier",
+    name: "Atelier",
+    required_xp: 2000,
+    image_key: "rooms/Room_atelier.png",
+  },
+  {
+    key: "premium",
+    name: "Premium",
+    required_xp: 3500,
+    image_key: "rooms/Room_premium.png",
+  },
+];
+
+const ROOM_BACKGROUND_IMAGES: Record<
+  string,
+  ImageSourcePropType
+> = {
+  cozy: require("../../assets/images/rooms/Room_cozy.png"),
+  sport: require("../../assets/images/rooms/Room_sport.png"),
+  musique: require("../../assets/images/rooms/Room_musique.png"),
+  atelier: require("../../assets/images/rooms/Room_atelier.png"),
+  premium: require("../../assets/images/rooms/Room_premium.png"),
+
+  "rooms/Room_cozy.png": require("../../assets/images/rooms/Room_cozy.png"),
+  "rooms/Room_sport.png": require("../../assets/images/rooms/Room_sport.png"),
+  "rooms/Room_musique.png": require("../../assets/images/rooms/Room_musique.png"),
+  "rooms/Room_atelier.png": require("../../assets/images/rooms/Room_atelier.png"),
+  "rooms/Room_premium.png": require("../../assets/images/rooms/Room_premium.png"),
+};
+
 export const ROOM_BACKGROUND =
-  require("../../assets/images/rooms/empty_room.png");
+  ROOM_BACKGROUND_IMAGES[DEFAULT_ROOM_BACKGROUND_KEY];
+
+export function getRoomBackgroundSource(
+  backgroundKey?: string | null
+): ImageSourcePropType {
+  return (
+    ROOM_BACKGROUND_IMAGES[
+      backgroundKey || DEFAULT_ROOM_BACKGROUND_KEY
+    ] || ROOM_BACKGROUND
+  );
+}
 
 const BOOKS =
   require("../../assets/images/furnitures/books.png");

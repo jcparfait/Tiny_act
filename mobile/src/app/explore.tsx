@@ -24,8 +24,11 @@ import { ErrorBox } from "../components/ErrorBox";
 import { MobileNav } from "../components/MobileNav";
 
 import {
+  DEFAULT_ROOM_BACKGROUND_KEY,
   getFurnitureSource,
-  ROOM_BACKGROUND,
+  getRoomBackgroundSource,
+  ROOM_BACKGROUNDS,
+  type RoomBackgroundKey,
 } from "../constants/furnitureAssets";
 
 import {
@@ -34,6 +37,11 @@ import {
   moveRoomFurniture,
   placeFurniture,
 } from "../services/roomApi";
+
+import {
+  loadSelectedRoomBackgroundKey,
+  saveSelectedRoomBackgroundKey,
+} from "../services/roomPreferences";
 
 import {
   MobileRoom,
@@ -73,6 +81,27 @@ function remainingFurnitureXp(
   return Math.max(
     furniture.required_xp - furniture.current_xp,
     0
+  );
+}
+
+function remainingBackgroundXp(
+  requiredXp: number,
+  totalXp: number
+) {
+  return Math.max(requiredXp - totalXp, 0);
+}
+
+function bestUnlockedBackgroundKey(
+  totalXp: number
+): RoomBackgroundKey {
+  const unlockedBackgrounds = ROOM_BACKGROUNDS.filter(
+    (background) => totalXp >= background.required_xp
+  );
+
+  return (
+    unlockedBackgrounds[
+      unlockedBackgrounds.length - 1
+    ]?.key || DEFAULT_ROOM_BACKGROUND_KEY
   );
 }
 
@@ -168,6 +197,11 @@ export default function RoomScreen() {
   const [error, setError] =
     useState<string | null>(null);
 
+  const [selectedBackgroundKey, setSelectedBackgroundKey] =
+    useState<RoomBackgroundKey>(
+      DEFAULT_ROOM_BACKGROUND_KEY
+    );
+
   const selectedFurniture = useMemo(
     () =>
       roomData?.room.furnitures.find(
@@ -203,6 +237,45 @@ export default function RoomScreen() {
   useEffect(() => {
     void refreshRoom();
   }, []);
+
+  useEffect(() => {
+    loadSelectedRoomBackgroundKey()
+      .then((storedBackgroundKey) => {
+        if (storedBackgroundKey) {
+          setSelectedBackgroundKey(storedBackgroundKey);
+        }
+      })
+      .catch(() => {
+        setSelectedBackgroundKey(
+          DEFAULT_ROOM_BACKGROUND_KEY
+        );
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!roomData) return;
+
+    const selectedBackground =
+      ROOM_BACKGROUNDS.find(
+        (background) =>
+          background.key === selectedBackgroundKey
+      );
+
+    if (
+      selectedBackground &&
+      roomData.total_xp >= selectedBackground.required_xp
+    ) {
+      return;
+    }
+
+    const fallbackBackgroundKey =
+      bestUnlockedBackgroundKey(roomData.total_xp);
+
+    setSelectedBackgroundKey(fallbackBackgroundKey);
+    void saveSelectedRoomBackgroundKey(
+      fallbackBackgroundKey
+    );
+  }, [roomData, selectedBackgroundKey]);
 
   async function refreshRoom() {
     setLoading(true);
@@ -425,6 +498,36 @@ export default function RoomScreen() {
     }
   }
 
+  async function handleSelectBackground(
+    backgroundKey: RoomBackgroundKey
+  ) {
+    if (!roomData) return;
+
+    const background = ROOM_BACKGROUNDS.find(
+      (roomBackground) =>
+        roomBackground.key === backgroundKey
+    );
+
+    if (!background) return;
+
+    if (roomData.total_xp < background.required_xp) {
+      return;
+    }
+
+    setSelectedBackgroundKey(backgroundKey);
+
+    try {
+      await saveSelectedRoomBackgroundKey(
+        backgroundKey
+      );
+    } catch (saveError) {
+      console.warn(
+        "Impossible d’enregistrer le fond de room",
+        saveError
+      );
+    }
+  }
+
   function replacePlacedFurniture(
     replacement: RoomFurnitureItem
   ) {
@@ -545,6 +648,7 @@ export default function RoomScreen() {
             >
               <RoomCanvas
                 room={roomData.room}
+                backgroundKey={selectedBackgroundKey}
                 selectedFurniture={selectedFurniture}
                 selectedId={selectedFurnitureId}
                 disabled={busyAction !== null}
@@ -597,8 +701,15 @@ export default function RoomScreen() {
                   nextLockedFurniture={
                     nextLockedFurniture
                   }
+                  totalXp={roomData.total_xp}
+                  selectedBackgroundKey={
+                    selectedBackgroundKey
+                  }
                   busyAction={busyAction}
                   onPlace={handlePlace}
+                  onSelectBackground={
+                    handleSelectBackground
+                  }
                 />
               </View>
             </View>
@@ -630,6 +741,7 @@ export default function RoomScreen() {
 
 function RoomCanvas({
   room,
+  backgroundKey,
   selectedFurniture,
   selectedId,
   disabled,
@@ -639,6 +751,7 @@ function RoomCanvas({
   onDelete,
 }: {
   room: MobileRoom;
+  backgroundKey: RoomBackgroundKey;
   selectedFurniture: RoomFurnitureItem | null;
   selectedId: number | null;
   disabled: boolean;
@@ -907,7 +1020,9 @@ function RoomCanvas({
           }}
         >
           <ExpoImage
-            source={ROOM_BACKGROUND}
+            source={getRoomBackgroundSource(
+              backgroundKey
+            )}
             contentFit="contain"
             contentPosition="center"
             style={{
@@ -1310,22 +1425,40 @@ function DraggableFurniture({
   );
 }
 
+type ShelfMode = "objects" | "rooms";
+
 function FurnitureShelf({
   unlockedFurniture,
   nextLockedFurniture,
+  totalXp,
+  selectedBackgroundKey,
   busyAction,
   onPlace,
+  onSelectBackground,
 }: {
   unlockedFurniture: RoomInventoryItem[];
   nextLockedFurniture: RoomInventoryItem[];
+  totalXp: number;
+  selectedBackgroundKey: RoomBackgroundKey;
   busyAction: string | null;
   onPlace: (furniture: RoomInventoryItem) => void;
+  onSelectBackground: (
+    backgroundKey: RoomBackgroundKey
+  ) => void;
 }) {
+  const [activeShelf, setActiveShelf] =
+    useState<ShelfMode>("objects");
+
   const [scrollX, setScrollX] = useState(0);
   const [viewportWidth, setViewportWidth] =
     useState(0);
   const [contentWidth, setContentWidth] =
     useState(0);
+
+  useEffect(() => {
+    setScrollX(0);
+    setContentWidth(0);
+  }, [activeShelf]);
 
   const canScroll =
     contentWidth > viewportWidth + 4;
@@ -1347,6 +1480,24 @@ function FurnitureShelf({
         Math.max(viewportWidth - thumbWidth, 0)
       )
     : 0;
+
+  const title =
+    activeShelf === "objects" ? "Objets" : "Rooms";
+
+  const unlockedBackgroundCount =
+    ROOM_BACKGROUNDS.filter(
+      (background) =>
+        totalXp >= background.required_xp
+    ).length;
+
+  const subtitle =
+    activeShelf === "objects"
+      ? `${unlockedFurniture.length} disponible(s)${
+          nextLockedFurniture.length > 0
+            ? ` · ${nextLockedFurniture.length} à débloquer`
+            : ""
+        }`
+      : `${unlockedBackgroundCount} débloquée(s) · ${totalXp} XP`;
 
   return (
     <View
@@ -1370,7 +1521,7 @@ function FurnitureShelf({
           gap: 10,
         }}
       >
-        <View>
+        <View style={{ flex: 1 }}>
           <Text
             style={{
               color: TA.colors.ink,
@@ -1380,10 +1531,11 @@ function FurnitureShelf({
               letterSpacing: -0.7,
             }}
           >
-            Objets
+            {title}
           </Text>
 
           <Text
+            numberOfLines={1}
             style={{
               marginTop: 2,
               color: TA.colors.inkMuted,
@@ -1392,43 +1544,43 @@ function FurnitureShelf({
               fontFamily: TA.fonts.bold,
             }}
           >
-            {unlockedFurniture.length} disponible(s)
-            {nextLockedFurniture.length > 0
-              ? ` · ${nextLockedFurniture.length} à débloquer`
-              : ""}
+            {subtitle}
           </Text>
         </View>
 
         <View
           style={{
-            paddingVertical: 7,
-            paddingHorizontal: 10,
+            flexDirection: "row",
+            padding: 3,
             borderRadius: 999,
             backgroundColor: TA.colors.surface,
             borderWidth: 1,
             borderColor: "#D8CCFF",
           }}
         >
-          <Text
-            style={{
-              color: TA.colors.purple,
-              fontSize: 11,
-              lineHeight: 14,
-              fontFamily: TA.fonts.black,
-            }}
-          >
-            Glisse horizontalement
-          </Text>
+          <ShelfTabButton
+            label="Objets"
+            active={activeShelf === "objects"}
+            onPress={() => setActiveShelf("objects")}
+          />
+
+          <ShelfTabButton
+            label="Rooms"
+            active={activeShelf === "rooms"}
+            onPress={() => setActiveShelf("rooms")}
+          />
         </View>
       </View>
 
-      {unlockedFurniture.length === 0 ? (
+      {activeShelf === "objects" &&
+      unlockedFurniture.length === 0 ? (
         <View style={{ paddingHorizontal: 14 }}>
           <EmptyCard text="Termine quelques activités pour débloquer ton premier meuble." />
         </View>
       ) : (
         <>
           <ScrollView
+            key={activeShelf}
             horizontal
             directionalLockEnabled
             bounces={false}
@@ -1457,18 +1609,33 @@ function FurnitureShelf({
               paddingBottom: 2,
             }}
           >
-            {unlockedFurniture.map((furniture) => (
-              <InventoryCard
-                key={furniture.id}
-                furniture={furniture}
-                busy={
-                  busyAction ===
-                  `place-${furniture.id}`
-                }
-                disabled={busyAction !== null}
-                onPlace={() => onPlace(furniture)}
-              />
-            ))}
+            {activeShelf === "objects"
+              ? unlockedFurniture.map((furniture) => (
+                  <InventoryCard
+                    key={furniture.id}
+                    furniture={furniture}
+                    busy={
+                      busyAction ===
+                      `place-${furniture.id}`
+                    }
+                    disabled={busyAction !== null}
+                    onPlace={() => onPlace(furniture)}
+                  />
+                ))
+              : ROOM_BACKGROUNDS.map((background) => (
+                  <RoomBackgroundCard
+                    key={background.key}
+                    background={background}
+                    totalXp={totalXp}
+                    selected={
+                      selectedBackgroundKey ===
+                      background.key
+                    }
+                    onSelect={() =>
+                      onSelectBackground(background.key)
+                    }
+                  />
+                ))}
           </ScrollView>
 
           <View
@@ -1498,6 +1665,136 @@ function FurnitureShelf({
         </>
       )}
     </View>
+  );
+}
+
+function ShelfTabButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingVertical: 7,
+        paddingHorizontal: 10,
+        borderRadius: 999,
+        backgroundColor: active
+          ? TA.colors.purple
+          : "transparent",
+        opacity: pressed ? 0.72 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: active
+            ? TA.colors.white
+            : TA.colors.purple,
+          fontSize: 11,
+          lineHeight: 14,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function RoomBackgroundCard({
+  background,
+  selected,
+  totalXp,
+  onSelect,
+}: {
+  background: (typeof ROOM_BACKGROUNDS)[number];
+  selected: boolean;
+  totalXp: number;
+  onSelect: () => void;
+}) {
+  const unlocked =
+    totalXp >= background.required_xp;
+
+  const remainingXp = remainingBackgroundXp(
+    background.required_xp,
+    totalXp
+  );
+
+  return (
+    <Pressable
+      onPress={onSelect}
+      disabled={!unlocked}
+      style={({ pressed }) => ({
+        width: 128,
+        height: 126,
+        padding: 9,
+        borderRadius: 22,
+        backgroundColor: selected
+          ? "#F8F3FF"
+          : "#FFFEFB",
+        borderWidth: selected ? 2.5 : 1.5,
+        borderColor: selected
+          ? TA.colors.purple
+          : "rgba(90, 74, 54, 0.16)",
+        opacity: !unlocked
+          ? 0.48
+          : pressed
+            ? 0.72
+            : 1,
+        ...TA.shadow.soft,
+      })}
+    >
+      <ExpoImage
+        source={getRoomBackgroundSource(
+          background.key
+        )}
+        contentFit="contain"
+        style={{
+          width: "100%",
+          height: 66,
+          borderRadius: 14,
+        }}
+      />
+
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 7,
+          color: TA.colors.ink,
+          fontSize: 14,
+          lineHeight: 17,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {background.name}
+      </Text>
+
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 2,
+          color: selected
+            ? TA.colors.purple
+            : unlocked
+              ? TA.colors.purple
+              : TA.colors.inkMuted,
+          fontSize: 12,
+          lineHeight: 15,
+          fontFamily: TA.fonts.black,
+        }}
+      >
+        {selected
+          ? "Actuelle"
+          : unlocked
+            ? "Choisir"
+            : `${remainingXp} XP`}
+      </Text>
+    </Pressable>
   );
 }
 
