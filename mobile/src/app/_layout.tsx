@@ -33,6 +33,8 @@ import {
 
 import { TA } from "../theme/tinyActTheme";
 
+const SHOW_LOADER_PREVIEW = false;
+
 function applyDefaultFonts() {
   const textDefaultProps =
     (Text as unknown as {
@@ -70,13 +72,7 @@ function applyDefaultFonts() {
 }
 
 function AppStatusBar() {
-  return (
-    <StatusBar
-      style="dark"
-      backgroundColor={TA.colors.bgStart}
-      translucent={false}
-    />
-  );
+  return <StatusBar style="dark" />;
 }
 
 export default function RootLayout() {
@@ -94,6 +90,16 @@ export default function RootLayout() {
       applyDefaultFonts();
     }
   }, [fontsLoaded]);
+
+  if (__DEV__ && SHOW_LOADER_PREVIEW) {
+    return (
+      <>
+        <AppStatusBar />
+
+        <FullPageLoader message="Test du chargement..." />
+      </>
+    );
+  }
 
   if (!fontsLoaded) {
     return (

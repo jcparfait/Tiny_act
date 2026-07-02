@@ -7,6 +7,11 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/brand/tiny-act-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F4EFE8"
+    },
     "ios": {
       "icon": "./assets/expo.icon",
       "userInterfaceStyle": "light"
@@ -22,7 +27,7 @@
     },
     "androidStatusBar": {
       "barStyle": "dark-content",
-      "backgroundColor": "#F7EEDB",
+      "backgroundColor": "#F4EFE8",
       "translucent": false
     },
     "web": {
@@ -34,10 +39,21 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#F4EFE8",
+          "image": "./assets/images/brand/tiny-act-logo.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "backgroundColor": "#F4EFE8",
+            "image": "./assets/images/brand/tiny-act-logo.png",
+            "imageWidth": 220,
+            "resizeMode": "contain"
+          },
+          "ios": {
+            "backgroundColor": "#F4EFE8",
+            "image": "./assets/images/brand/tiny-act-logo.png",
+            "imageWidth": 220,
+            "resizeMode": "contain"
           }
         }
       ],

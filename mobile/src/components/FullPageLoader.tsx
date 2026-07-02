@@ -7,12 +7,10 @@ import {
 import { TA } from "../theme/tinyActTheme";
 
 type FullPageLoaderProps = {
-  title?: string;
   message?: string;
 };
 
 export function FullPageLoader({
-  title = "Tiny Act",
   message = "Chargement...",
 }: FullPageLoaderProps) {
   return (
@@ -31,19 +29,6 @@ export function FullPageLoader({
           gap: 14,
         }}
       >
-        <Text
-          style={{
-            color: TA.colors.ink,
-            fontSize: 34,
-            lineHeight: 38,
-            fontFamily: TA.fonts.black,
-            letterSpacing: -1,
-            textAlign: "center",
-          }}
-        >
-          {title}
-        </Text>
-
         <ActivityIndicator
           color={TA.colors.purple}
           size="large"
@@ -54,7 +39,7 @@ export function FullPageLoader({
             color: TA.colors.inkMuted,
             fontSize: 14,
             lineHeight: 20,
-            fontFamily: TA.fonts.bold,
+            fontWeight: "800",
             textAlign: "center",
           }}
         >
