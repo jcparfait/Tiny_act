@@ -69,6 +69,7 @@ const DEFAULT_ZOOM = 0.88;
 const ZOOM_STEP = 0.28;
 const FOOTER_HEIGHT = 86;
 const INVENTORY_RAIL_HEIGHT = 218;
+const PAN_OVERSCROLL_RATIO = 0.18;
 
 type ViewOffset = {
   x: number;
@@ -120,6 +121,8 @@ function distanceBetweenTouches(
   touches: Array<{
     pageX: number;
     pageY: number;
+    locationX?: number;
+    locationY?: number;
   }>
 ) {
   if (touches.length < 2) return 0;
@@ -138,6 +141,42 @@ function distanceBetweenTouches(
   );
 }
 
+function centerBetweenTouches(
+  touches: Array<{
+    pageX: number;
+    pageY: number;
+    locationX?: number;
+    locationY?: number;
+  }>
+): ViewOffset {
+  if (touches.length < 2) {
+    return {
+      x: 0,
+      y: 0,
+    };
+  }
+
+  const firstTouch = touches[0];
+  const secondTouch = touches[1];
+
+  const firstX =
+    firstTouch.locationX ?? firstTouch.pageX;
+
+  const firstY =
+    firstTouch.locationY ?? firstTouch.pageY;
+
+  const secondX =
+    secondTouch.locationX ?? secondTouch.pageX;
+
+  const secondY =
+    secondTouch.locationY ?? secondTouch.pageY;
+
+  return {
+    x: (firstX + secondX) / 2,
+    y: (firstY + secondY) / 2,
+  };
+}
+
 function clampViewOffset(
   offset: ViewOffset,
   canvasWidth: number,
@@ -152,23 +191,38 @@ function clampViewOffset(
   }
 
   const worldSize = canvasWidth * zoom;
+  const overscroll =
+    Math.min(canvasWidth, canvasHeight) *
+    PAN_OVERSCROLL_RATIO;
 
   const clampedX =
     worldSize <= canvasWidth
-      ? (canvasWidth - worldSize) / 2
+      ? clamp(
+          offset.x,
+          (canvasWidth - worldSize) / 2 -
+            overscroll,
+          (canvasWidth - worldSize) / 2 +
+            overscroll
+        )
       : clamp(
           offset.x,
-          canvasWidth - worldSize,
-          0
+          canvasWidth - worldSize - overscroll,
+          overscroll
         );
 
   const clampedY =
     worldSize <= canvasHeight
-      ? (canvasHeight - worldSize) / 2
+      ? clamp(
+          offset.y,
+          (canvasHeight - worldSize) / 2 -
+            overscroll,
+          (canvasHeight - worldSize) / 2 +
+            overscroll
+        )
       : clamp(
           offset.y,
-          canvasHeight - worldSize,
-          0
+          canvasHeight - worldSize - overscroll,
+          overscroll
         );
 
   return {
@@ -776,8 +830,17 @@ function RoomCanvas({
   const [zoom, setZoom] =
     useState(DEFAULT_ZOOM);
 
+  const zoomRef =
+    useRef(DEFAULT_ZOOM);
+
   const [viewOffset, setViewOffset] =
     useState<ViewOffset>({
+      x: 0,
+      y: 0,
+    });
+
+  const viewOffsetRef =
+    useRef<ViewOffset>({
       x: 0,
       y: 0,
     });
@@ -791,6 +854,12 @@ function RoomCanvas({
   const pinchStartDistance =
     useRef(0);
 
+  const pinchStartCenter =
+    useRef<ViewOffset>({
+      x: 0,
+      y: 0,
+    });
+
   const pinchStartZoom =
     useRef(zoom);
 
@@ -801,6 +870,18 @@ function RoomCanvas({
 
   const worldScale = baseScale * zoom;
   const worldSize = ROOM_IMAGE_SIZE * worldScale;
+
+  function updateZoom(nextZoom: number) {
+    zoomRef.current = nextZoom;
+    setZoom(nextZoom);
+  }
+
+  function updateViewOffset(
+    nextOffset: ViewOffset
+  ) {
+    viewOffsetRef.current = nextOffset;
+    setViewOffset(nextOffset);
+  }
 
   function centeredOffset(
     targetZoom: number
@@ -827,28 +908,32 @@ function RoomCanvas({
       MAX_ZOOM
     );
 
-    setViewOffset((currentOffset) => {
-      if (canvasWidth <= 0 || canvasHeight <= 0) {
-        return currentOffset;
-      }
+    if (canvasWidth <= 0 || canvasHeight <= 0) {
+      updateZoom(safeZoom);
+      return;
+    }
 
-      const previousWorldSize = Math.max(
-        canvasWidth * zoom,
-        0.001
-      );
+    const currentOffset = viewOffsetRef.current;
+    const currentZoom = zoomRef.current;
 
-      const nextWorldSize = Math.max(
-        canvasWidth * safeZoom,
-        0.001
-      );
+    const previousWorldSize = Math.max(
+      canvasWidth * currentZoom,
+      0.001
+    );
 
-      const ratio =
-        nextWorldSize / previousWorldSize;
+    const nextWorldSize = Math.max(
+      canvasWidth * safeZoom,
+      0.001
+    );
 
-      const centerX = canvasWidth / 2;
-      const centerY = canvasHeight / 2;
+    const ratio =
+      nextWorldSize / previousWorldSize;
 
-      return clampViewOffset(
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+
+    updateViewOffset(
+      clampViewOffset(
         {
           x:
             centerX -
@@ -861,28 +946,32 @@ function RoomCanvas({
         canvasWidth,
         canvasHeight,
         safeZoom
-      );
-    });
+      )
+    );
 
-    setZoom(safeZoom);
+    updateZoom(safeZoom);
   }
 
   function resetView() {
-    setZoom(DEFAULT_ZOOM);
-    setViewOffset(centeredOffset(DEFAULT_ZOOM));
+    updateZoom(DEFAULT_ZOOM);
+    updateViewOffset(centeredOffset(DEFAULT_ZOOM));
   }
 
   useEffect(() => {
     if (canvasWidth <= 0 || canvasHeight <= 0) return;
 
-    setViewOffset(centeredOffset(DEFAULT_ZOOM));
+    updateViewOffset(centeredOffset(DEFAULT_ZOOM));
   }, [canvasHeight, canvasWidth]);
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () =>
-          false,
+        onStartShouldSetPanResponder: (event) => {
+          const touches =
+            event.nativeEvent.touches || [];
+
+          return touches.length >= 2;
+        },
 
         onMoveShouldSetPanResponder: (
           event,
@@ -893,9 +982,10 @@ function RoomCanvas({
 
           return (
             touches.length >= 2 ||
-            Math.abs(gesture.dx) +
-              Math.abs(gesture.dy) >
-              8
+            (zoomRef.current > MIN_ZOOM + 0.05 &&
+              Math.abs(gesture.dx) +
+                Math.abs(gesture.dy) >
+                4)
           );
         },
 
@@ -904,13 +994,16 @@ function RoomCanvas({
             event.nativeEvent.touches || [];
 
           panStartOffset.current =
-            viewOffset;
+            viewOffsetRef.current;
 
           if (touches.length >= 2) {
             pinchStartDistance.current =
               distanceBetweenTouches(touches);
 
-            pinchStartZoom.current = zoom;
+            pinchStartCenter.current =
+              centerBetweenTouches(touches);
+
+            pinchStartZoom.current = zoomRef.current;
           }
         },
 
@@ -932,17 +1025,57 @@ function RoomCanvas({
               return;
             }
 
-            const nextZoom =
+            const safeZoom = clamp(
               pinchStartZoom.current *
-              (currentDistance /
-                pinchStartDistance.current);
+                (currentDistance /
+                  pinchStartDistance.current),
+              MIN_ZOOM,
+              MAX_ZOOM
+            );
 
-            setClampedZoom(nextZoom);
+            const previousWorldSize = Math.max(
+              canvasWidth * pinchStartZoom.current,
+              0.001
+            );
+
+            const nextWorldSize = Math.max(
+              canvasWidth * safeZoom,
+              0.001
+            );
+
+            const ratio =
+              nextWorldSize / previousWorldSize;
+
+            const currentCenter =
+              centerBetweenTouches(touches);
+
+            updateZoom(safeZoom);
+
+            updateViewOffset(
+              clampViewOffset(
+                {
+                  x:
+                    currentCenter.x -
+                    (pinchStartCenter.current.x -
+                      panStartOffset.current.x) *
+                      ratio,
+
+                  y:
+                    currentCenter.y -
+                    (pinchStartCenter.current.y -
+                      panStartOffset.current.y) *
+                      ratio,
+                },
+                canvasWidth,
+                canvasHeight,
+                safeZoom
+              )
+            );
 
             return;
           }
 
-          setViewOffset(
+          updateViewOffset(
             clampViewOffset(
               {
                 x:
@@ -955,19 +1088,19 @@ function RoomCanvas({
               },
               canvasWidth,
               canvasHeight,
-              zoom
+              zoomRef.current
             )
           );
         },
 
         onPanResponderRelease: () => {
           panStartOffset.current =
-            viewOffset;
+            viewOffsetRef.current;
         },
 
         onPanResponderTerminate: () => {
           panStartOffset.current =
-            viewOffset;
+            viewOffsetRef.current;
         },
 
         onPanResponderTerminationRequest:
@@ -976,8 +1109,6 @@ function RoomCanvas({
     [
       canvasHeight,
       canvasWidth,
-      viewOffset,
-      zoom,
     ]
   );
 

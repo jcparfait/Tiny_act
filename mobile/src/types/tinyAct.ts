@@ -87,6 +87,23 @@ export type MelodyPayload = {
   source?: string | null;
 };
 
+export type SportPlanStep = {
+  kind?: string | null;
+  text: string;
+  duration_seconds?: number | null;
+  auto_advance?: boolean;
+  loop?: boolean;
+};
+
+export type SportPlan = {
+  version?: number;
+  preparation_seconds?: number;
+  target_duration_seconds?: number;
+  repeat_mode?: string;
+  default_rest_seconds?: number;
+  steps: SportPlanStep[];
+};
+
 export type ActivityPayload = {
   duration_seconds?: number;
   activity_session_id?: number | null;
@@ -100,6 +117,8 @@ export type ActivityPayload = {
   language_items?: LanguageItem[];
 
   melody?: MelodyPayload | null;
+
+  sport_plan?: SportPlan | null;
 };
 
 export type Activity = {
@@ -159,11 +178,25 @@ export type MelodyProgress = {
   completed: boolean;
 };
 
+export type SportPhase =
+  | "preview"
+  | "preparation"
+  | "step"
+  | "finished";
+
+export type SportProgress = {
+  phase: SportPhase;
+  current_index: number;
+  remaining_seconds: number | null;
+  completed: boolean;
+};
+
 export type ActivityProgressData = {
   quiz?: QuizProgress;
   word_learning?: WordLearningProgress;
   sentence_completion?: SentenceCompletionProgress;
   melody?: MelodyProgress;
+  sport?: SportProgress;
 };
 
 export type ActivityProgressResponse = {

@@ -1,6 +1,15 @@
 module Api
   module V1
     class InterestsController < BaseController
+      MOBILE_DISABLED_INTEREST_NAMES = [
+        "Productivité",
+        "Productivite",
+        "Photo",
+        "Bien-être",
+        "Bien etre",
+        "Dessin"
+      ].freeze
+
       def index
         render json: interests_payload
       end
@@ -46,19 +55,35 @@ module Api
           end
           .uniq
 
-        Interest.where(id: requested_ids).pluck(:id)
+        mobile_enabled_interests
+          .where(id: requested_ids)
+          .pluck(:id)
       end
 
       def interests_payload
         {
-          interests: Interest.order(:name).map do |interest|
+          interests: mobile_enabled_interests.order(:name).map do |interest|
             {
               id: interest.id,
               name: interest.name
             }
           end,
-          selected_interest_ids: current_api_user.interest_ids
+
+          selected_interest_ids:
+            current_api_user
+            .interest_ids
+            .then do |ids|
+              mobile_enabled_interests
+              .where(id: ids)
+              .pluck(:id)
+            end
         }
+      end
+
+      def mobile_enabled_interests
+        Interest.where.not(
+          name: MOBILE_DISABLED_INTEREST_NAMES
+        )
       end
     end
   end

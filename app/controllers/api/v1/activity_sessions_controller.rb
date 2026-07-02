@@ -404,7 +404,11 @@ module Api
           activity_session_id: activity_session&.id
         }
 
-        if activity.code_quiz?
+        if activity.sport_activity?
+          base_payload.merge(
+            sport_plan: activity.sport_activity_plan
+          )
+        elsif activity.code_quiz?
           base_payload.merge(
             quiz_kind: "code",
             quiz_questions: serialize_code_quiz_questions

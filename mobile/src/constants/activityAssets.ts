@@ -1,6 +1,6 @@
 import type { ImageSourcePropType } from "react-native";
 
-import { Activity } from "../types/tinyAct";
+import type { Activity } from "../types/tinyAct";
 
 export type ActivityInterestVisual = {
   label: string;
@@ -9,7 +9,10 @@ export type ActivityInterestVisual = {
   image: ImageSourcePropType | null;
 };
 
-const ACTIVITY_IMAGES: Record<string, ImageSourcePropType> = {
+const ACTIVITY_IMAGES: Record<
+  string,
+  ImageSourcePropType
+> = {
   Sport:
     require("../../assets/images/mascot/activities/sport.png"),
 
@@ -19,7 +22,13 @@ const ACTIVITY_IMAGES: Record<string, ImageSourcePropType> = {
   Créativité:
     require("../../assets/images/mascot/activities/creativite.png"),
 
+  Creativite:
+    require("../../assets/images/mascot/activities/creativite.png"),
+
   "Bien-être":
+    require("../../assets/images/mascot/activities/bien_etre.png"),
+
+  "Bien etre":
     require("../../assets/images/mascot/activities/bien_etre.png"),
 
   Photo:
@@ -29,6 +38,9 @@ const ACTIVITY_IMAGES: Record<string, ImageSourcePropType> = {
     require("../../assets/images/mascot/activities/dessin.png"),
 
   Écriture:
+    require("../../assets/images/mascot/activities/ecriture.png"),
+
+  Ecriture:
     require("../../assets/images/mascot/activities/ecriture.png"),
 
   Culture:
@@ -75,11 +87,25 @@ const INTEREST_VISUALS: Record<
     image: ACTIVITY_IMAGES.Créativité,
   },
 
+  Creativite: {
+    label: "Créativité",
+    color: "#F58AB7",
+    softColor: "#FFF0F7",
+    image: ACTIVITY_IMAGES.Creativite,
+  },
+
   "Bien-être": {
     label: "Bien-être",
     color: "#8FC7F2",
     softColor: "#F1F9FF",
     image: ACTIVITY_IMAGES["Bien-être"],
+  },
+
+  "Bien etre": {
+    label: "Bien-être",
+    color: "#8FC7F2",
+    softColor: "#F1F9FF",
+    image: ACTIVITY_IMAGES["Bien etre"],
   },
 
   Photo: {
@@ -101,6 +127,13 @@ const INTEREST_VISUALS: Record<
     color: "#E5B84D",
     softColor: "#FFF7DC",
     image: ACTIVITY_IMAGES.Écriture,
+  },
+
+  Ecriture: {
+    label: "Écriture",
+    color: "#E5B84D",
+    softColor: "#FFF7DC",
+    image: ACTIVITY_IMAGES.Ecriture,
   },
 
   Culture: {
@@ -169,6 +202,26 @@ function fallbackInterestName(activity: Activity) {
   return "Activité";
 }
 
+export function getInterestVisualByName(
+  interestName?: string | null
+): ActivityInterestVisual {
+  if (interestName) {
+    const knownVisual =
+      INTEREST_VISUALS[interestName];
+
+    if (knownVisual) {
+      return knownVisual;
+    }
+  }
+
+  return {
+    label: interestName || "Activité",
+    color: "#7C63F2",
+    softColor: "#F2EDFF",
+    image: null,
+  };
+}
+
 export function getActivityInterestVisual(
   activity: Activity
 ): ActivityInterestVisual {
@@ -176,17 +229,5 @@ export function getActivityInterestVisual(
     activity.interest?.name ||
     fallbackInterestName(activity);
 
-  const knownVisual =
-    INTEREST_VISUALS[interestName];
-
-  if (knownVisual) {
-    return knownVisual;
-  }
-
-  return {
-    label: interestName,
-    color: "#7C63F2",
-    softColor: "#F2EDFF",
-    image: null,
-  };
+  return getInterestVisualByName(interestName);
 }

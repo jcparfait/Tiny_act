@@ -13,6 +13,8 @@ import {
   useSegments,
 } from "expo-router";
 
+import { StatusBar } from "expo-status-bar";
+
 import {
   useFonts,
   Poppins_400Regular,
@@ -92,6 +94,12 @@ export default function RootLayout() {
           backgroundColor: TA.colors.bg,
         }}
       >
+        <StatusBar
+          style="dark"
+          backgroundColor={TA.colors.bg}
+          translucent={false}
+        />
+
         <ActivityIndicator />
       </View>
     );
@@ -99,6 +107,12 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
+      <StatusBar
+        style="dark"
+        backgroundColor={TA.colors.bg}
+        translucent={false}
+      />
+
       <RootNavigator />
     </AuthProvider>
   );

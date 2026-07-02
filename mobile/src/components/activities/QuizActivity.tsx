@@ -17,15 +17,14 @@ import {
   QuizQuestion,
 } from "../../types/tinyAct";
 
+import type { ActivityFooterAction } from "../ActiveActivityCard";
+
 import {
-  activityMainText,
-  DarkButton,
-  DarkInfoBox,
   FeedbackBox,
-  IntroCard,
-  QuestionCard,
   ScoreCard,
 } from "./shared";
+
+import { TA } from "../../theme/tinyActTheme";
 
 function validSavedQuizProgress(
   value: QuizProgress | undefined
@@ -39,7 +38,15 @@ function validSavedQuizProgress(
   );
 }
 
-export function QuizActivity({ activity }: { activity: Activity }) {
+export function QuizActivity({
+  activity,
+  onActivityReadyToFinishChange,
+  onFooterActionChange,
+}: {
+  activity: Activity;
+  onActivityReadyToFinishChange?: (ready: boolean) => void;
+  onFooterActionChange?: (action: ActivityFooterAction | null) => void;
+}) {
   const activitySessionId =
     activity.payload?.activity_session_id || null;
 
@@ -60,10 +67,10 @@ export function QuizActivity({ activity }: { activity: Activity }) {
   const [progressError, setProgressError] =
     useState<string | null>(null);
 
-  const quizLabel =
-    activity.activity_type === "code_quiz"
-      ? "Quiz code"
-      : "Quiz culture";
+  const currentQuestion = questions[currentIndex];
+  const isAnswered = selectedAnswer !== null;
+  const isLastQuestion =
+    currentIndex === questions.length - 1;
 
   useEffect(() => {
     let cancelled = false;
@@ -137,6 +144,10 @@ export function QuizActivity({ activity }: { activity: Activity }) {
   }, [activity.id, activitySessionId]);
 
   useEffect(() => {
+    onActivityReadyToFinishChange?.(completed);
+  }, [completed, onActivityReadyToFinishChange]);
+
+  useEffect(() => {
     if (
       !progressLoaded ||
       !activitySessionId ||
@@ -173,10 +184,47 @@ export function QuizActivity({ activity }: { activity: Activity }) {
     selectedAnswer,
   ]);
 
-  const currentQuestion = questions[currentIndex];
-  const isAnswered = selectedAnswer !== null;
-  const isLastQuestion =
-    currentIndex === questions.length - 1;
+  useEffect(() => {
+    if (!progressLoaded || completed || questions.length === 0) {
+      onFooterActionChange?.(null);
+      return;
+    }
+
+    if (!isAnswered) {
+      onFooterActionChange?.({
+        label: "Question suivante",
+        disabled: true,
+        onPress: () => {},
+      });
+      return;
+    }
+
+    onFooterActionChange?.({
+      label: isLastQuestion ? "Voir le score" : "Question suivante",
+      disabled: false,
+      onPress: () => {
+        if (isLastQuestion) {
+          setCompleted(true);
+          return;
+        }
+
+        setCurrentIndex((previousIndex) => previousIndex + 1);
+        setSelectedAnswer(null);
+      },
+    });
+
+    return () => {
+      onFooterActionChange?.(null);
+    };
+  }, [
+    completed,
+    currentIndex,
+    isAnswered,
+    isLastQuestion,
+    onFooterActionChange,
+    progressLoaded,
+    questions.length,
+  ]);
 
   function handleAnswer(answer: string) {
     if (selectedAnswer || !currentQuestion) return;
@@ -188,27 +236,15 @@ export function QuizActivity({ activity }: { activity: Activity }) {
     }
   }
 
-  function handleNextQuestion() {
-    if (!isAnswered) return;
-
-    if (isLastQuestion) {
-      setCompleted(true);
-      return;
-    }
-
-    setCurrentIndex((previousIndex) => previousIndex + 1);
-    setSelectedAnswer(null);
-  }
-
   if (!progressLoaded) {
     return (
       <View
         style={{
-          padding: 22,
-          borderRadius: 22,
-          backgroundColor: "#FFFFFF",
-          borderWidth: 1,
-          borderColor: "rgba(90, 74, 54, 0.16)",
+          padding: 18,
+          borderRadius: 24,
+          backgroundColor: TA.colors.surface,
+          borderWidth: 1.5,
+          borderColor: TA.colors.borderMedium,
           alignItems: "center",
           gap: 12,
         }}
@@ -218,8 +254,8 @@ export function QuizActivity({ activity }: { activity: Activity }) {
         <Text
           style={{
             fontSize: 15,
-            color: "rgba(21, 27, 47, 0.58)",
-            fontWeight: "700",
+            color: TA.colors.inkMuted,
+            fontFamily: TA.fonts.bold,
           }}
         >
           Chargement de ta progression…
@@ -230,23 +266,43 @@ export function QuizActivity({ activity }: { activity: Activity }) {
 
   if (questions.length === 0) {
     return (
-      <View style={{ gap: 14 }}>
-        <IntroCard
-          label={quizLabel}
-          text={activityMainText(activity)}
-        />
+      <View
+        style={{
+          padding: 18,
+          borderRadius: 24,
+          backgroundColor: TA.colors.surface,
+          borderWidth: 1.5,
+          borderColor: TA.colors.borderMedium,
+          gap: 8,
+        }}
+      >
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 22,
+            fontFamily: TA.fonts.black,
+          }}
+        >
+          Aucune question reçue
+        </Text>
 
-        <DarkInfoBox
-          title="Aucune question reçue"
-          text="Vérifie que l’activité contient des questions de quiz."
-        />
+        <Text
+          style={{
+            color: TA.colors.inkMuted,
+            fontSize: 14,
+            lineHeight: 20,
+            fontFamily: TA.fonts.bold,
+          }}
+        >
+          Vérifie que l’activité contient des questions de quiz.
+        </Text>
       </View>
     );
   }
 
   if (completed) {
     return (
-      <View style={{ gap: 14 }}>
+      <View style={{ gap: 12 }}>
         {progressError && (
           <FeedbackBox
             success={false}
@@ -263,7 +319,7 @@ export function QuizActivity({ activity }: { activity: Activity }) {
   }
 
   return (
-    <View style={{ gap: 14 }}>
+    <View style={{ gap: 12 }}>
       {progressError && (
         <FeedbackBox
           success={false}
@@ -271,95 +327,131 @@ export function QuizActivity({ activity }: { activity: Activity }) {
         />
       )}
 
-      <IntroCard
-        label={`${quizLabel} · Question ${
-          currentIndex + 1
-        }/${questions.length}`}
-        text={activityMainText(activity)}
-      />
+      <View
+        style={{
+          padding: 16,
+          borderRadius: 26,
+          backgroundColor: TA.colors.surface,
+          borderWidth: 2,
+          borderColor: isAnswered
+            ? selectedAnswer === currentQuestion.correct_answer
+              ? "#6AC986"
+              : "#FF9B8F"
+            : TA.colors.borderMedium,
+          gap: 14,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            gap: 10,
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: TA.colors.blue,
+              fontSize: 12,
+              fontFamily: TA.fonts.black,
+              textTransform: "uppercase",
+              letterSpacing: 1.2,
+            }}
+          >
+            Question {currentIndex + 1}/{questions.length}
+          </Text>
 
-      <QuestionCard question={currentQuestion} />
+          <Text
+            style={{
+              color: TA.colors.inkMuted,
+              fontSize: 12,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            {score} pts
+          </Text>
+        </View>
 
-      <View style={{ gap: 10 }}>
-        {currentQuestion.answers.map((answer) => {
-          const selected = selectedAnswer === answer;
-          const correct =
-            answer === currentQuestion.correct_answer;
+        <Text
+          style={{
+            color: TA.colors.ink,
+            fontSize: 24,
+            lineHeight: 28,
+            fontFamily: TA.fonts.black,
+            letterSpacing: -1,
+          }}
+        >
+          {currentQuestion.question}
+        </Text>
 
-          return (
-            <Pressable
-              key={answer}
-              onPress={() => handleAnswer(answer)}
-              disabled={isAnswered}
-              style={{
-                padding: 15,
-                borderRadius: 18,
-                backgroundColor:
-                  isAnswered && correct
-                    ? "#D9F8E5"
-                    : isAnswered && selected && !correct
-                      ? "#FFE1DD"
-                      : selected
-                        ? "#151B2F"
-                        : "#FFFFFF",
-                borderWidth: 2,
-                borderColor:
-                  isAnswered && correct
-                    ? "#2EAD63"
-                    : isAnswered && selected && !correct
-                      ? "#7C63F2"
-                      : selected
-                        ? "#151B2F"
-                        : "rgba(90, 74, 54, 0.16)",
-              }}
-            >
-              <Text
+        <View style={{ gap: 8 }}>
+          {currentQuestion.answers.map((answer) => {
+            const selected = selectedAnswer === answer;
+            const correct =
+              answer === currentQuestion.correct_answer;
+
+            return (
+              <Pressable
+                key={answer}
+                onPress={() => handleAnswer(answer)}
+                disabled={isAnswered}
                 style={{
-                  fontSize: 15,
-                  fontWeight: "800",
-                  lineHeight: 21,
-                  color:
+                  paddingVertical: 13,
+                  paddingHorizontal: 14,
+                  borderRadius: 18,
+                  backgroundColor:
                     isAnswered && correct
-                      ? "#176C3A"
+                      ? "#E8F8EF"
                       : isAnswered && selected && !correct
-                        ? "#B42318"
-                        : selected
-                          ? "#FFFFFF"
-                          : "#151B2F",
+                        ? "#FFEAE7"
+                        : TA.colors.surface,
+                  borderWidth: 2,
+                  borderColor:
+                    isAnswered && correct
+                      ? "#5DBB78"
+                      : isAnswered && selected && !correct
+                        ? "#FF8F82"
+                        : TA.colors.borderMedium,
                 }}
               >
-                {answer}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontFamily: TA.fonts.black,
+                    lineHeight: 20,
+                    color:
+                      isAnswered && correct
+                        ? "#176C3A"
+                        : isAnswered && selected && !correct
+                          ? "#B42318"
+                          : TA.colors.ink,
+                  }}
+                >
+                  {answer}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-      {isAnswered && (
-        <FeedbackBox
-          success={
-            selectedAnswer ===
-            currentQuestion.correct_answer
-          }
-          text={
-            selectedAnswer ===
-            currentQuestion.correct_answer
+        {isAnswered && (
+          <Text
+            style={{
+              color:
+                selectedAnswer === currentQuestion.correct_answer
+                  ? "#176C3A"
+                  : "#B42318",
+              fontSize: 14,
+              lineHeight: 20,
+              fontFamily: TA.fonts.black,
+            }}
+          >
+            {selectedAnswer === currentQuestion.correct_answer
               ? "Bonne réponse."
-              : `Mauvaise réponse. La bonne réponse était : ${currentQuestion.correct_answer}`
-          }
-        />
-      )}
-
-      {isAnswered && (
-        <DarkButton
-          label={
-            isLastQuestion
-              ? "Voir le score"
-              : "Question suivante"
-          }
-          onPress={handleNextQuestion}
-        />
-      )}
+              : `Mauvaise réponse. La bonne réponse était : ${currentQuestion.correct_answer}`}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }

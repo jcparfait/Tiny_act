@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { Activity } from "../types/tinyAct";
 
@@ -10,6 +10,7 @@ import type {
 import { MelodyActivity } from "./activities/MelodyActivity";
 import { QuizActivity } from "./activities/QuizActivity";
 import { SentenceCompletionActivity } from "./activities/SentenceCompletionActivity";
+import { SportActivity } from "./activities/SportActivity";
 import { StandardActivity } from "./activities/StandardActivity";
 import { WordLearningActivity } from "./activities/WordLearningActivity";
 import { FallbackActivity } from "./activities/shared";
@@ -21,12 +22,34 @@ type ActivityRendererProps = {
   onHeaderMetaChange?: (meta: ActivityHeaderMeta | null) => void;
 };
 
+function normalizeInterestName(value?: string | null) {
+  return (value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function isSportActivity(activity: Activity) {
+  return (
+    normalizeInterestName(activity.interest?.name) === "sport" ||
+    Boolean(activity.payload?.sport_plan)
+  );
+}
+
 export function ActivityRenderer({
   activity,
   onActivityReadyToFinishChange,
   onFooterActionChange,
   onHeaderMetaChange,
 }: ActivityRendererProps) {
+  const sportActivity = useMemo(
+    () => isSportActivity(activity),
+    [activity]
+  );
+
   useEffect(() => {
     onFooterActionChange?.(null);
     onHeaderMetaChange?.(null);
@@ -34,6 +57,7 @@ export function ActivityRenderer({
 
   useEffect(() => {
     if (
+      !sportActivity &&
       activity.activity_type !== "melody" &&
       activity.activity_type !== "culture_quiz" &&
       activity.activity_type !== "code_quiz" &&
@@ -45,8 +69,22 @@ export function ActivityRenderer({
   }, [
     activity.id,
     activity.activity_type,
+    sportActivity,
     onActivityReadyToFinishChange,
   ]);
+
+  if (sportActivity) {
+    return (
+      <SportActivity
+        activity={activity}
+        onActivityReadyToFinishChange={
+          onActivityReadyToFinishChange
+        }
+        onFooterActionChange={onFooterActionChange}
+        onHeaderMetaChange={onHeaderMetaChange}
+      />
+    );
+  }
 
   if (activity.activity_type === "standard") {
     return <StandardActivity activity={activity} />;

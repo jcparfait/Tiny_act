@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -6,7 +7,11 @@ import {
   Text,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+
+import {
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 
 import { ActiveActivityCard } from "../../components/ActiveActivityCard";
 import { ActivityRewardCard } from "../../components/ActivityRewardCard";
@@ -92,7 +97,7 @@ export default function SessionDetailScreen() {
   const [loading, setLoading] =
     useState(true);
 
-  const [starting, setStarting] =
+  const [autoStarting, setAutoStarting] =
     useState(false);
 
   const [pausing, setPausing] =
@@ -132,6 +137,68 @@ export default function SessionDetailScreen() {
               data.activity_session.activity_id
           ) || data.activities[0];
 
+        const sessionIsAlreadyFinished =
+          data.activity_session.finished ===
+            true ||
+          data.activity_session.status ===
+            "finished";
+
+        if (sessionIsAlreadyFinished) {
+          setActivitySession(
+            data.activity_session
+          );
+
+          setActivity(
+            selectedActivity || null
+          );
+
+          setElapsedSeconds(
+            computeElapsedSeconds(
+              data.activity_session
+            )
+          );
+
+          setActivityReadyToFinish(true);
+
+          await loadRewardForSession(
+            data.activity_session.id
+          );
+
+          return;
+        }
+
+        if (
+          data.activity_session.status === "preview"
+        ) {
+          setAutoStarting(true);
+
+          const startedData =
+            await startActivitySession(
+              data.activity_session.id
+            );
+
+          setActivitySession(
+            startedData.activity_session
+          );
+
+          setActivity(startedData.activity);
+
+          setElapsedSeconds(
+            computeElapsedSeconds(
+              startedData.activity_session
+            )
+          );
+
+          setActivityReadyToFinish(
+            startedData.activity.activity_type !==
+              "melody"
+          );
+
+          setReward(null);
+
+          return;
+        }
+
         setActivitySession(
           data.activity_session
         );
@@ -151,19 +218,7 @@ export default function SessionDetailScreen() {
             "melody"
         );
 
-        const sessionIsAlreadyFinished =
-          data.activity_session.finished ===
-            true ||
-          data.activity_session.status ===
-            "finished";
-
-        if (sessionIsAlreadyFinished) {
-          await loadRewardForSession(
-            data.activity_session.id
-          );
-        } else {
-          setReward(null);
-        }
+        setReward(null);
       } catch (err) {
         setError(
           err instanceof Error
@@ -171,6 +226,7 @@ export default function SessionDetailScreen() {
             : "Erreur inconnue"
         );
       } finally {
+        setAutoStarting(false);
         setLoading(false);
       }
     }
@@ -209,47 +265,6 @@ export default function SessionDetailScreen() {
       setReward(rewardData);
     } catch {
       setReward(null);
-    }
-  }
-
-  async function handleStart() {
-    if (!activitySession) return;
-
-    setStarting(true);
-    setError(null);
-
-    try {
-      const data =
-        await startActivitySession(
-          activitySession.id
-        );
-
-      setActivitySession(
-        data.activity_session
-      );
-
-      setActivity(data.activity);
-
-      setElapsedSeconds(
-        computeElapsedSeconds(
-          data.activity_session
-        )
-      );
-
-      setActivityReadyToFinish(
-        data.activity.activity_type !==
-          "melody"
-      );
-
-      setReward(null);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erreur inconnue"
-      );
-    } finally {
-      setStarting(false);
     }
   }
 
@@ -375,9 +390,6 @@ export default function SessionDetailScreen() {
   const sessionIsPaused =
     activitySession?.status === "paused";
 
-  const sessionIsPreview =
-    activitySession?.status === "preview";
-
   const canFinish =
     activitySession &&
     !sessionIsFinished &&
@@ -411,13 +423,40 @@ export default function SessionDetailScreen() {
             subtitle="Consulte ou reprends cette activité."
           />
 
-          {loading && <ActivityIndicator />}
+          {(loading || autoStarting) && (
+            <View
+              style={{
+                padding: 22,
+                borderRadius: 28,
+                backgroundColor: "#FFFFFF",
+                borderWidth: 2,
+                borderColor:
+                  "rgba(90, 74, 54, 0.16)",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <ActivityIndicator />
+
+              <Text
+                style={{
+                  color: "rgba(21, 27, 47, 0.58)",
+                  fontSize: 14,
+                  fontWeight: "800",
+                  textAlign: "center",
+                }}
+              >
+                Ouverture de l’activité...
+              </Text>
+            </View>
+          )}
 
           {error && (
             <ErrorBox message={error} />
           )}
 
           {!loading &&
+            !autoStarting &&
             activitySession &&
             activity &&
             !sessionIsFinished && (
@@ -436,6 +475,7 @@ export default function SessionDetailScreen() {
             )}
 
           {!loading &&
+            !autoStarting &&
             activitySession &&
             activity &&
             sessionIsFinished &&
@@ -453,6 +493,7 @@ export default function SessionDetailScreen() {
             )}
 
           {!loading &&
+            !autoStarting &&
             activitySession &&
             activity &&
             sessionIsFinished &&
@@ -464,7 +505,8 @@ export default function SessionDetailScreen() {
                   backgroundColor:
                     "#FFFFFF",
                   borderWidth: 2,
-                  borderColor: "rgba(90, 74, 54, 0.16)",
+                  borderColor:
+                    "rgba(90, 74, 54, 0.16)",
                   gap: 12,
                 }}
               >
@@ -504,22 +546,11 @@ export default function SessionDetailScreen() {
             )}
 
           {!loading &&
+            !autoStarting &&
             activitySession &&
             activity &&
             !sessionIsFinished && (
               <View style={{ gap: 12 }}>
-                {sessionIsPreview && (
-                  <PrimaryButton
-                    label={
-                      starting
-                        ? "Démarrage..."
-                        : "Commencer l’activité"
-                    }
-                    onPress={handleStart}
-                    disabled={starting}
-                  />
-                )}
-
                 {sessionIsRunning && (
                   <PrimaryButton
                     label={
