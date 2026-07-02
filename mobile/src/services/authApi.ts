@@ -7,6 +7,7 @@ import {
 } from "../types/tinyAct";
 
 import { getAuthToken } from "./authStorage";
+import { fetchWithTimeout } from "./request";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -35,7 +36,7 @@ async function authFetch<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${getApiBaseUrl()}${path}`,
     {
       ...options,

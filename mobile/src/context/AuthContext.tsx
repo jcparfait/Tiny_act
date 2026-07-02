@@ -1,6 +1,7 @@
 import {
   createContext,
   type PropsWithChildren,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -46,6 +47,9 @@ type ProfileUpdateValues = {
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
+  restoreError: string | null;
+
+  retryRestoreSession: () => Promise<void>;
 
   signIn: (
     email: string,
@@ -86,6 +90,18 @@ type AuthContextValue = {
 const AuthContext =
   createContext<AuthContextValue | null>(null);
 
+function isExpiredSessionError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+
+  const message = error.message.toLowerCase();
+
+  return (
+    message.includes("401") ||
+    message.includes("unauthorized") ||
+    message.includes("session a expir")
+  );
+}
+
 export function AuthProvider({
   children,
 }: PropsWithChildren) {
@@ -93,46 +109,77 @@ export function AuthProvider({
     useState<AuthUser | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [restoreError, setRestoreError] =
+    useState<string | null>(null);
+
+  const restoreSession = useCallback(
+    async (cancelled?: () => boolean) => {
+      setLoading(true);
+      setRestoreError(null);
+
+      try {
+        const token = await getAuthToken();
+
+        if (!token) {
+          if (!cancelled?.()) {
+            setUser(null);
+          }
+
+          return;
+        }
+
+        const response = await loadCurrentUser();
+
+        if (!cancelled?.()) {
+          setUser(response.user);
+        }
+      } catch (error) {
+        if (isExpiredSessionError(error)) {
+          await deleteAuthToken();
+
+          if (!cancelled?.()) {
+            setUser(null);
+          }
+
+          return;
+        }
+
+        if (!cancelled?.()) {
+          setRestoreError(
+            error instanceof Error
+              ? error.message
+              : "Impossible de restaurer la session."
+          );
+        }
+      } finally {
+        if (!cancelled?.()) {
+          setLoading(false);
+        }
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
 
-    async function restoreSession() {
-      try {
-        const token = await getAuthToken();
-
-        if (!token) return;
-
-        const response = await loadCurrentUser();
-
-        if (!cancelled) {
-          setUser(response.user);
-        }
-      } catch {
-        await deleteAuthToken();
-
-        if (!cancelled) {
-          setUser(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    restoreSession();
+    void restoreSession(() => cancelled);
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [restoreSession]);
+
+  async function retryRestoreSession() {
+    await restoreSession();
+  }
 
   async function storeLoginResponse(response: {
     token: string;
     user: AuthUser;
   }) {
     await setAuthToken(response.token);
+    setRestoreError(null);
     setUser(response.user);
   }
 
@@ -205,9 +252,10 @@ export function AuthProvider({
     try {
       await logoutMobile();
     } catch {
-      // La déconnexion locale reste prioritaire.
+      // La deconnexion locale reste prioritaire.
     } finally {
       await deleteAuthToken();
+      setRestoreError(null);
       setUser(null);
     }
   }
@@ -215,6 +263,7 @@ export function AuthProvider({
   async function deleteProfile() {
     await deleteMobileProfile();
     await deleteAuthToken();
+    setRestoreError(null);
     setUser(null);
   }
 
@@ -223,6 +272,8 @@ export function AuthProvider({
       value={{
         user,
         loading,
+        restoreError,
+        retryRestoreSession,
         signIn,
         signUp,
         completeSocialSignIn,

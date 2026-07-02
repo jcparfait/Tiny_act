@@ -4,6 +4,7 @@ import {
 } from "../types/tinyAct";
 
 import { getAuthToken } from "./authStorage";
+import { fetchWithTimeout } from "./request";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -19,21 +20,24 @@ async function roomFetch<T>(
 
   const token = await getAuthToken();
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      Accept: "application/json",
-      ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {}),
-      ...((options?.headers || {}) as Record<
-        string,
-        string
-      >),
-    },
-  });
+  const response = await fetchWithTimeout(
+    `${API_URL}${path}`,
+    {
+      ...options,
+      headers: {
+        Accept: "application/json",
+        ...(token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {}),
+        ...((options?.headers || {}) as Record<
+          string,
+          string
+        >),
+      },
+    }
+  );
 
   const text = await response.text();
 

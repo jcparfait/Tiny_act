@@ -20,8 +20,19 @@ import {
 } from "../types/tinyAct";
 
 import { getAuthToken } from "./authStorage";
+import { fetchWithTimeout } from "./request";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+function getApiUrl() {
+  if (!API_URL) {
+    throw new Error(
+      "EXPO_PUBLIC_API_URL n'est pas configurée."
+    );
+  }
+
+  return API_URL;
+}
 
 async function fetchJson<T>(
   url: string,
@@ -38,7 +49,7 @@ async function fetchJson<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     ...options,
     headers,
   });
@@ -81,7 +92,7 @@ export async function loginMobile(
   password: string
 ): Promise<LoginResponse> {
   return fetchJson<LoginResponse>(
-    `${API_URL}/api/v1/auth/login`,
+    `${getApiUrl()}/api/v1/auth/login`,
     {
       method: "POST",
       headers: {
@@ -99,13 +110,13 @@ export async function loadCurrentUser(): Promise<
   CurrentUserResponse
 > {
   return fetchJson<CurrentUserResponse>(
-    `${API_URL}/api/v1/auth/me`
+    `${getApiUrl()}/api/v1/auth/me`
   );
 }
 
 export async function logoutMobile(): Promise<void> {
   return fetchJson<void>(
-    `${API_URL}/api/v1/auth/logout`,
+    `${getApiUrl()}/api/v1/auth/logout`,
     {
       method: "DELETE",
     }
@@ -115,14 +126,16 @@ export async function logoutMobile(): Promise<void> {
 export async function loadInitialData(): Promise<
   InitialDataResponse
 > {
+  const apiUrl = getApiUrl();
+
   const [moods, locations, durations] =
     await Promise.all([
-      fetchJson<Mood[]>(`${API_URL}/api/v1/moods`),
+      fetchJson<Mood[]>(`${apiUrl}/api/v1/moods`),
       fetchJson<Location[]>(
-        `${API_URL}/api/v1/locations`
+        `${apiUrl}/api/v1/locations`
       ),
       fetchJson<Duration[]>(
-        `${API_URL}/api/v1/durations`
+        `${apiUrl}/api/v1/durations`
       ),
     ]);
 
@@ -137,7 +150,7 @@ export async function loadActivitySessions(): Promise<
   ActivitySessionSummary[]
 > {
   return fetchJson<ActivitySessionSummary[]>(
-    `${API_URL}/api/v1/activity_sessions`
+    `${getApiUrl()}/api/v1/activity_sessions`
   );
 }
 
@@ -145,7 +158,7 @@ export async function loadActivitySession(
   activitySessionId: number
 ): Promise<ActivitySessionDetailsResponse> {
   return fetchJson<ActivitySessionDetailsResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}`
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}`
   );
 }
 
@@ -153,7 +166,7 @@ export async function loadActivityProgress(
   activitySessionId: number
 ): Promise<ActivityProgressResponse> {
   return fetchJson<ActivityProgressResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/progress`
   );
 }
 
@@ -162,7 +175,7 @@ export async function saveActivityProgress(
   progressData: ActivityProgressData
 ): Promise<ActivityProgressResponse> {
   return fetchJson<ActivityProgressResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/progress`,
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/progress`,
     {
       method: "PATCH",
       headers: {
@@ -179,7 +192,7 @@ export async function createActivitySession(
   payload: CreateActivitySessionPayload
 ): Promise<CreateActivitySessionResponse> {
   return fetchJson<CreateActivitySessionResponse>(
-    `${API_URL}/api/v1/activity_sessions`,
+    `${getApiUrl()}/api/v1/activity_sessions`,
     {
       method: "POST",
       headers: {
@@ -197,7 +210,7 @@ export async function selectActivity(
   activityId: number
 ): Promise<SelectActivityResponse> {
   return fetchJson<SelectActivityResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/select_activity`,
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/select_activity`,
     {
       method: "PATCH",
       headers: {
@@ -214,7 +227,7 @@ export async function startActivitySession(
   activitySessionId: number
 ): Promise<StartActivitySessionResponse> {
   return fetchJson<StartActivitySessionResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/start`,
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/start`,
     {
       method: "PATCH",
       headers: {
@@ -230,7 +243,7 @@ export async function pauseActivitySession(
   elapsedSeconds: number
 ): Promise<PauseActivitySessionResponse> {
   return fetchJson<PauseActivitySessionResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/pause`,
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/pause`,
     {
       method: "PATCH",
       headers: {
@@ -247,7 +260,7 @@ export async function resumeActivitySession(
   activitySessionId: number
 ): Promise<ResumeActivitySessionResponse> {
   return fetchJson<ResumeActivitySessionResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/resume`,
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/resume`,
     {
       method: "PATCH",
       headers: {
@@ -263,7 +276,7 @@ export async function finishActivitySession(
   elapsedSeconds: number
 ): Promise<FinishActivitySessionResponse> {
   return fetchJson<FinishActivitySessionResponse>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/finish`,
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/finish`,
     {
       method: "PATCH",
       headers: {
@@ -280,6 +293,6 @@ export async function loadActivityReward(
   activitySessionId: number
 ): Promise<ActivityReward> {
   return fetchJson<ActivityReward>(
-    `${API_URL}/api/v1/activity_sessions/${activitySessionId}/reward`
+    `${getApiUrl()}/api/v1/activity_sessions/${activitySessionId}/reward`
   );
 }

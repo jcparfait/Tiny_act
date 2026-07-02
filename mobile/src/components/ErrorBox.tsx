@@ -1,35 +1,11 @@
 import { Text, View } from "react-native";
 
+import { readableError } from "../services/request";
 import { TA } from "../theme/tinyActTheme";
 
 type ErrorBoxProps = {
   message: string;
 };
-
-function readableError(message: string) {
-  if (
-    message.includes("Failed to fetch") ||
-    message.includes("Network request failed")
-  ) {
-    return "Impossible de joindre le serveur. Vérifie que Rails est bien lancé.";
-  }
-
-  if (
-    message.includes("401") ||
-    message.toLowerCase().includes("unauthorized")
-  ) {
-    return "Ta session a expiré. Reconnecte-toi pour continuer.";
-  }
-
-  if (
-    message.includes("500") ||
-    message.toLowerCase().includes("internal server error")
-  ) {
-    return "Le serveur a rencontré une erreur. Regarde les logs Rails.";
-  }
-
-  return message;
-}
 
 export function ErrorBox({
   message,

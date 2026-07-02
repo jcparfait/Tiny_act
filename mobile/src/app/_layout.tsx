@@ -1,10 +1,8 @@
 import { useEffect } from "react";
 
 import {
-  ActivityIndicator,
   Text,
   TextInput,
-  View,
 } from "react-native";
 
 import {
@@ -24,6 +22,9 @@ import {
   Poppins_800ExtraBold,
   Poppins_900Black,
 } from "@expo-google-fonts/poppins";
+
+import { FullPageError } from "../components/FullPageError";
+import { FullPageLoader } from "../components/FullPageLoader";
 
 import {
   AuthProvider,
@@ -68,6 +69,16 @@ function applyDefaultFonts() {
   };
 }
 
+function AppStatusBar() {
+  return (
+    <StatusBar
+      style="dark"
+      backgroundColor={TA.colors.bgStart}
+      translucent={false}
+    />
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
@@ -86,32 +97,17 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: TA.colors.bg,
-        }}
-      >
-        <StatusBar
-          style="dark"
-          backgroundColor={TA.colors.bg}
-          translucent={false}
-        />
+      <>
+        <AppStatusBar />
 
-        <ActivityIndicator />
-      </View>
+        <FullPageLoader message="Préparation de l’app..." />
+      </>
     );
   }
 
   return (
     <AuthProvider>
-      <StatusBar
-        style="dark"
-        backgroundColor={TA.colors.bg}
-        translucent={false}
-      />
+      <AppStatusBar />
 
       <RootNavigator />
     </AuthProvider>
@@ -122,6 +118,8 @@ function RootNavigator() {
   const {
     user,
     loading,
+    restoreError,
+    retryRestoreSession,
   } = useAuth();
 
   const router = useRouter();
@@ -147,7 +145,7 @@ function RootNavigator() {
     currentRoute !== "avatar";
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading || restoreError || !user) return;
 
     if (redirectingToInterests) {
       router.replace("/interests");
@@ -161,9 +159,19 @@ function RootNavigator() {
     loading,
     redirectingToAvatar,
     redirectingToInterests,
+    restoreError,
     router,
     user,
   ]);
+
+  if (restoreError) {
+    return (
+      <FullPageError
+        message={restoreError}
+        onRetry={retryRestoreSession}
+      />
+    );
+  }
 
   if (
     loading ||
@@ -171,16 +179,7 @@ function RootNavigator() {
     redirectingToAvatar
   ) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: TA.colors.bg,
-        }}
-      >
-        <ActivityIndicator />
-      </View>
+      <FullPageLoader message="Chargement de ta session..." />
     );
   }
 
