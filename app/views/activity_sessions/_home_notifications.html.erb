@@ -12,6 +12,7 @@
         else "is-hidden"
         end
       %>
+      <% notification_subtitle = notification[:subtitle].presence || notification[:body] %>
 
       <%= link_to notification[:url],
                   class: "home-notification-card home-notification-card-#{notification[:kind]} #{stack_class}",
@@ -119,7 +120,7 @@
 
         <div class="home-notification-content">
           <strong><%= notification[:title] %></strong>
-          <p><%= notification[:subtitle] %></p>
+          <p><%= notification_subtitle %></p>
         </div>
 
         <div class="home-notification-arrow">›</div>
