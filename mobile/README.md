@@ -29,7 +29,7 @@ L'application permet a l'utilisateur de:
 
 ## Prerequis
 
-- Node.js installe localement ;
+- Node.js 20.19.4 ou plus recent ;
 - le backend Rails lance depuis la racine du depot ;
 - un simulateur Android/iOS ou un telephone avec Expo Go ;
 - une URL API accessible depuis le device.
@@ -108,6 +108,7 @@ npm run typecheck
 mobile/
 ├── .env.example             # Exemple de configuration API
 ├── app.json                 # Configuration Expo
+├── eslint.config.js         # Configuration ESLint Expo
 ├── package.json             # Scripts et dependances
 ├── tsconfig.json            # TypeScript strict et alias @/*
 └── src/
@@ -151,6 +152,10 @@ L'application mobile consomme principalement:
 - `/api/v1/room/furnitures`.
 
 ## Depannage rapide
+
+### Node.js trop ancien
+
+React Native 0.85 demande Node.js 20.19.4 ou plus recent. Si `npm install`, `npm run lint` ou `expo-doctor` affiche `Unsupported engine`, mettre Node a jour puis relancer `npm install`.
 
 ### `EXPO_PUBLIC_API_URL n'est pas configuree`
 
