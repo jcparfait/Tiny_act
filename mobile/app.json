@@ -7,11 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/images/brand/tiny-act-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F4EFE8"
-    },
     "ios": {
       "icon": "./assets/expo.icon",
       "userInterfaceStyle": "light"
