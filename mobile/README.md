@@ -1,56 +1,181 @@
-# Welcome to your Expo app 👋
+# Tiny Act Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile Expo / React Native de Tiny Act.
 
-## Get started
+Ce dossier contient le client mobile. Le backend Rails reste a la racine du depot et expose l'API JSON utilisee par l'application mobile.
 
-1. Install dependencies
+## Role de l'app mobile
 
-   ```bash
-   npm install
-   ```
+L'application permet a l'utilisateur de:
 
-2. Start the app
+- se connecter ou creer un compte ;
+- choisir ses centres d'interet et son avatar ;
+- selectionner son humeur, son lieu et sa duree disponible ;
+- recevoir des recommandations de micro-activites ;
+- lancer, mettre en pause, reprendre et terminer une session ;
+- gagner de l'XP ;
+- consulter son historique ;
+- debloquer des meubles et personnaliser sa room.
 
-   ```bash
-   npx expo start
-   ```
+## Stack mobile
 
-In the output, you'll find options to open the app in a
+- Expo SDK 56
+- React Native 0.85
+- React 19
+- TypeScript strict
+- Expo Router
+- Expo Secure Store pour le token mobile
+- Expo Image, Expo Fonts et Expo Splash Screen
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Prerequis
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Node.js installe localement ;
+- le backend Rails lance depuis la racine du depot ;
+- un simulateur Android/iOS ou un telephone avec Expo Go ;
+- une URL API accessible depuis le device.
 
-## Get a fresh project
+## Installation
 
-When you're ready, run:
+Depuis la racine du depot:
 
 ```bash
-npm run reset-project
+cd mobile
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Le depot contient actuellement un `package-lock.json`, donc les commandes documentees utilisent `npm`.
 
-### Other setup steps
+## Configuration API
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Creer un fichier `.env.local` dans `mobile/`:
 
-## Learn more
+```bash
+EXPO_PUBLIC_API_URL=http://localhost:3000
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Pour un telephone physique, `localhost` pointe vers le telephone, pas vers l'ordinateur. Il faut donc utiliser l'adresse IP locale de la machine qui lance Rails, par exemple:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+EXPO_PUBLIC_API_URL=http://192.168.1.42:3000
+```
 
-## Join the community
+Pour une build de production, cette variable devra pointer vers l'URL Heroku de l'API Rails.
 
-Join our community of developers creating universal apps.
+## Lancement
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Lancer le backend Rails dans un premier terminal depuis la racine du depot:
+
+```bash
+bundle install
+bin/rails db:create db:migrate db:seed
+bin/rails server
+```
+
+Lancer Expo dans un second terminal:
+
+```bash
+cd mobile
+npx expo start
+```
+
+Puis choisir l'une des options Expo:
+
+- Android emulator ;
+- iOS simulator ;
+- Expo Go sur telephone ;
+- web, utile seulement pour un controle rapide.
+
+## Scripts disponibles
+
+```bash
+npm run start
+npm run android
+npm run ios
+npm run web
+npm run lint
+```
+
+Controle TypeScript manuel:
+
+```bash
+npx tsc --noEmit
+```
+
+## Structure
+
+```text
+mobile/
+├── app.json                 # Configuration Expo
+├── package.json             # Scripts et dependances
+├── tsconfig.json            # TypeScript strict et alias @/*
+└── src/
+    ├── app/                 # Ecrans Expo Router
+    ├── components/          # Composants UI
+    ├── constants/           # Assets, avatars, bonus, furniture
+    ├── context/             # AuthContext
+    ├── services/            # Clients API et stockage local
+    ├── theme/               # Tokens visuels Tiny Act
+    └── types/               # Types TypeScript
+```
+
+## Ecrans principaux
+
+- `login`, `register`, `forgot-password`, `reset-password` ;
+- `interests` et `avatar` pour l'onboarding ;
+- `index` pour le parcours de recommandation ;
+- `session/[id]` pour executer une activite ;
+- `history` pour l'historique ;
+- `explore` pour la room ;
+- `profile` pour le compte utilisateur.
+
+## Endpoints consommes
+
+L'application mobile consomme principalement:
+
+- `/api/v1/auth/login` ;
+- `/api/v1/auth/register` ;
+- `/api/v1/auth/me` ;
+- `/api/v1/interests` ;
+- `/api/v1/moods` ;
+- `/api/v1/locations` ;
+- `/api/v1/durations` ;
+- `/api/v1/activity_sessions` ;
+- `/api/v1/activity_sessions/:id/start` ;
+- `/api/v1/activity_sessions/:id/pause` ;
+- `/api/v1/activity_sessions/:id/resume` ;
+- `/api/v1/activity_sessions/:id/finish` ;
+- `/api/v1/activity_sessions/:id/reward` ;
+- `/api/v1/room` ;
+- `/api/v1/room/furnitures`.
+
+## Depannage rapide
+
+### `EXPO_PUBLIC_API_URL n'est pas configuree`
+
+Verifier que `mobile/.env.local` existe et contient `EXPO_PUBLIC_API_URL`. Redemarrer Expo apres modification.
+
+### `Impossible de joindre le serveur`
+
+Verifier que Rails tourne bien sur le port 3000 et que l'URL API est accessible depuis le device.
+
+Sur telephone physique, utiliser l'IP locale de l'ordinateur au lieu de `localhost`.
+
+### Session expiree
+
+Le token mobile est stocke via Expo Secure Store. En cas de souci pendant le developpement, se deconnecter puis se reconnecter.
+
+### Assets ou splash screen incoherents
+
+Verifier les chemins dans `app.json`, notamment:
+
+- `./assets/images/icon.png` ;
+- `./assets/images/brand/tiny-act-logo.png` ;
+- les images Android adaptive icon.
+
+## Prochaines ameliorations
+
+- ajouter un script `typecheck` dans `package.json` ;
+- standardiser le gestionnaire de paquets entre `npm` et `yarn` ;
+- ajouter `eas.json` pour generer une APK Android installable ;
+- ajouter une configuration d'environnement de production ;
+- ajouter quelques tests unitaires sur les helpers mobiles critiques.
