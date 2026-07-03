@@ -1,7 +1,7 @@
 class ActivitySessionsController < ApplicationController
   ROOM_REWARD_XP = 120
 
-  include TopbarDatas
+  include TopbarData
 
   def index
     @activity_sessions = current_user.activity_sessions.where(finished: true).includes(activity: :interest).order(updated_at: :desc)
