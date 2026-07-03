@@ -8,7 +8,9 @@ Le projet combine une application Expo / React Native et une API Rails. L'object
 
 - Version mobile fonctionnelle sur la branche par defaut `mobile/expo-client`.
 - Backend Rails present dans le meme depot et expose des endpoints JSON sous `/api/v1`.
-- Deploiement Heroku, README mobile detaille, tests API plus complets et APK installable en cours de preparation.
+- README principal et README mobile nettoyes.
+- Tests Rails ajoutes sur les principaux endpoints API mobile.
+- Deploiement Heroku, CI et APK installable en cours de preparation.
 
 ## Apercu produit
 
@@ -37,7 +39,7 @@ Fonctionnalites principales:
 | Backend | Ruby on Rails 8.1, API JSON, Devise |
 | Base de donnees | PostgreSQL |
 | Donnees | Seeds Rails, imports CSV via Roo |
-| Tests existants | Minitest Rails, tests modele/service sur la logique XP |
+| Tests | Minitest Rails, tests API mobile, tests modele/service sur la logique XP |
 
 ## Architecture
 
@@ -46,8 +48,9 @@ Fonctionnalites principales:
 ├── app/                         # Backend Rails: controllers, models, services
 ├── config/routes.rb             # Routes web Rails et API mobile /api/v1
 ├── db/                          # Schema, migrations, seeds et donnees CSV
-├── test/                        # Tests Rails
+├── test/                        # Tests Rails, dont tests API mobile
 └── mobile/                      # Application Expo / React Native
+    ├── .env.example             # Exemple de configuration API mobile
     ├── app.json                 # Configuration Expo
     ├── package.json             # Scripts et dependances mobile
     └── src/
@@ -106,15 +109,10 @@ http://localhost:3000/api/v1
 ```bash
 cd mobile
 npm install
+cp .env.example .env.local
 ```
 
-Creer un fichier `.env.local` dans `mobile/`:
-
-```bash
-EXPO_PUBLIC_API_URL=http://localhost:3000
-```
-
-Si l'application tourne sur un telephone physique, remplacer `localhost` par l'adresse IP locale de la machine qui lance Rails.
+Adapter `EXPO_PUBLIC_API_URL` dans `mobile/.env.local` si l'application tourne sur un telephone physique.
 
 Lancer Expo:
 
@@ -128,16 +126,26 @@ Commandes utiles:
 
 ```bash
 bin/rails test
+bin/rails test test/controllers/api/v1
 bin/rails test test/services/xp_calculator_test.rb
 cd mobile && npm run lint
+cd mobile && npm run typecheck
 ```
+
+Couverture actuelle:
+
+- authentification mobile: login, token, endpoint protege, logout ;
+- inscription mobile ;
+- selection des centres d'interet mobiles ;
+- creation et execution d'une session d'activite ;
+- attribution d'XP et lecture de reward ;
+- room mobile: inventaire, placement, deplacement et suppression de meuble ;
+- logique XP cote service.
 
 A renforcer avant presentation finale:
 
-- tests API mobile: authentification, onboarding, creation de session, fin de session et room ;
-- verification TypeScript mobile avec `tsc --noEmit` ;
 - CI GitHub Actions ;
-- README mobile dedie ;
+- tests mobiles unitaires sur les helpers critiques ;
 - APK Android installable via EAS Build.
 
 ## Comptes de demonstration
@@ -180,8 +188,6 @@ L'XP est attribuee une seule fois par session terminee grace au champ `xp_awarde
 
 ## Roadmap courte
 
-- finaliser le README mobile dans `mobile/` ;
-- ajouter une suite de tests API lisible pour un recruteur ;
 - ajouter une CI GitHub Actions ;
 - deployer l'API Rails sur Heroku ;
 - configurer `EXPO_PUBLIC_API_URL` pour la production ;
