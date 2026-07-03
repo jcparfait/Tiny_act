@@ -58,4 +58,18 @@ end
 
 class ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
+
+  def json_response
+    JSON.parse(response.body)
+  end
+
+  def bearer_token_for(user)
+    user.issue_mobile_api_token!
+  end
+
+  def api_headers_for(user)
+    {
+      "Authorization" => "Bearer #{bearer_token_for(user)}"
+    }
+  end
 end
