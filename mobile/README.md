@@ -43,11 +43,17 @@ cd mobile
 npm install
 ```
 
-Le depot contient actuellement un `package-lock.json`, donc les commandes documentees utilisent `npm`.
+Le projet mobile utilise `npm` et le lockfile `package-lock.json`.
 
 ## Configuration API
 
-Creer un fichier `.env.local` dans `mobile/`:
+Copier le fichier d'exemple:
+
+```bash
+cp .env.example .env.local
+```
+
+Par defaut:
 
 ```bash
 EXPO_PUBLIC_API_URL=http://localhost:3000
@@ -93,18 +99,14 @@ npm run android
 npm run ios
 npm run web
 npm run lint
-```
-
-Controle TypeScript manuel:
-
-```bash
-npx tsc --noEmit
+npm run typecheck
 ```
 
 ## Structure
 
 ```text
 mobile/
+├── .env.example             # Exemple de configuration API
 ├── app.json                 # Configuration Expo
 ├── package.json             # Scripts et dependances
 ├── tsconfig.json            # TypeScript strict et alias @/*
@@ -174,8 +176,6 @@ Verifier les chemins dans `app.json`, notamment:
 
 ## Prochaines ameliorations
 
-- ajouter un script `typecheck` dans `package.json` ;
-- standardiser le gestionnaire de paquets entre `npm` et `yarn` ;
 - ajouter `eas.json` pour generer une APK Android installable ;
 - ajouter une configuration d'environnement de production ;
 - ajouter quelques tests unitaires sur les helpers mobiles critiques.
