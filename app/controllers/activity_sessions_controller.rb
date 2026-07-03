@@ -1,4 +1,4 @@
-class ActivitySessionsController < BaseController
+class ActivitySessionsController < ApplicationController
   ROOM_REWARD_XP = 120
 
   include TopbarDatas
@@ -259,55 +259,93 @@ class ActivitySessionsController < BaseController
       load_random_language_items("word")
     when "sentence_completion"
       load_random_language_items("sentence")
+    else
+      []
     end
   end
 
-  def load_random_language_items(item_type)
+  def assign_language_if_needed
+    return unless @activity_session.activity.language_activity?
+    return if @activity_session.language.present?
+
     language = LanguageItem
-               .where(item_type: item_type)
+               .where(item_type: language_item_type)
                .distinct
                .pluck(:language)
                .sample
 
-    return if language.blank?
-
-    @language = language
-
-    @language_items = LanguageItem
-                      .where(item_type: item_type, language: language)
-                      .order(Arel.sql("RANDOM()"))
-                      .limit(5)
+    @activity_session.update!(language: language) if language.present?
   end
 
-  def assign_language_if_needed
-    return unless @activities.any?(&:language_activity?)
-    return if @activity_session.language.present?
+  def language_items_for(activity)
+    return [] unless activity.language_activity?
+    return [] if @activity_session.language.blank?
 
-    language = LanguageItem.distinct.pluck(:language).sample
-    @activity_session.update!(language: language) if language.present?
+    LanguageItem
+      .where(
+        item_type: language_item_type,
+        language: @activity_session.language
+      )
+      .order(Arel.sql("RANDOM()"))
+      .limit(30)
+  end
+
+  def language_item_type
+    case @activity_session.activity.activity_type
+    when "word_learning"
+      "word"
+    when "sentence_completion"
+      "sentence"
+    end
+  end
+
+  def load_random_language_items(item_type)
+    LanguageItem
+      .where(item_type: item_type)
+      .order(Arel.sql("RANDOM()"))
+      .limit(30)
   end
 
   def readable_language(language)
     {
       "english" => "anglais",
       "spanish" => "espagnol"
-    }[language]
+    }[language] || language
   end
 
   def activity_session_params
-    params.require(:activity_session).permit(:culture_category)
+    params.require(:activity_session).permit(:activity_id)
+  end
+
+  def prepare_finished_summary
+    @earned_xp = XpCalculator.awarded_xp_for(@activity_session)
+    @total_xp = XpCalculator.total_for(current_user)
+    @interest_xp = XpCalculator.total_for_interest(
+      current_user,
+      @activity_session.activity.interest
+    )
+
+    @newly_unlocked_furnitures = newly_unlocked_furnitures_for(@activity_session)
+    @next_furniture = next_furniture_for(@activity_session.activity.interest)
+
+    mark_furniture_unlocks_as_seen if @newly_unlocked_furnitures.any?
   end
 
   def record_new_furniture_unlocks_for(activity_session)
     interest = activity_session.activity.interest
-    locked_furnitures_before_reward = locked_furnitures_for(activity_session.user, interest)
+
+    locked_furnitures_before_reward = locked_furnitures_for(interest)
 
     XpCalculator.award!(activity_session)
 
-    current_xp = XpCalculator.total_for_interest(activity_session.user, interest)
-    newly_unlocked_furniture_ids = locked_furnitures_before_reward
-                                   .select { |furniture| furniture.required_xp.to_i <= current_xp }
-                                   .map(&:id)
+    current_xp = XpCalculator.total_for_interest(current_user, interest)
+
+    newly_unlocked_furniture_ids =
+      locked_furnitures_before_reward
+      .select do |furniture|
+        furniture.required_xp.to_i <= current_xp
+      end
+      .map(&:id)
 
     activity_session.update!(
       newly_unlocked_furniture_ids: newly_unlocked_furniture_ids,
@@ -315,8 +353,30 @@ class ActivitySessionsController < BaseController
     )
   end
 
-  def locked_furnitures_for(user, interest)
-    current_xp = XpCalculator.total_for_interest(user, interest)
+  def newly_unlocked_furnitures_for(activity_session)
+    return [] if activity_session.furniture_unlocks_seen_at.present?
+
+    Furniture
+      .where(id: Array(activity_session.newly_unlocked_furniture_ids))
+      .order(:required_xp, :id)
+  end
+
+  def mark_furniture_unlocks_as_seen
+    @activity_session.update!(furniture_unlocks_seen_at: Time.current)
+  end
+
+  def next_furniture_for(interest)
+    current_xp = XpCalculator.total_for_interest(current_user, interest)
+
+    Furniture
+      .where(interest: interest)
+      .where("required_xp > ?", current_xp)
+      .order(:required_xp, :id)
+      .first
+  end
+
+  def locked_furnitures_for(interest)
+    current_xp = XpCalculator.total_for_interest(current_user, interest)
 
     Furniture
       .where(interest: interest)
@@ -324,279 +384,41 @@ class ActivitySessionsController < BaseController
       .order(:required_xp, :id)
   end
 
-  def prepare_finished_summary
-    @activity = @activity_session.activity
-    @summary_interest_name = @activity&.interest&.name.presence || "Activité"
+  def prepare_room_progress
+    selected_interests = current_user.interests.to_a
+    return if selected_interests.empty?
 
-    @summary_duration_minutes = @activity&.duration&.value.to_i
-    @summary_duration_label = if @summary_duration_minutes.positive?
-                                "#{@summary_duration_minutes} min"
-                              else
-                                "Durée non renseignée"
-                              end
-
-    @summary_saved_scroll_minutes = @summary_duration_minutes.positive? ? @summary_duration_minutes : 15
-    @summary_xp_gained = @activity_session.awarded_xp
-    @newly_unlocked_furnitures = newly_unlocked_furnitures_for_summary
+    @room_total_xp = XpCalculator.total_for(current_user)
+    @next_room_furniture = closest_next_room_furniture_for(selected_interests)
   end
 
-  def newly_unlocked_furnitures_for_summary
-    return Furniture.none if @activity_session.furniture_unlocks_seen_at.present?
+  def closest_next_room_furniture_for(interests)
+    interests
+      .filter_map do |interest|
+        next_furniture = next_furniture_for(interest)
+        next unless next_furniture
 
-    furniture_ids = @activity_session.newly_unlocked_furniture_ids.map(&:to_i)
-    return Furniture.none if furniture_ids.empty?
-
-    furnitures = Furniture
-                 .includes(:interest)
-                 .where(id: furniture_ids)
-                 .sort_by { |furniture| furniture_ids.index(furniture.id) || furniture_ids.size }
-
-    @activity_session.update!(furniture_unlocks_seen_at: Time.current)
-
-    furnitures
-  end
-
-  # =========================
-  # HOME NOTIFICATIONS
-  # =========================
-
-  def build_home_notifications
-    notifications = [
-      pending_activity_notification,
-      room_progress_notification,
-      daily_streak_notification
-    ].compact
-
-    add_notification_counters(notifications)
-  end
-
-  def add_notification_counters(notifications)
-    total = notifications.size
-
-    notifications.each_with_index.map do |notification, index|
-      notification.merge(counter: "#{index + 1}/#{total}")
-    end
-  end
-
-  def pending_activity_notification
-    pending_activity_session = latest_pending_activity_session
-
-    return if pending_activity_session.blank?
-
-    activity = pending_activity_session.activity
-
-    {
-      kind: :pending,
-      priority: 1,
-      label: "REPRENDRE",
-      title: activity.name.presence || "Activité en cours",
-      subtitle: pending_activity_subtitle(pending_activity_session),
-      icon_type: :play,
-      url: activity_path(
-        activity,
-        activity_session_id: pending_activity_session.id
-      ),
-      tab_class: "tab-purple",
-      decoration_class: nil
-    }
-  end
-
-  def room_progress_notification
-    next_unlock = closest_next_furniture_unlock
-
-    return if next_unlock.blank?
-
-    {
-      kind: :room,
-      priority: 2,
-      label: "PROGRESSION",
-      title: "Ta room progresse",
-      subtitle: room_progress_subtitle(next_unlock),
-      icon_type: :room,
-      url: room_path(current_user.room),
-      tab_class: "tab-gold",
-      decoration_class: nil
-    }
-  end
-
-  def room_progress_subtitle(next_unlock)
-    "Plus que #{next_unlock[:remaining_xp]} XP en #{next_unlock[:interest].name} " \
-      "pour débloquer #{next_unlock[:furniture].name}."
-  end
-
-  def closest_next_furniture_unlock
-    interests = current_user.interests.to_a
-    return if interests.empty?
-
-    xp_by_interest_id = interests.index_with do |interest|
-      XpCalculator.total_for_interest(current_user, interest)
-    end.transform_keys(&:id)
-
-    Furniture
-      .includes(:interest)
-      .where(interest: interests)
-      .filter_map do |furniture|
-        current_xp = xp_by_interest_id[furniture.interest_id].to_i
-        remaining_xp = furniture.required_xp.to_i - current_xp
-
-        next if remaining_xp <= 0
+        current_xp = XpCalculator.total_for_interest(current_user, interest)
 
         {
-          furniture: furniture,
-          interest: furniture.interest,
-          remaining_xp: remaining_xp
+          furniture: next_furniture,
+          interest: interest,
+          remaining_xp: [next_furniture.required_xp.to_i - current_xp, 0].max
         }
       end
-      .min_by do |unlock|
-        [
-          unlock[:remaining_xp],
-          unlock[:furniture].required_xp.to_i,
-          unlock[:furniture].id
-        ]
-      end
+      .min_by { |item| [item[:remaining_xp], item[:furniture].required_xp.to_i] }
   end
 
-  def daily_streak_notification
-    today_count = finished_sessions_today_count
+  def build_home_notifications
+    notifications = []
 
-    return if today_count.zero?
-
-    {
-      kind: :streak,
-      priority: 3,
-      label: "SÉRIE",
-      title: current_streak_title,
-      subtitle: "#{today_count}/#{daily_bonus_goal} actions faites aujourd’hui",
-      icon_type: :star_mascot,
-      url: new_activity_session_path,
-      tab_class: "tab-green",
-      decoration_class: nil
-    }
-  end
-
-  def latest_pending_activity_session
-    current_user
-      .activity_sessions
-      .includes(activity: %i[interest duration])
-      .where(finished: false, status: ["in_progress", "paused"])
-      .order(updated_at: :desc)
-      .first
-  end
-
-  def pending_activity_subtitle(activity_session)
-    activity = activity_session.activity
-
-    interest_name = activity_interest_name(activity)
-    duration_label = activity_duration_label(activity)
-    elapsed_label = elapsed_activity_label(activity_session)
-
-    [interest_name, duration_label, elapsed_label].compact.join(" • ")
-  end
-
-  def elapsed_activity_label(activity_session)
-    elapsed_seconds = activity_session.elapsed_seconds.to_i
-
-    return if elapsed_seconds <= 0
-
-    minutes = elapsed_seconds / 60
-    seconds = elapsed_seconds % 60
-
-    if minutes.positive?
-      "#{minutes} min #{seconds.to_s.rjust(2, '0')} déjà faites"
-    else
-      "#{seconds}s déjà faites"
-    end
-  end
-
-  def prepare_room_progress
-    @room_reward_threshold_xp = ROOM_REWARD_XP
-    @room_total_xp = current_user_total_xp
-    @room_rewards_unlocked = @room_total_xp / ROOM_REWARD_XP
-
-    current_cycle_xp = @room_total_xp % ROOM_REWARD_XP
-
-    if current_cycle_xp.zero? && @room_total_xp.positive?
-      @room_progress_percent = 100
-      @room_xp_before_reward = 0
-    else
-      @room_progress_percent = ((current_cycle_xp.to_f / ROOM_REWARD_XP) * 100).round
-      @room_xp_before_reward = ROOM_REWARD_XP - current_cycle_xp
-    end
-  end
-
-  def current_user_total_xp
-    XpCalculator.total_for(current_user)
-  end
-
-  def finished_sessions_count
-    return @finished_sessions_count if defined?(@finished_sessions_count) && @finished_sessions_count.present?
-
-    @finished_sessions_count = current_user
-                               .activity_sessions
-                               .where(finished: true)
-                               .count
-  end
-
-  def actions_needed_for_reward
-    3
-  end
-
-  def daily_bonus_goal
-    3
-  end
-
-  def finished_sessions_today_count
-    current_user
-      .activity_sessions
-      .where(finished: true, date: Date.current)
-      .count
-  end
-
-  def current_streak_title
-    streak_days = current_streak_days
-
-    if streak_days > 1
-      "#{streak_days} jours de suite"
-    else
-      "Belle action aujourd’hui"
-    end
-  end
-
-  def current_streak_days
-    finished_dates = current_user
-                     .activity_sessions
-                     .where(finished: true)
-                     .where.not(date: nil)
-                     .distinct
-                     .order(date: :desc)
-                     .pluck(:date)
-
-    return 0 if finished_dates.empty?
-
-    streak = 0
-    expected_date = Date.current
-
-    finished_dates.each do |date|
-      if date == expected_date
-        streak += 1
-        expected_date -= 1.day
-      elsif date < expected_date
-        break
-      end
+    if @next_room_furniture.present?
+      notifications << {
+        title: "Prochain déblocage",
+        body: "Plus que #{@next_room_furniture[:remaining_xp]} XP en #{@next_room_furniture[:interest].name} pour débloquer #{@next_room_furniture[:furniture].name}."
+      }
     end
 
-    streak
-  end
-
-  def activity_interest_name(activity)
-    activity&.interest&.name.presence
-  end
-
-  def activity_duration_label(activity)
-    minutes = activity&.duration&.value.to_i
-
-    return if minutes <= 0
-
-    "#{minutes} min"
+    notifications
   end
 end
