@@ -7,10 +7,26 @@ Le projet combine une application Expo / React Native et une API Rails. L'object
 ## Statut
 
 - Version mobile fonctionnelle sur la branche par defaut `mobile/expo-client`.
-- Backend Rails present dans le meme depot et expose des endpoints JSON sous `/api/v1`.
+- Backend Rails deploye sur Heroku et expose des endpoints JSON sous `/api/v1`.
+- APK Android installable generee avec EAS Build.
+- Release GitHub de demonstration disponible pour les recruteurs.
 - README principal et README mobile nettoyes.
 - Tests Rails ajoutes sur les principaux endpoints API mobile.
-- Deploiement Heroku, CI et APK installable en cours de preparation.
+
+## Demo recruteur
+
+- Release GitHub: https://github.com/jcparfait/Tiny_act/releases/tag/v1.0.0-mobile-demo
+- Dernier build Android EAS: https://expo.dev/accounts/jcparfait/projects/tiny-act/builds/d46043ef-a0f3-46ff-bff9-822f29c3b5fb
+- APK Android directe: https://expo.dev/artifacts/eas/9RBGzWuqGBwAQI0Pgtfsj5ew1UjOBCVM4u-9tMZOgdc.apk
+- API Heroku: https://tiny-act-513fa82ec3fd.herokuapp.com
+- Healthcheck API: https://tiny-act-513fa82ec3fd.herokuapp.com/api/v1/health
+
+Compte de demonstration:
+
+```text
+Email: jc.demo@example.com
+Mot de passe: 123456
+```
 
 ## Apercu produit
 
@@ -130,6 +146,7 @@ bin/rails test test/controllers/api/v1
 bin/rails test test/services/xp_calculator_test.rb
 cd mobile && npm run lint
 cd mobile && npm run typecheck
+cd mobile && npm run doctor
 ```
 
 Couverture actuelle:
@@ -142,11 +159,11 @@ Couverture actuelle:
 - room mobile: inventaire, placement, deplacement et suppression de meuble ;
 - logique XP cote service.
 
-A renforcer avant presentation finale:
+A renforcer ensuite:
 
 - CI GitHub Actions ;
 - tests mobiles unitaires sur les helpers critiques ;
-- APK Android installable via EAS Build.
+- build Android AAB pour une publication Google Play.
 
 ## Comptes de demonstration
 
@@ -189,7 +206,6 @@ L'XP est attribuee une seule fois par session terminee grace au champ `xp_awarde
 ## Roadmap courte
 
 - ajouter une CI GitHub Actions ;
-- deployer l'API Rails sur Heroku ;
-- configurer `EXPO_PUBLIC_API_URL` pour la production ;
-- generer une APK Android installable ;
-- ajouter captures d'ecran, lien Heroku et lien APK dans ce README.
+- ajouter quelques tests mobiles unitaires ;
+- preparer une build Android AAB pour le Play Store ;
+- ajouter captures d'ecran et courte video de demo dans ce README.
