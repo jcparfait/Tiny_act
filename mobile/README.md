@@ -17,6 +17,20 @@ L'application permet a l'utilisateur de:
 - consulter son historique ;
 - debloquer des meubles et personnaliser sa room.
 
+## Build recruteur
+
+- Release GitHub: https://github.com/jcparfait/Tiny_act/releases/tag/v1.0.0-mobile-demo
+- Dernier build Android EAS: https://expo.dev/accounts/jcparfait/projects/tiny-act/builds/d46043ef-a0f3-46ff-bff9-822f29c3b5fb
+- APK Android directe: https://expo.dev/artifacts/eas/9RBGzWuqGBwAQI0Pgtfsj5ew1UjOBCVM4u-9tMZOgdc.apk
+- API Heroku: https://tiny-act-513fa82ec3fd.herokuapp.com
+
+Compte demo:
+
+```text
+Email: jc.demo@example.com
+Mot de passe: 123456
+```
+
 ## Stack mobile
 
 - Expo SDK 56
@@ -220,8 +234,8 @@ Le token mobile est stocke via Expo Secure Store. En cas de souci pendant le dev
 
 Verifier les chemins dans `app.json`, notamment:
 
-- `./assets/images/icon.png` ;
-- `./assets/images/brand/tiny-act-logo.png` ;
+- `./assets/images/brand/tiny-act-logo.app.png` pour l'icone installee ;
+- `./assets/images/brand/tiny-act-logo.png` pour le splash screen ;
 - les images Android adaptive icon.
 
 ## Prochaines ameliorations
