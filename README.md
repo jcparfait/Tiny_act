@@ -28,6 +28,15 @@ Email: jc.demo@example.com
 Mot de passe: 123456
 ```
 
+## Captures d'ecran
+
+<p>
+  <img src="docs/screenshots/mobile/login.png" alt="Connexion Tiny Act" width="220" />
+  <img src="docs/screenshots/mobile/recommendation.png" alt="Parcours de recommandation Tiny Act" width="220" />
+  <img src="docs/screenshots/mobile/activity.png" alt="Activite Tiny Act" width="220" />
+  <img src="docs/screenshots/mobile/room.png" alt="Room et progression Tiny Act" width="220" />
+</p>
+
 ## Apercu produit
 
 L'utilisateur choisit d'abord son humeur, son lieu et sa duree disponible. L'application propose ensuite des activites compatibles avec ses centres d'interet. Quand une activite est terminee, l'utilisateur gagne de l'XP et peut debloquer des meubles pour personnaliser sa room.
@@ -208,4 +217,4 @@ L'XP est attribuee une seule fois par session terminee grace au champ `xp_awarde
 - ajouter une CI GitHub Actions ;
 - ajouter quelques tests mobiles unitaires ;
 - preparer une build Android AAB pour le Play Store ;
-- ajouter captures d'ecran et courte video de demo dans ce README.
+- ajouter une courte video de demo si necessaire.
