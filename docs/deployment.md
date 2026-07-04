@@ -4,6 +4,16 @@
 
 Le backend Rails est deployable sur Heroku depuis la racine du depot.
 
+### 0. Installer le Heroku CLI
+
+Sur macOS avec Homebrew:
+
+```bash
+brew tap heroku/brew
+brew install heroku
+heroku --version
+```
+
 ### 1. Preparer Heroku
 
 ```bash
@@ -12,14 +22,24 @@ heroku create tiny-act-api
 heroku addons:create heroku-postgresql:essential-0 --app tiny-act-api
 ```
 
-Si l'application Heroku existe deja, remplacer `tiny-act-api` par son nom reel.
+Si l'application Heroku existe deja, remplacer `tiny-act-api` par son nom reel et connecter le remote Git:
+
+```bash
+heroku git:remote -a tiny-act-api
+```
 
 ### 2. Configurer les variables d'environnement
 
 ```bash
 heroku config:set RAILS_ENV=production --app tiny-act-api
-heroku config:set RAILS_MASTER_KEY="$(cat config/master.key)" --app tiny-act-api
+heroku config:set SECRET_KEY_BASE="$(bin/rails secret)" --app tiny-act-api
 heroku config:set APP_HOST=tiny-act-api.herokuapp.com --app tiny-act-api
+```
+
+Si le projet utilise des credentials Rails chiffres en production et que `config/master.key` existe localement, ajouter aussi:
+
+```bash
+heroku config:set RAILS_MASTER_KEY="$(cat config/master.key)" --app tiny-act-api
 ```
 
 Optionnel, seulement si une version web externe doit appeler l'API depuis un navigateur:
