@@ -7,7 +7,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://tiny-act.herokuapp.com"
+        "EXPO_PUBLIC_API_URL": "https://tiny-act-513fa82ec3fd.herokuapp.com"
       },
       "android": {
         "buildType": "apk"
@@ -15,7 +15,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://tiny-act.herokuapp.com"
+        "EXPO_PUBLIC_API_URL": "https://tiny-act-513fa82ec3fd.herokuapp.com"
       },
       "android": {
         "buildType": "app-bundle"
