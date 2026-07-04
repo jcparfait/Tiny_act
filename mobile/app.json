@@ -1,17 +1,20 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Tiny Act",
+    "slug": "tiny-act",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "tinyact",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.jcparfait.tinyact",
       "icon": "./assets/expo.icon",
       "userInterfaceStyle": "light"
     },
     "android": {
+      "package": "com.jcparfait.tinyact",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
