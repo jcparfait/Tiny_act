@@ -45,7 +45,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "doctor": "expo-doctor"
+    "doctor": "expo-doctor",
+    "build:android:apk": "eas build --platform android --profile preview"
   },
   "private": true,
   "packageManager": "npm@10"
