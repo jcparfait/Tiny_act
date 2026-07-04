@@ -26,13 +26,15 @@ L'application permet a l'utilisateur de:
 - Expo Router
 - Expo Secure Store pour le token mobile
 - Expo Image, Expo Fonts et Expo Splash Screen
+- EAS Build pour les builds Android installables
 
 ## Prerequis
 
 - Node.js 20.19.4 ou plus recent ;
-- le backend Rails lance depuis la racine du depot ;
+- le backend Rails lance depuis la racine du depot ou deploye sur Heroku ;
 - un simulateur Android/iOS ou un telephone avec Expo Go ;
-- une URL API accessible depuis le device.
+- une URL API accessible depuis le device ;
+- EAS CLI pour generer une APK Android.
 
 ## Installation
 
@@ -65,7 +67,11 @@ Pour un telephone physique, `localhost` pointe vers le telephone, pas vers l'ord
 EXPO_PUBLIC_API_URL=http://192.168.1.42:3000
 ```
 
-Pour une build de production, cette variable devra pointer vers l'URL Heroku de l'API Rails.
+Pour la build APK, `mobile/eas.json` pointe vers l'API Heroku:
+
+```bash
+EXPO_PUBLIC_API_URL=https://tiny-act.herokuapp.com
+```
 
 ## Lancement
 
@@ -100,7 +106,45 @@ npm run ios
 npm run web
 npm run lint
 npm run typecheck
+npm run doctor
+npm run build:android:apk
 ```
+
+## Build Android APK
+
+Installer EAS CLI si necessaire:
+
+```bash
+npm install -g eas-cli
+```
+
+Se connecter a Expo:
+
+```bash
+eas login
+```
+
+Verifier le projet avant build:
+
+```bash
+npm run typecheck
+npm run lint
+npm run doctor
+```
+
+Generer une APK Android installable:
+
+```bash
+npm run build:android:apk
+```
+
+Le profil `preview` dans `eas.json` produit une APK avec:
+
+```text
+https://tiny-act.herokuapp.com
+```
+
+comme URL d'API.
 
 ## Structure
 
@@ -108,6 +152,7 @@ npm run typecheck
 mobile/
 ├── .env.example             # Exemple de configuration API
 ├── app.json                 # Configuration Expo
+├── eas.json                 # Profils EAS Build
 ├── eslint.config.js         # Configuration ESLint Expo
 ├── package.json             # Scripts et dependances
 ├── tsconfig.json            # TypeScript strict et alias @/*
@@ -163,7 +208,7 @@ Verifier que `mobile/.env.local` existe et contient `EXPO_PUBLIC_API_URL`. Redem
 
 ### `Impossible de joindre le serveur`
 
-Verifier que Rails tourne bien sur le port 3000 et que l'URL API est accessible depuis le device.
+Verifier que Rails tourne bien sur le port 3000 ou que l'URL Heroku repond a `/api/v1/health`.
 
 Sur telephone physique, utiliser l'IP locale de l'ordinateur au lieu de `localhost`.
 
@@ -181,6 +226,5 @@ Verifier les chemins dans `app.json`, notamment:
 
 ## Prochaines ameliorations
 
-- ajouter `eas.json` pour generer une APK Android installable ;
-- ajouter une configuration d'environnement de production ;
-- ajouter quelques tests unitaires sur les helpers mobiles critiques.
+- ajouter quelques tests unitaires sur les helpers mobiles critiques ;
+- preparer un profil store Android en AAB si publication Google Play.
