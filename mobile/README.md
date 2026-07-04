@@ -70,7 +70,7 @@ EXPO_PUBLIC_API_URL=http://192.168.1.42:3000
 Pour la build APK, `mobile/eas.json` pointe vers l'API Heroku:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://tiny-act.herokuapp.com
+EXPO_PUBLIC_API_URL=https://tiny-act-513fa82ec3fd.herokuapp.com
 ```
 
 ## Lancement
@@ -141,7 +141,7 @@ npm run build:android:apk
 Le profil `preview` dans `eas.json` produit une APK avec:
 
 ```text
-https://tiny-act.herokuapp.com
+https://tiny-act-513fa82ec3fd.herokuapp.com
 ```
 
 comme URL d'API.
