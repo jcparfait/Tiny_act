@@ -1,0 +1,25 @@
+{
+  "cli": {
+    "version": ">= 20.5.1",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://tiny-act.herokuapp.com"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://tiny-act.herokuapp.com"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}
