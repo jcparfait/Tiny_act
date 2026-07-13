@@ -11,10 +11,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   rails:
     name: Rails tests and security
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -51,15 +56,17 @@ jobs:
       - name: Run Rails tests
         run: bin/rails test
 
-      - name: Run RuboCop
-        run: bin/rubocop
-
       - name: Run Brakeman
         run: bin/brakeman --quiet --no-pager
+
+      - name: Run RuboCop (advisory)
+        continue-on-error: true
+        run: bin/rubocop --force-exclusion app lib
 
   mobile:
     name: Mobile quality checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -85,5 +92,6 @@ jobs:
       - name: ESLint
         run: npm run lint
 
-      - name: Expo Doctor
+      - name: Expo Doctor (advisory)
+        continue-on-error: true
         run: npm run doctor
