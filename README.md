@@ -1,60 +1,67 @@
 # Tiny Act
 
-Tiny Act est une application mobile qui aide l'utilisateur a choisir et realiser une micro-activite adaptee a son humeur, son lieu, son temps disponible et ses centres d'interet.
+[![CI](https://github.com/jcparfait/Tiny_act/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jcparfait/Tiny_act/actions/workflows/ci.yml)
+![Ruby](https://img.shields.io/badge/Ruby-3.3.5-CC342D?logo=ruby&logoColor=white)
+![Rails](https://img.shields.io/badge/Rails-8.1-CC0000?logo=rubyonrails&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-SDK%2056-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.85-61DAFB?logo=react&logoColor=black)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-production-4169E1?logo=postgresql&logoColor=white)
 
-Le projet combine une application Expo / React Native et une API Rails. L'objectif est simple: transformer un moment d'inertie en petite action concrete, puis rendre la progression visible avec de l'XP, un historique et une room personnalisable.
+**Tiny Act** est une application mobile qui aide l’utilisateur à choisir et réaliser une micro-activité adaptée à son humeur, son lieu, son temps disponible et ses centres d’intérêt.
 
-## Statut
+Le projet associe une application Expo / React Native à une API Ruby on Rails. Son objectif est de transformer un moment d’inertie en petite action concrète, puis de rendre la progression visible grâce à l’XP, l’historique et une room personnalisable.
 
-- Version mobile fonctionnelle sur la branche par defaut `mobile/expo-client`.
-- Backend Rails deploye sur Heroku et expose des endpoints JSON sous `/api/v1`.
-- APK Android installable generee avec EAS Build.
-- Release GitHub de demonstration disponible pour les recruteurs.
-- README principal et README mobile nettoyes.
-- Tests Rails ajoutes sur les principaux endpoints API mobile.
+## Statut du projet
 
-## Demo recruteur
+- Version mobile fonctionnelle sur la branche par défaut `main`.
+- Backend Rails déployé sur Heroku avec des endpoints JSON sous `/api/v1`.
+- APK Android installable générée avec EAS Build.
+- Release GitHub de démonstration disponible.
+- Tests Rails sur les principaux parcours API mobiles.
+- Intégration continue GitHub Actions pour les tests Rails et les contrôles de qualité mobiles.
 
-- Release GitHub: https://github.com/jcparfait/Tiny_act/releases/tag/v1.0.0-mobile-demo
-- Dernier build Android EAS: https://expo.dev/accounts/jcparfait/projects/tiny-act/builds/d46043ef-a0f3-46ff-bff9-822f29c3b5fb
-- APK Android directe: https://expo.dev/artifacts/eas/9RBGzWuqGBwAQI0Pgtfsj5ew1UjOBCVM4u-9tMZOgdc.apk
-- API Heroku: https://tiny-act-513fa82ec3fd.herokuapp.com
-- Healthcheck API: https://tiny-act-513fa82ec3fd.herokuapp.com/api/v1/health
+## Démonstration
 
-Compte de demonstration:
+- [Release GitHub v1.0.0](https://github.com/jcparfait/Tiny_act/releases/tag/v1.0.0-mobile-demo)
+- [Build Android EAS](https://expo.dev/accounts/jcparfait/projects/tiny-act/builds/d46043ef-a0f3-46ff-bff9-822f29c3b5fb)
+- [Télécharger directement l’APK](https://expo.dev/artifacts/eas/9RBGzWuqGBwAQI0Pgtfsj5ew1UjOBCVM4u-9tMZOgdc.apk)
+- [API Heroku](https://tiny-act-513fa82ec3fd.herokuapp.com)
+- [Healthcheck API](https://tiny-act-513fa82ec3fd.herokuapp.com/api/v1/health)
+
+Compte de démonstration :
 
 ```text
 Email: jc.demo@example.com
 Mot de passe: 123456
 ```
 
-## Captures d'ecran
+## Captures d’écran
 
 <p>
   <img src="docs/screenshots/mobile/login.png" alt="Connexion Tiny Act" width="220" />
   <img src="docs/screenshots/mobile/recommendation.png" alt="Parcours de recommandation Tiny Act" width="220" />
-  <img src="docs/screenshots/mobile/activity.png" alt="Activite Tiny Act" width="220" />
+  <img src="docs/screenshots/mobile/activity.png" alt="Activité Tiny Act" width="220" />
   <img src="docs/screenshots/mobile/room.png" alt="Room et progression Tiny Act" width="220" />
 </p>
 
-## Apercu produit
+## Parcours produit
 
-L'utilisateur choisit d'abord son humeur, son lieu et sa duree disponible. L'application propose ensuite des activites compatibles avec ses centres d'interet. Quand une activite est terminee, l'utilisateur gagne de l'XP et peut debloquer des meubles pour personnaliser sa room.
+L’utilisateur sélectionne son humeur, son lieu et sa durée disponible. Tiny Act propose ensuite des activités compatibles avec ses centres d’intérêt. Une activité terminée rapporte de l’XP, fait progresser le centre d’intérêt associé et peut débloquer des meubles pour personnaliser la room.
 
-Fonctionnalites principales:
+Fonctionnalités principales :
 
-- authentification mobile avec compte utilisateur et token API ;
-- onboarding avec selection des centres d'interet et avatar ;
-- recommandation d'activites selon humeur, lieu, duree et interets ;
-- activites guidees avec timer, pause, reprise et finalisation ;
-- activites specialisees: quiz culture, quiz code, langues, melodie et sport guide ;
-- historique des sessions terminees ;
-- calcul d'XP centralise cote backend ;
-- progression par centre d'interet ;
-- inventaire et room personnalisable avec meubles debloques par XP ;
-- persistance locale du token et des preferences mobiles.
+- authentification mobile par compte utilisateur et token API ;
+- onboarding avec sélection des centres d’intérêt et avatar ;
+- recommandation selon l’humeur, le lieu, la durée et les intérêts ;
+- activités guidées avec timer, pause, reprise et finalisation ;
+- quiz culture et code, langues, mélodie et sport guidé ;
+- historique des sessions terminées ;
+- calcul d’XP centralisé côté backend ;
+- progression par centre d’intérêt ;
+- inventaire et room personnalisable ;
+- persistance locale du token et des préférences mobiles.
 
-## Stack
+## Stack technique
 
 | Partie | Technologies |
 | --- | --- |
@@ -62,68 +69,61 @@ Fonctionnalites principales:
 | UI mobile | Expo Image, Expo Fonts, React Native Animated, design system local |
 | Auth mobile | API token, Expo Secure Store |
 | Backend | Ruby on Rails 8.1, API JSON, Devise |
-| Base de donnees | PostgreSQL |
-| Donnees | Seeds Rails, imports CSV via Roo |
-| Tests | Minitest Rails, tests API mobile, tests modele/service sur la logique XP |
+| Base de données | PostgreSQL |
+| Données | Seeds Rails, imports CSV avec Roo |
+| Tests | Minitest Rails, tests API, modèles et service XP |
+| Qualité | GitHub Actions, TypeScript, ESLint, Expo Doctor, Brakeman, RuboCop |
 
 ## Architecture
 
 ```text
 .
-├── app/                         # Backend Rails: controllers, models, services
-├── config/routes.rb             # Routes web Rails et API mobile /api/v1
-├── db/                          # Schema, migrations, seeds et donnees CSV
-├── test/                        # Tests Rails, dont tests API mobile
+├── app/                         # Backend Rails : contrôleurs, modèles, services
+├── config/routes.rb             # Routes web et API mobile /api/v1
+├── db/                          # Schéma, migrations, seeds et données CSV
+├── test/                        # Tests Rails et API mobile
 └── mobile/                      # Application Expo / React Native
-    ├── .env.example             # Exemple de configuration API mobile
+    ├── .env.example             # Exemple de configuration API
     ├── app.json                 # Configuration Expo
-    ├── package.json             # Scripts et dependances mobile
+    ├── package.json             # Scripts et dépendances mobiles
     └── src/
-        ├── app/                 # Ecrans Expo Router
-        ├── components/          # Composants UI mobiles
+        ├── app/                 # Écrans Expo Router
+        ├── components/          # Composants UI
         ├── context/             # AuthContext
         ├── services/            # Clients API
         ├── theme/               # Tokens visuels
-        └── types/               # Types TypeScript partages cote mobile
+        └── types/               # Types TypeScript
 ```
 
 ## API mobile
 
-Les routes API principales sont exposees sous `/api/v1`:
+Les routes principales sont exposées sous `/api/v1` :
 
 | Domaine | Routes principales |
 | --- | --- |
-| Sante API | `GET /api/v1/health` |
+| Santé API | `GET /api/v1/health` |
 | Auth | `POST /auth/login`, `POST /auth/register`, `GET /auth/me`, `DELETE /auth/logout` |
 | Profil | `PATCH /auth/profile`, `DELETE /auth/profile` |
 | Onboarding | `GET /interests`, `PATCH /interests` |
-| Criteres | `GET /moods`, `GET /locations`, `GET /durations` |
+| Critères | `GET /moods`, `GET /locations`, `GET /durations` |
 | Sessions | `GET /activity_sessions`, `POST /activity_sessions`, `GET /activity_sessions/:id` |
-| Execution | `PATCH /start`, `PATCH /pause`, `PATCH /resume`, `PATCH /finish` |
+| Exécution | `PATCH /start`, `PATCH /pause`, `PATCH /resume`, `PATCH /finish` |
 | Progression | `GET/PATCH /activity_sessions/:id/progress`, `GET /reward` |
 | Room | `GET /room`, `POST/PATCH/DELETE /room/furnitures` |
 
 ## Installation locale
 
-Prerequis:
-
-- Ruby compatible Rails 8.1 ;
-- PostgreSQL ;
-- Bundler ;
-- Node.js ;
-- Expo CLI via `npx`.
+Prérequis : Ruby 3.3.5, PostgreSQL, Bundler, Node.js et `npx`.
 
 ### Backend Rails
 
 ```bash
 bundle install
-bin/rails db:create
-bin/rails db:migrate
-bin/rails db:seed
+bin/rails db:create db:migrate db:seed
 bin/rails server
 ```
 
-API locale:
+API locale :
 
 ```text
 http://localhost:3000/api/v1
@@ -135,86 +135,55 @@ http://localhost:3000/api/v1
 cd mobile
 npm install
 cp .env.example .env.local
-```
-
-Adapter `EXPO_PUBLIC_API_URL` dans `mobile/.env.local` si l'application tourne sur un telephone physique.
-
-Lancer Expo:
-
-```bash
 npx expo start
 ```
 
-## Tests et qualite
+Adapter `EXPO_PUBLIC_API_URL` dans `mobile/.env.local` si l’application tourne sur un téléphone physique.
 
-Commandes utiles:
+## Tests et intégration continue
+
+Commandes locales :
 
 ```bash
 bin/rails test
 bin/rails test test/controllers/api/v1
 bin/rails test test/services/xp_calculator_test.rb
-cd mobile && npm run lint
 cd mobile && npm run typecheck
+cd mobile && npm run lint
 cd mobile && npm run doctor
 ```
 
-Couverture actuelle:
+Le workflow GitHub Actions exécute automatiquement les tests Rails, l’analyse de sécurité et les contrôles TypeScript / ESLint à chaque push ou pull request vers `main`.
 
-- authentification mobile: login, token, endpoint protege, logout ;
-- inscription mobile ;
-- selection des centres d'interet mobiles ;
-- creation et execution d'une session d'activite ;
-- attribution d'XP et lecture de reward ;
-- room mobile: inventaire, placement, deplacement et suppression de meuble ;
-- logique XP cote service.
+Couverture actuelle :
 
-A renforcer ensuite:
-
-- CI GitHub Actions ;
-- tests mobiles unitaires sur les helpers critiques ;
-- build Android AAB pour une publication Google Play.
-
-## Comptes de demonstration
-
-Les seeds creent plusieurs comptes de demo avec le mot de passe suivant:
-
-```text
-123456
-```
-
-Exemples:
-
-- `jc.demo@example.com`
-- `tibo.demo@example.com`
-- `david.demo@example.com`
-- `dina.demo@example.com`
-- `emma.demo@example.com`
+- authentification mobile : inscription, connexion, token, endpoint protégé et déconnexion ;
+- sélection des centres d’intérêt ;
+- création et exécution d’une session d’activité ;
+- attribution d’XP et lecture de la récompense ;
+- inventaire, placement, déplacement et suppression des meubles ;
+- logique du calculateur d’XP.
 
 ## Logique XP
 
-Le calcul d'XP est centralise dans `app/services/xp_calculator.rb`.
+Le calcul d’XP est centralisé dans `app/services/xp_calculator.rb`.
 
-Base par duree:
-
-| Duree | XP de base |
+| Durée | XP de base |
 | --- | ---: |
 | 5 minutes | 10 XP |
 | 15 minutes | 22 XP |
 | 30 minutes | 40 XP |
 
-Multiplicateur par humeur:
-
 | Humeur | Multiplicateur |
 | --- | ---: |
-| A plat | x1.3 |
-| Bof / Mitige | x1.15 |
+| À plat | x1.3 |
+| Mitigé | x1.15 |
 | En forme | x1.0 |
 
-L'XP est attribuee une seule fois par session terminee grace au champ `xp_awarded_at`, puis synchronisee avec la progression par centre d'interet.
+L’XP est attribuée une seule fois par session terminée grâce au champ `xp_awarded_at`, puis synchronisée avec la progression du centre d’intérêt concerné.
 
-## Roadmap courte
+## Roadmap
 
-- ajouter une CI GitHub Actions ;
-- ajouter quelques tests mobiles unitaires ;
-- preparer une build Android AAB pour le Play Store ;
-- ajouter une courte video de demo si necessaire.
+- ajouter des tests unitaires mobiles sur les helpers critiques ;
+- préparer une build Android AAB pour le Play Store ;
+- ajouter une courte vidéo de démonstration.
